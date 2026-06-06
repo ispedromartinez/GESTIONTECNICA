@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node \"C:\\\\Users\\\\Marti\\\\AppData\\\\Local\\\\Temp\\\\patch_html.js\")",
+      "PowerShell(node \"C:\\\\Users\\\\Marti\\\\AppData\\\\Local\\\\Temp\\\\patch_html2.js\")",
+      "PowerShell(node \"C:\\\\Users\\\\Marti\\\\AppData\\\\Local\\\\Temp\\\\read_xlsx.js\")",
+      "PowerShell(node \"C:\\\\Users\\\\Marti\\\\AppData\\\\Local\\\\Temp\\\\patch_sites.js\")",
+      "PowerShell(node \"C:\\\\Users\\\\Marti\\\\AppData\\\\Local\\\\Temp\\\\patch_na.js\")",
+      "PowerShell(node \"C:\\\\Users\\\\Marti\\\\AppData\\\\Local\\\\Temp\\\\patch_required.js\")",
+      "PowerShell(Get-NetFirewallRule *)",
+      "PowerShell(Get-NetConnectionProfile *)",
+      "PowerShell(New-NetFirewallRule *)",
+      "PowerShell(Get-Process *)"
+    ]
+  }
+}
