@@ -462,11 +462,11 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 <div class="section" id="tab4">
   <div class="card">
     <div class="card-title">Resumen de Actividad<span class="req"> *</span></div>
-    <textarea id="resumen" rows="4" placeholder="Describir las actividades realizadas..."></textarea>
+    <textarea id="resumen" rows="4" placeholder="Describir las actividades realizadas..." spellcheck="true" lang="es"></textarea>
   </div>
   <div class="card">
     <div class="card-title">Observaciones y Recomendaciones</div>
-    <textarea id="observaciones" rows="5" placeholder="Observaciones, anomalías, recomendaciones..."></textarea>
+    <textarea id="observaciones" rows="5" placeholder="Observaciones, anomalías, recomendaciones..." spellcheck="true" lang="es"></textarea>
   </div>
   <div class="nav-bar">
     <button class="btn-nav" onclick="showTab(3)">← Anterior</button>
@@ -833,14 +833,18 @@ function selectOtrosSite(){
 }
 function hilight(items){items.forEach((el,i)=>el.classList.toggle('hi',i===hiIdx));if(hiIdx>=0)items[hiIdx]?.scrollIntoView({block:'nearest'});}
 function selectSite(name,addr){
+  const idx=SITES.findIndex(([n])=>n===name);
+  const code=idx>=0?'CC-'+String(idx+1).padStart(3,'0'):'';
   siteInput.value=name;document.getElementById('nombreSitio').value=name;
   document.getElementById('direccion').value=addr;document.getElementById('addrDisp').textContent=addr||'—';
+  document.getElementById('codigoSitio').value=code;
   siteInput.classList.add('sel');siteClear.classList.add('show');siteCnt.textContent='✓ Sitio seleccionado';
   closeDD();previewCod();
 }
 function clearSite(){
   siteInput.value='';document.getElementById('nombreSitio').value='';
   document.getElementById('direccion').value='';document.getElementById('addrDisp').textContent='—';
+  document.getElementById('codigoSitio').value='';
   siteInput.classList.remove('sel');siteClear.classList.remove('show');siteCnt.textContent='';
   closeDD();siteInput.focus();previewCod();
 }
@@ -1521,6 +1525,16 @@ updateTabStates();
 buildPhotoSlots();
 document.getElementById('fechaEjecucion').valueAsDate=new Date();
 previewCod();checkServer();setInterval(checkServer,15000);
+
+// Auto nueva línea al escribir punto en resumen
+document.getElementById('resumen').addEventListener('input', function(){
+  const pos = this.selectionStart;
+  const val = this.value;
+  if (val[pos - 1] === '.' && val[pos] !== '\n') {
+    this.value = val.slice(0, pos) + '\n' + val.slice(pos);
+    this.selectionStart = this.selectionEnd = pos + 1;
+  }
+});
 </script>
 <script>
 (function(){

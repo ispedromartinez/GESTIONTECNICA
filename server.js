@@ -3,9 +3,15 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { createClient } = require('@supabase/supabase-js');
 const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
         ImageRun, AlignmentType, WidthType, BorderStyle, ShadingType,
         VerticalAlign, Header } = require('docx');
+
+const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_KEY)
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+  : null;
+const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'documentos-word';
 
 const app = express();
 app.use(cors());
@@ -39,7 +45,7 @@ const BC  = '7B7B7B';   // color borde
 const TW  = 9869;       // ancho tabla principal (igual al header original)
 
 // Borders: thin=4 (like original sz:4), used everywhere
-const thinB = (color=BC) => ({ style: BorderStyle.SINGLE, size: 4, color });
+const thinB = (color=BC) => ({ style: BorderStyle.SINGLE, size: 12, color });
 const allThin = { top: thinB(), bottom: thinB(), left: thinB(), right: thinB() };
 
 const mkPara = (text, opts={}) => new Paragraph({
@@ -69,7 +75,7 @@ const VC = (text, w, span=1) => new TableCell({
   borders: allThin,
   verticalAlign: VerticalAlign.CENTER,
   margins: { top: 40, bottom: 40, left: 70, right: 40 },
-  children: [mkPara(text || '', { sz: 16 })]
+  children: [mkPara(text || '', { sz: 16, center: true })]
 });
 
 // Column header cell (blue2 bg, centered, bold)
@@ -104,89 +110,129 @@ const secRow = (text) => new TableRow({
 // ── Build DOCX ─────────────────────────────────────────────
 async function buildDocx(d) {
   const v = s => (s||'').toString().trim() || 'N/A';
+  // Separa el resumen por punto seguido de espacio, cada oración en su propia viñeta
+  const splitSentences = text => {
+    if (!text || text.trim() === 'N/A') return [text || 'N/A'];
+    const parts = text.split(/(?<=\.)\s+/).map(s => s.trim()).filter(Boolean);
+    return parts.length > 1 ? parts : [text.trim()];
+  };
+  const mkBullet = text => new Paragraph({
+    bullet: { level: 0 },
+    spacing: { before: 0, after: 60 },
+    children: [new TextRun({ text: text || '', size: 16, font: 'Calibri', color: '000000' })]
+  });
 
   // ── HEADER with logo ──────────────────────────────────
+  const HDR_BLUE  = '1A3A6C';   // azul corporativo ICETEL
+  const HDR_BLUE2 = 'D6E4F0';   // azul claro etiquetas COD/FECHA
+  const HDR_BRD   = '1A3A6C';   // borde header
+  const thinHdr   = (color=HDR_BRD) => ({ style: BorderStyle.SINGLE, size: 12, color });
+  const allHdr    = { top: thinHdr(), bottom: thinHdr(), left: thinHdr(), right: thinHdr() };
+
   let headerChildren = [];
   try {
-    const logoPath = path.join(__dirname, 'logo.jpeg');
+    // Intenta logo.png primero, luego logo.jpeg como respaldo
+    let logoPath = path.join(__dirname, 'logo.png');
+    let logoType = 'png';
+    if (!fs.existsSync(logoPath)) { logoPath = path.join(__dirname, 'logo.jpeg'); logoType = 'jpeg'; }
     const logoData = fs.readFileSync(logoPath);
     const headerTable = new Table({
       width: { size: TW, type: WidthType.DXA },
       columnWidths: [2563, 4625, 745, 1936],
       borders: {
-        top: thinB('A5A5A5'), bottom: thinB('A5A5A5'),
-        left: thinB('A5A5A5'), right: thinB('A5A5A5'),
-        insideH: thinB('A5A5A5'), insideV: thinB('A5A5A5')
+        top: thinHdr(), bottom: thinHdr(),
+        left: thinHdr(), right: thinHdr(),
+        insideH: thinHdr(), insideV: thinHdr()
       },
       rows: [
         // Row 1: Logo | CENTRALES CLIMA | COD. | value
         new TableRow({
-          height: { value: 410 },
+          height: { value: 450 },
           children: [
-            // Logo cell
+            // Logo cell — fondo blanco
             new TableCell({
               width: { size: 2563, type: WidthType.DXA },
               rowSpan: 2,
-              borders: allThin,
+              borders: allHdr,
               verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 20, bottom: 20, left: 40, right: 40 },
+              margins: { top: 30, bottom: 30, left: 60, right: 60 },
               children: [new Paragraph({
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 0, after: 0 },
-                children: [new ImageRun({ data: logoData, transformation: { width: 110, height: 30 }, type: 'jpeg' })]
+                children: [new ImageRun({ data: logoData, transformation: { width: 120, height: 65 }, type: logoType })]
               })]
             }),
-            // Title cell
+            // Title cell — azul corporativo, texto blanco
             new TableCell({
               width: { size: 4625, type: WidthType.DXA },
-              borders: { top: thinB('A5A5A5'), bottom: thinB(BC), left: thinB('A5A5A5'), right: thinB('A5A5A5') },
+              borders: allHdr,
+              shading: { fill: HDR_BLUE, type: ShadingType.CLEAR },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 20, bottom: 20, left: 70, right: 40 },
-              children: [mkPara('CENTRALES CLIMA', { bold: true, sz: 22, center: true })]
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 0 },
+                children: [new TextRun({ text: 'CENTRALES CLIMA', bold: true, size: 24, font: 'Calibri', color: 'FFFFFF' })]
+              })]
             }),
             // COD label
             new TableCell({
               width: { size: 745, type: WidthType.DXA },
-              borders: { top: thinB('A5A5A5'), bottom: thinB('A5A5A5'), left: thinB('A5A5A5'), right: thinB(BC) },
+              borders: allHdr,
+              shading: { fill: HDR_BLUE2, type: ShadingType.CLEAR },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 20, bottom: 20, left: 40, right: 40 },
-              children: [mkPara('COD.', { sz: 16 })]
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 0 },
+                children: [new TextRun({ text: 'COD.', bold: true, size: 16, font: 'Calibri', color: HDR_BLUE })]
+              })]
             }),
             // COD value
             new TableCell({
               width: { size: 1936, type: WidthType.DXA },
-              borders: { top: thinB('A5A5A5'), bottom: thinB('A5A5A5'), left: thinB(BC), right: thinB('A5A5A5') },
+              borders: allHdr,
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 20, bottom: 20, left: 40, right: 40 },
-              children: [mkPara(v(d.codInforme), { sz: 16 })]
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 0 },
+                children: [new TextRun({ text: v(d.codInforme), size: 16, font: 'Calibri', bold: true })]
+              })]
             }),
           ]
         }),
-        // Row 2: (logo merged) | INFORME MANT... | FECHA | value
+        // Row 2: (logo merged) | INFORME CORRECTIVO CLIMA | FECHA | value
         new TableRow({
-          height: { value: 320 },
+          height: { value: 360 },
           children: [
             new TableCell({
               width: { size: 4625, type: WidthType.DXA },
-              borders: { top: thinB(BC), bottom: thinB('A5A5A5'), left: thinB('A5A5A5'), right: thinB('A5A5A5') },
+              borders: allHdr,
+              shading: { fill: HDR_BLUE, type: ShadingType.CLEAR },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 20, bottom: 20, left: 70, right: 40 },
               children: [new Paragraph({
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 0, after: 0 },
-                children: [new TextRun({ text: 'INFORME CORRECTIVO CLIMA', bold: true, size: 22, font: 'Calibri' })]
+                children: [new TextRun({ text: 'INFORME CORRECTIVO CLIMA', bold: true, size: 22, font: 'Calibri', color: 'FFFFFF' })]
               })]
             }),
             new TableCell({
               width: { size: 745, type: WidthType.DXA },
-              borders: { top: thinB('A5A5A5'), bottom: thinB('A5A5A5'), left: thinB('A5A5A5'), right: thinB(BC) },
+              borders: allHdr,
+              shading: { fill: HDR_BLUE2, type: ShadingType.CLEAR },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 20, bottom: 20, left: 40, right: 40 },
-              children: [mkPara('FECHA', { sz: 16 })]
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 0 },
+                children: [new TextRun({ text: 'FECHA', bold: true, size: 16, font: 'Calibri', color: HDR_BLUE })]
+              })]
             }),
             new TableCell({
               width: { size: 1936, type: WidthType.DXA },
-              borders: { top: thinB('A5A5A5'), bottom: thinB('A5A5A5'), left: thinB(BC), right: thinB('A5A5A5') },
+              borders: allHdr,
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 20, bottom: 20, left: 40, right: 40 },
               children: [new Paragraph({
@@ -270,10 +316,10 @@ async function buildDocx(d) {
 
   // ── RESUMEN ───────────────────────────────────────────
   const row_rs = secRow('RESUMEN DE LA ACTIVIDAD');
-  const row_rs2 = new TableRow({ height:{value:1600}, children:[
+  const row_rs2 = new TableRow({ height:{value:2200}, children:[
     new TableCell({ width:{size:TW,type:WidthType.DXA}, columnSpan:14,
       borders:allThin, margins:{top:60,bottom:60,left:100,right:100},
-      children:[mkPara(v(d.resumen),{sz:16})] })
+      children: splitSentences(v(d.resumen)).map(linea => mkBullet(linea)) })
   ]});
 
   // ── EQUIPAMIENTO ─────────────────────────────────────
@@ -438,6 +484,16 @@ app.post('/generar', async (req,res) => {
     const fname = `${d.codInforme||'Informe'}_${sitePart}.docx`;
     const fpath = path.join(DOCS_DIR, fname);
     fs.writeFileSync(fpath, buffer);
+
+    if (supabase) {
+      const { error: uploadError } = await supabase.storage
+        .from(SUPABASE_BUCKET)
+        .upload(fname, buffer, {
+          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          upsert: true
+        });
+      if (uploadError) console.error('Supabase upload error:', uploadError.message);
+    }
 
     const db = loadDB();
     const { photos, ...meta } = d;
