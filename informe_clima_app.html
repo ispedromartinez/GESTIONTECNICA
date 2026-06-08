@@ -16,7 +16,7 @@
   --max-w:860px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0D47A1 url('fondo.png') no-repeat center center fixed;background-size:cover;color:var(--text);min-height:100vh;}
 
 /* ── HEADER ── */
 header{background:linear-gradient(135deg,#0D47A1 0%,#1565C0 60%,#1976D2 100%);color:#fff;padding:14px 20px 12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.2);}
@@ -48,7 +48,7 @@ header{background:linear-gradient(135deg,#0D47A1 0%,#1565C0 60%,#1976D2 100%);co
 .tab.papelera.active .num{background:var(--red);color:#fff;}
 
 /* ── SECTIONS ── */
-.section{display:none;padding:22px 20px;padding-bottom:80px;max-width:var(--max-w);margin:0 auto;}
+.section{display:none;padding:22px 20px;padding-bottom:80px;max-width:var(--max-w);margin:20px auto;background:rgba(240,244,248,.97);border-radius:var(--r);box-shadow:var(--sh-lg);}
 .section.active{display:block;}
 
 /* ── CARDS ── */
@@ -997,6 +997,7 @@ function nuevoInforme(){
     const fi=document.getElementById(`fi${i}`);if(fi)fi.value='';
     const desc=document.getElementById(`desc${i}`);if(desc){desc.value='';desc.style.display='none';}
   }
+  buildPhotoSlots();
   document.getElementById('photoTabNum').textContent='0';
   // Set today
   document.getElementById('fechaEjecucion').valueAsDate=new Date();
@@ -1178,24 +1179,33 @@ function setupPhotoInteraction(idx){
     slot.addEventListener('touchend',e=>{if(e.touches.length===0)drag=false;});
   },0);
 }
+function createPhotoSlot(i){
+  if(document.getElementById(`slot${i}`))return;
+  const grid=document.getElementById('photosGrid');
+  const wrap=document.createElement('div');wrap.className='pslot-wrap';
+  const s=document.createElement('div');s.className='pslot';s.id=`slot${i}`;
+  s.innerHTML=`<input class="fi" type="file" accept="image/*" multiple id="fi${i}"><img id="img${i}" alt=""><div class="ph-pl"><span class="ph-ic">🖼</span><span class="ph-fg">Fig. ${i+1}</span><span class="ph-ht">Toca para agregar</span></div><button class="rst-btn" title="Centrar" onclick="resetPhotoTransform(${i},event)">⟳</button><button class="rm-btn" onclick="removePhoto(${i},event)">✕</button><span class="ph-lb">Fig. ${i+1}</span>`;
+  s.querySelector('.fi').addEventListener('change',e=>handlePhoto(i,e));
+  setupPhotoInteraction(i);
+  const desc=document.createElement('input');
+  desc.type='text';desc.className='photo-desc';desc.id=`desc${i}`;
+  desc.placeholder=`Descripción foto ${i+1}...`;
+  desc.addEventListener('input',()=>{photoDescs[i]=desc.value;});
+  wrap.appendChild(s);wrap.appendChild(desc);
+  grid.appendChild(wrap);
+}
 function buildPhotoSlots(){
   const grid=document.getElementById('photosGrid');grid.innerHTML='';
-  for(let i=0;i<12;i++){
-    const wrap=document.createElement('div');wrap.className='pslot-wrap';
-    const s=document.createElement('div');s.className='pslot';s.id=`slot${i}`;
-    s.innerHTML=`<input class="fi" type="file" accept="image/*" id="fi${i}"><img id="img${i}" alt=""><div class="ph-pl"><span class="ph-ic">🖼</span><span class="ph-fg">Fig. ${i+1}</span><span class="ph-ht">Toca para agregar</span></div><button class="rst-btn" title="Centrar" onclick="resetPhotoTransform(${i},event)">⟳</button><button class="rm-btn" onclick="removePhoto(${i},event)">✕</button><span class="ph-lb">Fig. ${i+1}</span>`;
-    s.querySelector('.fi').addEventListener('change',e=>handlePhoto(i,e));
-    setupPhotoInteraction(i);
-    const desc=document.createElement('input');
-    desc.type='text';desc.className='photo-desc';desc.id=`desc${i}`;
-    desc.placeholder=`Descripción foto ${i+1}...`;
-    desc.addEventListener('input',()=>{photoDescs[i]=desc.value;});
-    wrap.appendChild(s);wrap.appendChild(desc);
-    grid.appendChild(wrap);
-  }
+  createPhotoSlot(0);
 }
-function handlePhoto(idx,e){
-  const file=e.target.files[0];if(!file)return;
+// Mantiene siempre visible una única casilla vacía al final (hasta el máximo de 12)
+function ensureTrailingSlot(){
+  let next=0;
+  while(next<12 && photoFiles[next])next++;
+  if(next<12)createPhotoSlot(next);
+}
+function loadPhotoFile(idx,file,focusDesc){
+  createPhotoSlot(idx);
   photoFiles[idx]=file;
   const reader=new FileReader();
   reader.onload=ev=>{
@@ -1210,9 +1220,21 @@ function handlePhoto(idx,e){
     im.style.transform='';
     document.getElementById('photoTabNum').textContent=photoFiles.filter(Boolean).length;
     updateEstadoActual();
-    const d=document.getElementById(`desc${idx}`);d.style.display='block';d.focus();
+    const d=document.getElementById(`desc${idx}`);d.style.display='block';if(focusDesc)d.focus();
+    ensureTrailingSlot();
   };
   reader.readAsDataURL(file);
+}
+function handlePhoto(idx,e){
+  const files=Array.from(e.target.files||[]);if(!files.length)return;
+  let target=idx;
+  files.forEach(file=>{
+    while(target<12 && photoFiles[target])target++;
+    if(target>=12)return;
+    loadPhotoFile(target,file,files.length===1);
+    target++;
+  });
+  e.target.value='';
 }
 function removePhoto(idx,e){
   e.stopPropagation();photoFiles[idx]=null;photoDataUrls[idx]=null;photoDescs[idx]='';
