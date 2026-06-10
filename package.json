@@ -4,7 +4,7 @@
   "description": "Generador de Informes Mantenimiento Clima",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.env server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.0",

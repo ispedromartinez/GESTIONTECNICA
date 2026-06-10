@@ -31,10 +31,163 @@ if (!fs.existsSync(PAPELERA_DIR)) fs.mkdirSync(PAPELERA_DIR);
 if (!fs.existsSync(DB_FILE))      fs.writeFileSync(DB_FILE, '[]');
 if (!fs.existsSync(PAPELERA_FILE))fs.writeFileSync(PAPELERA_FILE, '[]');
 
-function loadDB()       { try { return JSON.parse(fs.readFileSync(DB_FILE,'utf8')); }       catch { return []; } }
-function saveDB(d)      { fs.writeFileSync(DB_FILE, JSON.stringify(d, null, 2)); }
-function loadPapelera() { try { return JSON.parse(fs.readFileSync(PAPELERA_FILE,'utf8')); } catch { return []; } }
-function savePapelera(d){ fs.writeFileSync(PAPELERA_FILE, JSON.stringify(d, null, 2)); }
+// ── Local fallback helpers ─────────────────────────────────────
+function loadDBLocal()       { try { return JSON.parse(fs.readFileSync(DB_FILE,'utf8')); }       catch { return []; } }
+function saveDBLocal(d)      { fs.writeFileSync(DB_FILE, JSON.stringify(d, null, 2)); }
+function loadPapeleraLocal() { try { return JSON.parse(fs.readFileSync(PAPELERA_FILE,'utf8')); } catch { return []; } }
+function savePapeleraLocal(d){ fs.writeFileSync(PAPELERA_FILE, JSON.stringify(d, null, 2)); }
+
+// ── Row mappers – Clima ────────────────────────────────────────
+const fromClima = r => ({
+  id: r.id, fecha: r.fecha, fechaCreacion: r.fecha_creacion,
+  codInforme: r.cod_informe, nombreSitio: r.nombre_sitio,
+  codigoSitio: r.codigo_sitio, tecnico: r.tecnico,
+  supervisor: r.supervisor, numOT: r.num_ot,
+  photoCount: r.photo_count, filename: r.filename
+});
+const toClima = e => ({
+  id: e.id, fecha: e.fecha, fecha_creacion: e.fechaCreacion,
+  cod_informe: e.codInforme, nombre_sitio: e.nombreSitio,
+  codigo_sitio: e.codigoSitio, tecnico: e.tecnico,
+  supervisor: e.supervisor, num_ot: e.numOT,
+  photo_count: e.photoCount, filename: e.filename
+});
+
+// ── Supabase Storage helpers ───────────────────────────────────
+async function storageUpload(buffer, storagePath) {
+  if (!supabase) return;
+  const { error } = await supabase.storage.from(SUPABASE_BUCKET)
+    .upload(storagePath, buffer, {
+      contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      upsert: true
+    });
+  if (error) console.error('storageUpload error:', error.message);
+}
+
+async function storageDownload(storagePath) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download(storagePath);
+  if (error || !data) return null;
+  return Buffer.from(await data.arrayBuffer());
+}
+
+async function storageMove(fromPath, toPath) {
+  if (!supabase) return;
+  const { error } = await supabase.storage.from(SUPABASE_BUCKET).move(fromPath, toPath);
+  if (error) console.error('storageMove error:', error.message);
+}
+
+async function storageRemove(paths) {
+  if (!supabase) return;
+  const { error } = await supabase.storage.from(SUPABASE_BUCKET).remove(paths);
+  if (error) console.error('storageRemove error:', error.message);
+}
+
+// ── Async DB – Informes Clima ──────────────────────────────────
+async function dbClimaList(q) {
+  if (supabase) {
+    const { data, error } = await supabase.from('informes_clima')
+      .select('*').order('fecha_creacion', { ascending: false });
+    if (!error) {
+      const rows = (data||[]).map(fromClima);
+      if (!q) return rows;
+      const ql = q.toLowerCase();
+      return rows.filter(r => ['nombreSitio','codInforme','tecnico','numOT']
+        .some(k => (r[k]||'').toLowerCase().includes(ql)));
+    }
+    console.error('dbClimaList:', error.message);
+  }
+  const db = loadDBLocal();
+  if (!q) return db;
+  const ql = q.toLowerCase();
+  return db.filter(r => ['nombreSitio','codInforme','tecnico','numOT']
+    .some(k => (r[k]||'').toLowerCase().includes(ql)));
+}
+
+async function dbClimaInsert(entry) {
+  if (supabase) {
+    const { error } = await supabase.from('informes_clima').insert(toClima(entry));
+    if (error) console.error('dbClimaInsert:', error.message);
+  } else {
+    const db = loadDBLocal(); db.unshift(entry); saveDBLocal(db);
+  }
+}
+
+async function dbClimaFind(id) {
+  if (supabase) {
+    const { data, error } = await supabase.from('informes_clima')
+      .select('*').eq('id', id).single();
+    if (!error && data) return fromClima(data);
+  }
+  return loadDBLocal().find(r => r.id === id) || null;
+}
+
+async function dbClimaDelete(id) {
+  if (supabase) {
+    const { error } = await supabase.from('informes_clima').delete().eq('id', id);
+    if (error) console.error('dbClimaDelete:', error.message);
+  } else {
+    saveDBLocal(loadDBLocal().filter(r => r.id !== id));
+  }
+}
+
+// ── Async DB – Papelera Clima ──────────────────────────────────
+async function dbPapeleraList(q) {
+  if (supabase) {
+    const { data, error } = await supabase.from('papelera_clima')
+      .select('*').order('fecha_eliminado', { ascending: false });
+    if (!error) {
+      const rows = (data||[]).map(r => ({ ...fromClima(r), fechaEliminado: r.fecha_eliminado }));
+      if (!q) return rows;
+      const ql = q.toLowerCase();
+      return rows.filter(r => ['nombreSitio','codInforme','tecnico']
+        .some(k => (r[k]||'').toLowerCase().includes(ql)));
+    }
+    console.error('dbPapeleraList:', error.message);
+  }
+  const p = loadPapeleraLocal();
+  if (!q) return p;
+  const ql = q.toLowerCase();
+  return p.filter(r => ['nombreSitio','codInforme','tecnico']
+    .some(k => (r[k]||'').toLowerCase().includes(ql)));
+}
+
+async function dbPapeleraInsert(entry) {
+  if (supabase) {
+    const row = { ...toClima(entry), fecha_eliminado: entry.fechaEliminado };
+    const { error } = await supabase.from('papelera_clima').insert(row);
+    if (error) console.error('dbPapeleraInsert:', error.message);
+  } else {
+    const p = loadPapeleraLocal(); p.unshift(entry); savePapeleraLocal(p);
+  }
+}
+
+async function dbPapeleraFind(id) {
+  if (supabase) {
+    const { data, error } = await supabase.from('papelera_clima')
+      .select('*').eq('id', id).single();
+    if (!error && data) return { ...fromClima(data), fechaEliminado: data.fecha_eliminado };
+  }
+  return loadPapeleraLocal().find(r => r.id === id) || null;
+}
+
+async function dbPapeleraDelete(id) {
+  if (supabase) {
+    const { error } = await supabase.from('papelera_clima').delete().eq('id', id);
+    if (error) console.error('dbPapeleraDelete:', error.message);
+  } else {
+    savePapeleraLocal(loadPapeleraLocal().filter(r => r.id !== id));
+  }
+}
+
+async function dbPapeleraClear() {
+  if (supabase) {
+    const { error } = await supabase.from('papelera_clima').delete().neq('id', '');
+    if (error) console.error('dbPapeleraClear:', error.message);
+  } else {
+    savePapeleraLocal([]);
+  }
+}
 
 // Logo base64 embedded
 const LOGO_B64 = fs.readFileSync(path.join(__dirname, 'logo.jpeg'), null) || null;
@@ -484,22 +637,11 @@ app.post('/generar', async (req,res) => {
     const buffer = await buildDocx(d);
     const sitePart = (d.nombreSitio||'Clima').replace(/[^a-zA-Z0-9]/g,'_').slice(0,25);
     const fname = `${d.codInforme||'Informe'}_${sitePart}.docx`;
-    const fpath = path.join(DOCS_DIR, fname);
-    fs.writeFileSync(fpath, buffer);
+    fs.writeFileSync(path.join(DOCS_DIR, fname), buffer);
+    await storageUpload(buffer, `clima/${fname}`);
 
-    if (supabase) {
-      const { error: uploadError } = await supabase.storage
-        .from(SUPABASE_BUCKET)
-        .upload(fname, buffer, {
-          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          upsert: true
-        });
-      if (uploadError) console.error('Supabase upload error:', uploadError.message);
-    }
-
-    const db = loadDB();
-    const { photos, ...meta } = d;
-    db.unshift({
+    const { photos } = d;
+    const entry = {
       id: Date.now().toString(),
       fecha: d.fecha, fechaCreacion: new Date().toISOString(),
       codInforme: d.codInforme, nombreSitio: d.nombreSitio,
@@ -507,8 +649,8 @@ app.post('/generar', async (req,res) => {
       supervisor: d.supervisor, numOT: d.numOT,
       photoCount: (photos||[]).filter(Boolean).length,
       filename: fname
-    });
-    saveDB(db);
+    };
+    await dbClimaInsert(entry);
 
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
@@ -517,104 +659,103 @@ app.post('/generar', async (req,res) => {
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
 });
 
-app.get('/registro', (req,res) => {
-  const db = loadDB();
+app.get('/registro', async (req,res) => {
   const q = (req.query.q||'').toLowerCase().trim();
-  res.json(q ? db.filter(r =>
-    (r.nombreSitio||'').toLowerCase().includes(q) ||
-    (r.codInforme||'').toLowerCase().includes(q) ||
-    (r.tecnico||'').toLowerCase().includes(q) ||
-    (r.numOT||'').toLowerCase().includes(q)
-  ) : db);
+  res.json(await dbClimaList(q || null));
 });
 
-app.get('/descargar/:id', (req,res) => {
-  const entry = loadDB().find(r=>r.id===req.params.id);
+app.get('/descargar/:id', async (req,res) => {
+  const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
-  const fpath = path.join(DOCS_DIR, entry.filename);
-  if (!fs.existsSync(fpath)) return res.status(404).json({error:'Archivo no existe'});
+  let buffer = await storageDownload(`clima/${entry.filename}`);
+  if (!buffer) {
+    const fpath = path.join(DOCS_DIR, entry.filename);
+    if (!fs.existsSync(fpath)) return res.status(404).json({error:'Archivo no existe'});
+    buffer = fs.readFileSync(fpath);
+  }
   res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   res.setHeader('Content-Disposition',`attachment; filename="${entry.filename}"`);
-  res.sendFile(fpath);
+  res.send(buffer);
 });
 
 app.post('/enviar/:id', async (req,res) => {
-  const entry = loadDB().find(r=>r.id===req.params.id);
+  const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
-  const fpath = path.join(DOCS_DIR, entry.filename);
-  if (!fs.existsSync(fpath)) return res.status(404).json({error:'Archivo no existe'});
+  let buffer = await storageDownload(`clima/${entry.filename}`);
+  if (!buffer) {
+    const fpath = path.join(DOCS_DIR, entry.filename);
+    if (!fs.existsSync(fpath)) return res.status(404).json({error:'Archivo no existe'});
+    buffer = fs.readFileSync(fpath);
+  }
   const {to,smtpHost,smtpPort,smtpUser,smtpPass} = req.body;
   if (!to) return res.status(400).json({error:'Email requerido'});
   try {
     const t = nodemailer.createTransport({ host:smtpHost||'smtp.gmail.com', port:smtpPort||587, secure:false, auth:{user:smtpUser,pass:smtpPass} });
     await t.sendMail({ from:smtpUser, to, subject:`Informe - ${entry.nombreSitio} - ${entry.codInforme}`,
       text:`Adjunto informe.\nSitio: ${entry.nombreSitio}\nFecha: ${entry.fecha}\nTécnico: ${entry.tecnico}`,
-      attachments:[{filename:entry.filename,path:fpath}] });
+      attachments:[{filename:entry.filename, content:buffer}] });
     res.json({ok:true});
   } catch(err){ res.status(500).json({error:err.message}); }
 });
 
 // Mover a papelera (soft delete)
-app.delete('/registro/:id', (req,res) => {
-  let db = loadDB();
-  const entry = db.find(r => r.id === req.params.id);
+app.delete('/registro/:id', async (req,res) => {
+  const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
-  const srcPath  = path.join(DOCS_DIR, entry.filename);
-  const destPath = path.join(PAPELERA_DIR, entry.filename);
-  try { if (fs.existsSync(srcPath)) fs.renameSync(srcPath, destPath); } catch(e) { console.error('move error:', e.message); }
-  const papelera = loadPapelera();
-  papelera.unshift({ ...entry, fechaEliminado: new Date().toISOString() });
-  savePapelera(papelera);
-  saveDB(db.filter(r => r.id !== req.params.id));
+  await storageMove(`clima/${entry.filename}`, `clima/papelera/${entry.filename}`);
+  try {
+    const srcPath = path.join(DOCS_DIR, entry.filename);
+    if (fs.existsSync(srcPath)) fs.renameSync(srcPath, path.join(PAPELERA_DIR, entry.filename));
+  } catch(e) {}
+  await dbClimaDelete(entry.id);
+  await dbPapeleraInsert({ ...entry, fechaEliminado: new Date().toISOString() });
   res.json({ok:true});
 });
 
 // List papelera
-app.get('/papelera', (req,res) => {
+app.get('/papelera', async (req,res) => {
   const q = (req.query.q||'').toLowerCase().trim();
-  const p = loadPapelera();
-  res.json(q ? p.filter(r =>
-    (r.nombreSitio||'').toLowerCase().includes(q) ||
-    (r.codInforme||'').toLowerCase().includes(q) ||
-    (r.tecnico||'').toLowerCase().includes(q)
-  ) : p);
+  res.json(await dbPapeleraList(q || null));
 });
 
 // Restore from papelera
-app.post('/papelera/restaurar/:id', (req,res) => {
-  let papelera = loadPapelera();
-  const entry = papelera.find(r => r.id === req.params.id);
+app.post('/papelera/restaurar/:id', async (req,res) => {
+  const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
-  const srcPath  = path.join(PAPELERA_DIR, entry.filename);
-  const destPath = path.join(DOCS_DIR, entry.filename);
-  try { if (fs.existsSync(srcPath)) fs.renameSync(srcPath, destPath); } catch(e) { console.error('restore error:', e.message); }
+  await storageMove(`clima/papelera/${entry.filename}`, `clima/${entry.filename}`);
+  try {
+    const srcPath = path.join(PAPELERA_DIR, entry.filename);
+    if (fs.existsSync(srcPath)) fs.renameSync(srcPath, path.join(DOCS_DIR, entry.filename));
+  } catch(e) {}
   const { fechaEliminado, ...clean } = entry;
-  const db = loadDB();
-  db.unshift(clean);
-  saveDB(db);
-  savePapelera(papelera.filter(r => r.id !== req.params.id));
+  await dbPapeleraDelete(entry.id);
+  await dbClimaInsert(clean);
   res.json({ok:true});
 });
 
 // Delete permanently from papelera
-app.delete('/papelera/:id', (req,res) => {
-  let papelera = loadPapelera();
-  const entry = papelera.find(r => r.id === req.params.id);
+app.delete('/papelera/:id', async (req,res) => {
+  const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
-  const fpath = path.join(PAPELERA_DIR, entry.filename);
-  try { if (fs.existsSync(fpath)) fs.unlinkSync(fpath); } catch(e) {}
-  savePapelera(papelera.filter(r => r.id !== req.params.id));
+  await storageRemove([`clima/papelera/${entry.filename}`]);
+  try {
+    const fpath = path.join(PAPELERA_DIR, entry.filename);
+    if (fs.existsSync(fpath)) fs.unlinkSync(fpath);
+  } catch(e) {}
+  await dbPapeleraDelete(entry.id);
   res.json({ok:true});
 });
 
 // Empty entire papelera
-app.delete('/papelera', (req,res) => {
-  const papelera = loadPapelera();
-  papelera.forEach(entry => {
-    const fpath = path.join(PAPELERA_DIR, entry.filename);
-    try { if (fs.existsSync(fpath)) fs.unlinkSync(fpath); } catch(e) {}
-  });
-  savePapelera([]);
+app.delete('/papelera', async (req,res) => {
+  const papelera = await dbPapeleraList(null);
+  if (papelera.length) {
+    await storageRemove(papelera.map(e => `clima/papelera/${e.filename}`));
+    papelera.forEach(e => {
+      try { const f = path.join(PAPELERA_DIR, e.filename); if (fs.existsSync(f)) fs.unlinkSync(f); } catch(e2) {}
+    });
+  }
+  await dbPapeleraClear();
   res.json({ok:true});
 });
 
@@ -631,10 +772,113 @@ if (!fs.existsSync(PAPELERA_DIR_WOM))  fs.mkdirSync(PAPELERA_DIR_WOM);
 if (!fs.existsSync(DB_FILE_WOM))       fs.writeFileSync(DB_FILE_WOM, '[]');
 if (!fs.existsSync(PAPELERA_FILE_WOM)) fs.writeFileSync(PAPELERA_FILE_WOM, '[]');
 
-function loadDBWom()        { try { return JSON.parse(fs.readFileSync(DB_FILE_WOM,'utf8')); }        catch { return []; } }
-function saveDBWom(d)       { fs.writeFileSync(DB_FILE_WOM, JSON.stringify(d, null, 2)); }
-function loadPapeleraWom()  { try { return JSON.parse(fs.readFileSync(PAPELERA_FILE_WOM,'utf8')); }  catch { return []; } }
-function savePapeleraWom(d) { fs.writeFileSync(PAPELERA_FILE_WOM, JSON.stringify(d, null, 2)); }
+// ── Local fallback helpers WOM ─────────────────────────────────
+function loadDBWomLocal()        { try { return JSON.parse(fs.readFileSync(DB_FILE_WOM,'utf8')); }        catch { return []; } }
+function saveDBWomLocal(d)       { fs.writeFileSync(DB_FILE_WOM, JSON.stringify(d, null, 2)); }
+function loadPapeleraWomLocal()  { try { return JSON.parse(fs.readFileSync(PAPELERA_FILE_WOM,'utf8')); }  catch { return []; } }
+function savePapeleraWomLocal(d) { fs.writeFileSync(PAPELERA_FILE_WOM, JSON.stringify(d, null, 2)); }
+
+// ── Row mappers – WOM ──────────────────────────────────────────
+const fromWom = r => ({
+  id: r.id, fechaCreacion: r.fecha_creacion,
+  ticket: r.ticket, codInterno: r.cod_interno,
+  fechaInicio: r.fecha_inicio, instalacion: r.instalacion,
+  tipoActividad: r.tipo_actividad, tecnicos: r.tecnicos,
+  photoCount: r.photo_count, filename: r.filename
+});
+const toWom = e => ({
+  id: e.id, fecha_creacion: e.fechaCreacion,
+  ticket: e.ticket, cod_interno: e.codInterno,
+  fecha_inicio: e.fechaInicio, instalacion: e.instalacion,
+  tipo_actividad: e.tipoActividad, tecnicos: e.tecnicos,
+  photo_count: e.photoCount, filename: e.filename
+});
+
+// ── Async DB – Informes WOM ────────────────────────────────────
+async function dbWomList() {
+  if (supabase) {
+    const { data, error } = await supabase.from('informes_wom')
+      .select('*').order('fecha_creacion', { ascending: false });
+    if (!error) return (data||[]).map(fromWom);
+    console.error('dbWomList:', error.message);
+  }
+  return loadDBWomLocal();
+}
+
+async function dbWomInsert(entry) {
+  if (supabase) {
+    const { error } = await supabase.from('informes_wom').insert(toWom(entry));
+    if (error) console.error('dbWomInsert:', error.message);
+  } else {
+    const db = loadDBWomLocal(); db.unshift(entry); saveDBWomLocal(db);
+  }
+}
+
+async function dbWomFind(id) {
+  if (supabase) {
+    const { data, error } = await supabase.from('informes_wom')
+      .select('*').eq('id', id).single();
+    if (!error && data) return fromWom(data);
+  }
+  return loadDBWomLocal().find(r => r.id === id) || null;
+}
+
+async function dbWomDelete(id) {
+  if (supabase) {
+    const { error } = await supabase.from('informes_wom').delete().eq('id', id);
+    if (error) console.error('dbWomDelete:', error.message);
+  } else {
+    saveDBWomLocal(loadDBWomLocal().filter(r => r.id !== id));
+  }
+}
+
+// ── Async DB – Papelera WOM ────────────────────────────────────
+async function dbPapeleraWomList() {
+  if (supabase) {
+    const { data, error } = await supabase.from('papelera_wom')
+      .select('*').order('deleted_at', { ascending: false });
+    if (!error) return (data||[]).map(r => ({ ...fromWom(r), deletedAt: r.deleted_at }));
+    console.error('dbPapeleraWomList:', error.message);
+  }
+  return loadPapeleraWomLocal();
+}
+
+async function dbPapeleraWomInsert(entry) {
+  if (supabase) {
+    const { error } = await supabase.from('papelera_wom')
+      .insert({ ...toWom(entry), deleted_at: entry.deletedAt });
+    if (error) console.error('dbPapeleraWomInsert:', error.message);
+  } else {
+    const p = loadPapeleraWomLocal(); p.unshift(entry); savePapeleraWomLocal(p);
+  }
+}
+
+async function dbPapeleraWomFind(id) {
+  if (supabase) {
+    const { data, error } = await supabase.from('papelera_wom')
+      .select('*').eq('id', id).single();
+    if (!error && data) return { ...fromWom(data), deletedAt: data.deleted_at };
+  }
+  return loadPapeleraWomLocal().find(r => r.id === id) || null;
+}
+
+async function dbPapeleraWomDelete(id) {
+  if (supabase) {
+    const { error } = await supabase.from('papelera_wom').delete().eq('id', id);
+    if (error) console.error('dbPapeleraWomDelete:', error.message);
+  } else {
+    savePapeleraWomLocal(loadPapeleraWomLocal().filter(r => r.id !== id));
+  }
+}
+
+async function dbPapeleraWomClear() {
+  if (supabase) {
+    const { error } = await supabase.from('papelera_wom').delete().neq('id', '');
+    if (error) console.error('dbPapeleraWomClear:', error.message);
+  } else {
+    savePapeleraWomLocal([]);
+  }
+}
 
 const RSO_SITES = {
   'RSO CONCEPCION':   'ANIBAL PINTO 105, CONCEPCION',
@@ -1154,10 +1398,10 @@ app.post('/generar-wom', async (req, res) => {
     const ticket = (d.ticket||'WOM').replace(/[^a-zA-Z0-9\-_]/g,'_').slice(0,50);
     const fname  = `${ticket}_WOM.docx`;
     fs.writeFileSync(path.join(DOCS_DIR_WOM, fname), buffer);
+    await storageUpload(buffer, `wom/${fname}`);
 
-    const db = loadDBWom();
-    const { photos, captions, ...meta } = d;
-    db.unshift({
+    const { photos, captions } = d;
+    const entry = {
       id: Date.now().toString(),
       fechaCreacion: new Date().toISOString(),
       ticket: d.ticket, codInterno: d.codInterno,
@@ -1166,8 +1410,8 @@ app.post('/generar-wom', async (req, res) => {
       tecnicos: (d.tecnicos||[]).filter(Boolean).join(', '),
       photoCount: (photos||[]).filter(Boolean).length,
       filename: fname
-    });
-    saveDBWom(db);
+    };
+    await dbWomInsert(entry);
 
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
@@ -1176,57 +1420,76 @@ app.post('/generar-wom', async (req, res) => {
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
 });
 
-app.get('/registro-wom', (_req, res) => res.json(loadDBWom()));
+app.get('/registro-wom', async (_req, res) => res.json(await dbWomList()));
 
-app.get('/descargar-wom/:id', (req, res) => {
-  const entry = loadDBWom().find(e => e.id === req.params.id);
+app.get('/descargar-wom/:id', async (req, res) => {
+  const entry = await dbWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
-  const fpath = path.join(DOCS_DIR_WOM, entry.filename);
-  if (!fs.existsSync(fpath)) return res.status(404).json({error:'Archivo no encontrado'});
-  res.download(fpath, entry.filename);
+  let buffer = await storageDownload(`wom/${entry.filename}`);
+  if (!buffer) {
+    const fpath = path.join(DOCS_DIR_WOM, entry.filename);
+    if (!fs.existsSync(fpath)) return res.status(404).json({error:'Archivo no encontrado'});
+    buffer = fs.readFileSync(fpath);
+  }
+  res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition',`attachment; filename="${entry.filename}"`);
+  res.send(buffer);
 });
 
-app.delete('/registro-wom/:id', (req, res) => {
-  const db  = loadDBWom();
-  const idx = db.findIndex(e => e.id === req.params.id);
-  if (idx === -1) return res.status(404).json({error:'No encontrado'});
-  const [entry] = db.splice(idx, 1);
-  try { const fp = path.join(DOCS_DIR_WOM, entry.filename); if (fs.existsSync(fp)) fs.renameSync(fp, path.join(PAPELERA_DIR_WOM, entry.filename)); } catch(e){}
-  const pap = loadPapeleraWom(); pap.unshift({...entry, deletedAt: new Date().toISOString()});
-  savePapeleraWom(pap); saveDBWom(db);
+app.delete('/registro-wom/:id', async (req, res) => {
+  const entry = await dbWomFind(req.params.id);
+  if (!entry) return res.status(404).json({error:'No encontrado'});
+  await storageMove(`wom/${entry.filename}`, `wom/papelera/${entry.filename}`);
+  try {
+    const fp = path.join(DOCS_DIR_WOM, entry.filename);
+    if (fs.existsSync(fp)) fs.renameSync(fp, path.join(PAPELERA_DIR_WOM, entry.filename));
+  } catch(e) {}
+  await dbWomDelete(entry.id);
+  await dbPapeleraWomInsert({ ...entry, deletedAt: new Date().toISOString() });
   res.json({ok:true});
 });
 
-app.get('/papelera-wom', (_req, res) => res.json(loadPapeleraWom()));
+app.get('/papelera-wom', async (_req, res) => res.json(await dbPapeleraWomList()));
 
-app.post('/papelera-wom/restaurar/:id', (req, res) => {
-  const pap = loadPapeleraWom();
-  const idx = pap.findIndex(e => e.id === req.params.id);
-  if (idx === -1) return res.status(404).json({error:'No encontrado'});
-  const [entry] = pap.splice(idx, 1);
+app.post('/papelera-wom/restaurar/:id', async (req, res) => {
+  const entry = await dbPapeleraWomFind(req.params.id);
+  if (!entry) return res.status(404).json({error:'No encontrado'});
+  await storageMove(`wom/papelera/${entry.filename}`, `wom/${entry.filename}`);
+  try {
+    const fp = path.join(PAPELERA_DIR_WOM, entry.filename);
+    if (fs.existsSync(fp)) fs.renameSync(fp, path.join(DOCS_DIR_WOM, entry.filename));
+  } catch(e) {}
   const { deletedAt, ...clean } = entry;
-  try { const fp = path.join(PAPELERA_DIR_WOM, clean.filename); if (fs.existsSync(fp)) fs.renameSync(fp, path.join(DOCS_DIR_WOM, clean.filename)); } catch(e){}
-  const db = loadDBWom(); db.unshift(clean);
-  saveDBWom(db); savePapeleraWom(pap);
+  await dbPapeleraWomDelete(entry.id);
+  await dbWomInsert(clean);
   res.json({ok:true});
 });
 
-app.delete('/papelera-wom/:id', (req, res) => {
-  const pap = loadPapeleraWom();
-  const idx = pap.findIndex(e => e.id === req.params.id);
-  if (idx === -1) return res.status(404).json({error:'No encontrado'});
-  const [entry] = pap.splice(idx, 1);
-  try { const fp = path.join(PAPELERA_DIR_WOM, entry.filename); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(e){}
-  savePapeleraWom(pap); res.json({ok:true});
+app.delete('/papelera-wom/:id', async (req, res) => {
+  const entry = await dbPapeleraWomFind(req.params.id);
+  if (!entry) return res.status(404).json({error:'No encontrado'});
+  await storageRemove([`wom/papelera/${entry.filename}`]);
+  try {
+    const fp = path.join(PAPELERA_DIR_WOM, entry.filename);
+    if (fs.existsSync(fp)) fs.unlinkSync(fp);
+  } catch(e) {}
+  await dbPapeleraWomDelete(entry.id);
+  res.json({ok:true});
 });
 
-app.delete('/papelera-wom', (_req, res) => {
-  const pap = loadPapeleraWom();
-  pap.forEach(e => { try { const fp = path.join(PAPELERA_DIR_WOM, e.filename); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(err){} });
-  savePapeleraWom([]); res.json({ok:true});
+app.delete('/papelera-wom', async (_req, res) => {
+  const papelera = await dbPapeleraWomList();
+  if (papelera.length) {
+    await storageRemove(papelera.map(e => `wom/papelera/${e.filename}`));
+    papelera.forEach(e => {
+      try { const fp = path.join(PAPELERA_DIR_WOM, e.filename); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(e2) {}
+    });
+  }
+  await dbPapeleraWomClear();
+  res.json({ok:true});
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const os = require('os');
 function getLocalIP() {
   for (const ifaces of Object.values(os.networkInterfaces())) {
