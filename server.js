@@ -17,7 +17,9 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '80mb' }));
 app.use(express.static(__dirname));
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'informe_clima_app.html')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'selector.html')));
+app.get('/tigo', (req, res) => res.sendFile(path.join(__dirname, 'informe_clima_app.html')));
+app.get('/wom', (req, res) => res.sendFile(path.join(__dirname, 'informe_wom_app.html')));
 
 const DOCS_DIR      = path.join(__dirname, 'informes');
 const PAPELERA_DIR  = path.join(__dirname, 'papelera');
@@ -614,6 +616,614 @@ app.delete('/papelera', (req,res) => {
   });
   savePapelera([]);
   res.json({ok:true});
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MÓDULO WOM
+// ═══════════════════════════════════════════════════════════════
+const DOCS_DIR_WOM      = path.join(__dirname, 'informes_wom');
+const PAPELERA_DIR_WOM  = path.join(__dirname, 'papelera_wom');
+const DB_FILE_WOM       = path.join(__dirname, 'registro_wom.json');
+const PAPELERA_FILE_WOM = path.join(__dirname, 'papelera_wom.json');
+
+if (!fs.existsSync(DOCS_DIR_WOM))      fs.mkdirSync(DOCS_DIR_WOM);
+if (!fs.existsSync(PAPELERA_DIR_WOM))  fs.mkdirSync(PAPELERA_DIR_WOM);
+if (!fs.existsSync(DB_FILE_WOM))       fs.writeFileSync(DB_FILE_WOM, '[]');
+if (!fs.existsSync(PAPELERA_FILE_WOM)) fs.writeFileSync(PAPELERA_FILE_WOM, '[]');
+
+function loadDBWom()        { try { return JSON.parse(fs.readFileSync(DB_FILE_WOM,'utf8')); }        catch { return []; } }
+function saveDBWom(d)       { fs.writeFileSync(DB_FILE_WOM, JSON.stringify(d, null, 2)); }
+function loadPapeleraWom()  { try { return JSON.parse(fs.readFileSync(PAPELERA_FILE_WOM,'utf8')); }  catch { return []; } }
+function savePapeleraWom(d) { fs.writeFileSync(PAPELERA_FILE_WOM, JSON.stringify(d, null, 2)); }
+
+const RSO_SITES = {
+  'RSO CONCEPCION':   'ANIBAL PINTO 105, CONCEPCION',
+  'RSO ANTOFAGASTA':  'FELIX GARCIA 581, ANTOFAGASTA',
+  'RSO PUERTO MONTT': 'AV LO CELIS S/N PUERTO MONTT',
+  'RSO PUNTA ARENAS': 'AV PDTE EDUARDO FREI MONTALVA 5, PUNTA ARENAS'
+};
+
+const ACTIVIDADES_WOM = [
+  'Trabajo Correctivo',
+  'Mantenimiento preventivo',
+  'Atención de emergencia',
+  'Inspección',
+  'Retiro de equipos'
+];
+
+async function buildDocxWom(d) {
+  const v  = s => (s||'').toString().trim();
+
+  // ── Medidas exactas del documento de referencia ──────────
+  // Header: tabla exterior invisible, col izq (logos) + col der (ORDEN DE TRABAJO)
+  const HDR_L   = 5616;   // col izquierda header (logos)
+  const HDR_R   = 5020;   // col derecha header (ORDEN DE TRABAJO = 2×2510)
+  const OT_COL  = 2510;   // columnas dentro de la mini-tabla OT
+
+  // Cuerpo: 9 tablas independientes
+  const LBL_W   = 1911;   // etiqueta azul (body)
+  const VAL_W   = 8453;   // valor (body)
+  const FULL_W  = LBL_W + VAL_W;   // 10364
+  const TEC_W   = 5067;             // técnicos (media página)
+  const DAT_LBL = 1199;
+  const DAT_VAL = 9165;
+  const RES_L   = 5171;   // resumen col izq
+  const RES_R   = 5245;   // resumen col der (exacto del ref: 5171+5245=10416)
+  const RES_W   = RES_L + RES_R;   // 10416
+
+  // ── Colores ──────────────────────────────────────────────
+  const BLU = '1F497D';
+  const WHT = 'FFFFFF';
+  const GRN = '008000';
+  const BLK = '000000';
+
+  // ── Bordes ───────────────────────────────────────────────
+  const thin    = () => ({ style: BorderStyle.SINGLE, size: 4, color: 'auto' });
+  const noneB   = { style: BorderStyle.NONE, size: 0, color: 'auto' };
+  // Sin borde izquierdo: evita la línea vertical en el margen izquierdo
+  const brd     = { top:thin(), bottom:thin(), left:noneB, right:thin() };
+  const tblBrd  = { top:thin(), bottom:thin(), left:noneB, right:thin(), insideH:thin(), insideV:thin() };
+  const noBrd   = { top:noneB, bottom:noneB, left:noneB, right:noneB };
+  const noTblBrd= { top:noneB, bottom:noneB, left:noneB, right:noneB, insideH:noneB, insideV:noneB };
+
+  // ── Helpers ──────────────────────────────────────────────
+  const para = (children, align='left', before=0) => new Paragraph({
+    alignment: align==='center' ? AlignmentType.CENTER : AlignmentType.LEFT,
+    spacing: { before, after: 0 },
+    children: Array.isArray(children) ? children : [children]
+  });
+  const run = (text, opts={}) => new TextRun({
+    text: text||'', size: opts.sz||18, font: 'Calibri',
+    bold: !!opts.bold, italics: !!opts.it, color: opts.c||BLK
+  });
+
+  // Celda OT (texto centrado, sin relleno)
+  const otCell = (text, w, opts={}) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, borders:brd,
+    verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:14,right:14},
+    children:[para(run(text,opts),'center',110)]
+  });
+  // Celda OT azul (ORDEN DE TRABAJO / Fecha OT)
+  const otBlu = (text, w, span, sz) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, ...(span>1?{columnSpan:span}:{}),
+    borders:brd, shading:{fill:BLU,type:ShadingType.CLEAR},
+    verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:60,right:60},
+    children:[para(run(text,{bold:true,sz,c:WHT}),'center',sz===30?284:110)]
+  });
+  // Celda código interno verde centrada
+  const otCod = (codVal, w) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, borders:brd,
+    verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:14,right:14},
+    children:[para(codVal
+      ? run(`INC-${codVal}`,{bold:true,c:GRN,sz:18})
+      : run('',{sz:18}),
+    'center',110)]
+  });
+
+  // Mini-tabla ORDEN DE TRABAJO — usa tblBrd (ya sin borde izquierdo)
+  const otTblBrd = tblBrd;
+  const otTable = new Table({
+    width:{size:HDR_R,type:WidthType.DXA}, columnWidths:[OT_COL,OT_COL], borders:otTblBrd,
+    indent:{size:0,type:WidthType.DXA},
+    rows:[
+      new TableRow({height:{value:558},children:[otBlu('ORDEN DE TRABAJO',OT_COL*2,2,30)]}),
+      new TableRow({height:{value:404},children:[
+        otCell('Código Interno',OT_COL), otCod(v(d.codInterno),OT_COL)
+      ]}),
+      new TableRow({height:{value:404},children:[
+        otCell('Ticket',OT_COL), otCell(v(d.ticket),OT_COL,{bold:true})
+      ]}),
+      new TableRow({height:{value:404},children:[otBlu('Fecha OT',OT_COL*2,2,18)]}),
+      new TableRow({height:{value:393},children:[
+        otCell('Inicio:',OT_COL), otCell(`${v(d.fechaInicio)}  ${v(d.horaInicio)}`,OT_COL)
+      ]}),
+      new TableRow({height:{value:371},children:[
+        otCell('Término:',OT_COL), otCell(`${v(d.fechaTermino)}  ${v(d.horaTermino)}`,OT_COL)
+      ]})
+    ]
+  });
+
+  // ── Logos (ICETEL + WOM) ──────────────────────────────────
+  let icetelLogo = null, womLogo = null;
+  try { const p=path.join(__dirname,'icetel-logo.jpeg'); if(fs.existsSync(p)) icetelLogo=fs.readFileSync(p); } catch(e){}
+  try { const p=path.join(__dirname,'wom-logo.png');     if(fs.existsSync(p)) womLogo   =fs.readFileSync(p); } catch(e){}
+
+  const logoParas = [];
+  if (icetelLogo) logoParas.push(
+    para(new ImageRun({data:icetelLogo, transformation:{width:314,height:175}}), 'left', 0)
+  );
+  if (womLogo) logoParas.push(
+    new Paragraph({
+      spacing:{before:40,after:0},
+      indent:{left:420},
+      children:[new ImageRun({data:womLogo, transformation:{width:220,height:102}})]
+    })
+  );
+  if (!logoParas.length) logoParas.push(para(run('ICETEL / WOM',{bold:true,sz:20}),'left',0));
+
+  // Celda logos (col izq header, sin bordes)
+  const logoCell = new TableCell({
+    width:{size:HDR_L,type:WidthType.DXA}, borders:noBrd,
+    verticalAlign:VerticalAlign.TOP, margins:{top:40,bottom:40,left:0,right:40},
+    children:logoParas
+  });
+
+  // Celda derecha header: contiene la mini-tabla OT
+  const otCell_ = new TableCell({
+    width:{size:HDR_R,type:WidthType.DXA}, borders:noBrd,
+    verticalAlign:VerticalAlign.TOP, margins:{top:0,bottom:0,left:0,right:0},
+    children:[otTable]
+  });
+
+  // Tabla exterior header (invisible)
+  const hdrTable = new Table({
+    width:{size:HDR_L+HDR_R,type:WidthType.DXA},
+    columnWidths:[HDR_L,HDR_R],
+    borders:noTblBrd,
+    rows:[new TableRow({children:[logoCell, otCell_]})]
+  });
+
+  // ── Helpers para tablas de cuerpo ────────────────────────
+  const bluCell = (text, w, span=1) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, ...(span>1?{columnSpan:span}:{}),
+    borders:brd, shading:{fill:BLU,type:ShadingType.CLEAR},
+    verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:100,right:80},
+    children:[para(run(text,{bold:true,sz:18,c:WHT}))]
+  });
+  const valCell = (text, w, opts={}) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, borders:brd,
+    verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:100,right:60},
+    children:[para(run(text,{sz:18,bold:opts.bold||false,c:opts.c||BLK}))]
+  });
+  const whtCell = (text, w) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, borders:brd,
+    shading:{fill:WHT,type:ShadingType.CLEAR},
+    verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:100,right:60},
+    children:[para(run(text,{bold:true}))]
+  });
+  const multiCell = (paragraphs, w) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, borders:brd,
+    margins:{top:60,bottom:60,left:100,right:80}, children:paragraphs
+  });
+
+  // ── TABLE 2: Cliente/Sistemas/Tipo actividad/Sitio/Dirección ─
+  const bodyTable = new Table({
+    width:{size:FULL_W,type:WidthType.DXA}, columnWidths:[LBL_W,VAL_W], borders:tblBrd,
+    rows:[
+      new TableRow({height:{value:404},children:[bluCell('Cliente',LBL_W),        valCell('WOM',VAL_W,{bold:true})]}),
+      new TableRow({height:{value:404},children:[bluCell('Sistemas',LBL_W),        valCell(v(d.infraestructura),VAL_W)]}),
+      new TableRow({height:{value:404},children:[bluCell('Tipo de actividad',LBL_W),valCell(v(d.tipoActividad),VAL_W)]}),
+      new TableRow({height:{value:404},children:[bluCell('Instalación',LBL_W),     valCell(v(d.instalacion),VAL_W)]}),
+      new TableRow({height:{value:404},children:[bluCell('Dirección',LBL_W),       valCell(v(d.direccion),VAL_W)]})
+    ]
+  });
+
+  // ── TABLE 3: Trabajos Realizados ──────────────────────────
+  const trabajosParas = (v(d.trabajos)||'').split('\n').filter(l=>l.trim())
+    .map(line => new Paragraph({spacing:{before:0,after:60},children:[run(line.trim())]}));
+  if (!trabajosParas.length) trabajosParas.push(new Paragraph({spacing:{before:0,after:0},children:[run('')]}));
+  const trabajosTable = new Table({
+    width:{size:FULL_W,type:WidthType.DXA}, columnWidths:[FULL_W], borders:tblBrd,
+    rows:[
+      new TableRow({height:{value:404},children:[bluCell('Trabajos Realizados',FULL_W)]}),
+      new TableRow({height:{value:Math.max(608,trabajosParas.length*300)},children:[multiCell(trabajosParas,FULL_W)]})
+    ]
+  });
+
+  // ── TABLE 4: Observaciones ────────────────────────────────
+  const obsTable = new Table({
+    width:{size:FULL_W,type:WidthType.DXA}, columnWidths:[FULL_W], borders:tblBrd,
+    rows:[
+      new TableRow({height:{value:404},children:[bluCell('Observaciones',FULL_W)]}),
+      new TableRow({height:{value:404},children:[multiCell(
+        [para(run(v(d.observaciones)||'Sin observaciones adicionales'))], FULL_W
+      )]})
+    ]
+  });
+
+  // ── TABLE 5: Separador vacío ──────────────────────────────
+  const emptyTable = new Table({
+    width:{size:FULL_W,type:WidthType.DXA}, columnWidths:[FULL_W], borders:tblBrd,
+    rows:[new TableRow({height:{value:150},children:[
+      new TableCell({width:{size:FULL_W,type:WidthType.DXA},borders:brd,children:[para(run(''))]})
+    ]})]
+  });
+
+  // ── TABLE 6: Técnicos (5067 DXA) ─────────────────────────
+  const tecNames = (d.tecnicos||[]).filter(Boolean);
+  const tecTable = new Table({
+    width:{size:TEC_W,type:WidthType.DXA}, columnWidths:[TEC_W], borders:tblBrd,
+    rows:[
+      new TableRow({height:{value:404},children:[bluCell('Técnico(s) Responsable(s)',TEC_W)]}),
+      new TableRow({height:{value:404},children:[new TableCell({
+        width:{size:TEC_W,type:WidthType.DXA}, borders:brd,
+        verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:100,right:60},
+        children:[para([run('Nombre y Apellido:  ',{bold:true}), run(tecNames.join('    /    '))])]
+      })]})
+    ]
+  });
+
+  // ── TABLE 7: Datos Generales (1199|9165) ─────────────────
+  const datTable = new Table({
+    width:{size:FULL_W,type:WidthType.DXA}, columnWidths:[DAT_LBL,DAT_VAL], borders:tblBrd,
+    rows:[
+      new TableRow({height:{value:404},children:[
+        new TableCell({width:{size:FULL_W,type:WidthType.DXA},columnSpan:2,borders:brd,
+          shading:{fill:BLU,type:ShadingType.CLEAR},verticalAlign:VerticalAlign.CENTER,
+          margins:{top:40,bottom:40,left:100,right:80},
+          children:[para(run('Datos generales:',{bold:true,c:WHT}))]})
+      ]}),
+      new TableRow({height:{value:404},children:[whtCell('Sala:',DAT_LBL),   valCell(v(d.sala),DAT_VAL)]}),
+      new TableRow({height:{value:404},children:[whtCell('Equipo:',DAT_LBL), valCell(v(d.equipo),DAT_VAL)]}),
+      new TableRow({height:{value:404},children:[whtCell('Marca:',DAT_LBL),  valCell(v(d.marca),DAT_VAL)]}),
+      new TableRow({height:{value:404},children:[whtCell('Modelo:',DAT_LBL), valCell(v(d.modelo),DAT_VAL)]})
+    ]
+  });
+
+  // ── TABLE 8: Resumen + Fotos (5171|5245 = 10416) ─────────
+  const photos   = d.photos   || [];
+  const captions = d.captions || [];
+
+  const mkPhotoCell = (b64, w) => {
+    if (!b64) return new TableCell({width:{size:w,type:WidthType.DXA},borders:brd,
+      verticalAlign:VerticalAlign.CENTER,margins:{top:40,bottom:40,left:40,right:40},
+      children:[para(run(''))]});
+    try {
+      const buf = Buffer.from(b64.replace(/^data:image\/\w+;base64,/,''),'base64');
+      return new TableCell({width:{size:w,type:WidthType.DXA},borders:brd,
+        verticalAlign:VerticalAlign.CENTER,margins:{top:40,bottom:40,left:40,right:40},
+        children:[para(new ImageRun({data:buf,transformation:{width:235,height:175}}),'center')]});
+    } catch(e) {
+      return new TableCell({width:{size:w,type:WidthType.DXA},borders:brd,
+        children:[para(run('[error foto]',{sz:14}))]});
+    }
+  };
+  const mkCapCell = (idx, w) => new TableCell({
+    width:{size:w,type:WidthType.DXA},borders:brd,
+    verticalAlign:VerticalAlign.CENTER,margins:{top:30,bottom:30,left:100,right:60},
+    children:[para(run(captions[idx]||'',{sz:16,it:true}))]
+  });
+
+  const resRows = [
+    new TableRow({height:{value:394},children:[
+      new TableCell({width:{size:RES_W,type:WidthType.DXA},columnSpan:2,borders:brd,
+        shading:{fill:BLU,type:ShadingType.CLEAR},verticalAlign:VerticalAlign.CENTER,
+        margins:{top:40,bottom:40,left:100,right:80},
+        children:[para(run('RESUMEN DE ACTIVIDAD:',{bold:true,c:WHT}))]})
+    ]}),
+    new TableRow({height:{value:414},children:[
+      new TableCell({width:{size:RES_L,type:WidthType.DXA},borders:brd,
+        margins:{top:40,bottom:40,left:100,right:60},children:[para(run(v(d.resumen1)))]}),
+      new TableCell({width:{size:RES_R,type:WidthType.DXA},borders:brd,
+        margins:{top:40,bottom:40,left:100,right:60},children:[para(run(v(d.resumen2)))]})
+    ]})
+  ];
+
+  for (let i=0; i<Math.min(photos.length,8); i+=2) {
+    const ph = i===0 ? 3231 : 3826;
+    resRows.push(new TableRow({height:{value:ph},children:[
+      mkPhotoCell(photos[i]||null,RES_L), mkPhotoCell(photos[i+1]||null,RES_R)
+    ]}));
+    resRows.push(new TableRow({height:{value:458},children:[
+      mkCapCell(i,RES_L), mkCapCell(i+1,RES_R)
+    ]}));
+  }
+
+  const resTable = new Table({
+    width:{size:RES_W,type:WidthType.DXA}, columnWidths:[RES_L,RES_R], borders:tblBrd, rows:resRows
+  });
+
+  // ── Documento final ───────────────────────────────────────
+  const gap = new Paragraph({spacing:{before:0,after:60},children:[]});
+  const doc = new Document({
+    sections:[{
+      properties:{
+        page:{
+          margin:{top:720,right:708,bottom:280,left:566},
+          size:{width:11910,height:16840}
+        }
+      },
+      children:[
+        hdrTable, gap,
+        bodyTable, gap,
+        trabajosTable, gap,
+        obsTable, gap,
+        emptyTable, gap,
+        tecTable, gap,
+        datTable, gap,
+        resTable
+      ]
+    }]
+  });
+  return await Packer.toBuffer(doc);
+}
+
+// ── (old buildDocxWom removed — replaced above) ──────────────
+async function buildDocxWom_UNUSED(d) {
+  const v  = s => (s||'').toString().trim();
+  const WTW   = 9869;
+  const wCol  = Math.floor(WTW / 10);
+  const W_BC  = '7B7B7B';
+  const W_LBL = 'D6E4F0';
+  const W_GRY = 'D9D9D9';
+  const W_BLU = '1A3A6C';
+  const W_GRN = '2E7D32';
+  const W_MAG = 'E2007A';
+
+  const thinW  = (c=W_BC) => ({ style: BorderStyle.SINGLE, size: 12, color: c });
+  const allW   = { top: thinW(), bottom: thinW(), left: thinW(), right: thinW() };
+  const thinBl = (c=W_BLU) => ({ style: BorderStyle.SINGLE, size: 12, color: c });
+  const allBl  = { top: thinBl(), bottom: thinBl(), left: thinBl(), right: thinBl() };
+
+  const para = (runs, center=false) => new Paragraph({
+    alignment: center ? AlignmentType.CENTER : AlignmentType.LEFT,
+    spacing: { before: 0, after: 0 },
+    children: Array.isArray(runs) ? runs : [runs]
+  });
+  const run  = (text, opts={}) => new TextRun({ text: text||'', size: opts.sz||16, font: 'Calibri',
+    bold: opts.bold||false, italics: opts.italics||false, color: opts.color||'000000' });
+
+  const WL = (text, span=1) => new TableCell({
+    width: { size: wCol*span, type: WidthType.DXA }, ...(span>1?{columnSpan:span}:{}),
+    borders: allW, shading: { fill: W_LBL, type: ShadingType.CLEAR },
+    verticalAlign: VerticalAlign.CENTER,
+    margins: { top:40, bottom:40, left:70, right:40 },
+    children: [para(run(text, { bold:true, sz:16 }))]
+  });
+  const WV = (text, span=1, opts={}) => new TableCell({
+    width: { size: wCol*span, type: WidthType.DXA }, ...(span>1?{columnSpan:span}:{}),
+    borders: allW, verticalAlign: VerticalAlign.CENTER,
+    margins: { top:40, bottom:40, left:70, right:40 },
+    children: [para(run(text, { sz:16, bold:opts.bold||false, color:opts.color||'000000' }), opts.center||false)]
+  });
+  const wSecRow = (text) => new TableRow({ height:{value:300}, children:[new TableCell({
+    width:{size:WTW,type:WidthType.DXA}, columnSpan:10,
+    borders:allW, shading:{fill:W_GRY,type:ShadingType.CLEAR},
+    verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:100,right:40},
+    children:[para(run(text,{bold:true,sz:18}))]
+  })]});
+
+  // ── Header con logo ──────────────────────────────────────
+  let headerTable = null;
+  try {
+    let logoPath = path.join(__dirname, 'logo.png');
+    if (!fs.existsSync(logoPath)) logoPath = path.join(__dirname, 'logo.jpeg');
+    const logoData = fs.readFileSync(logoPath);
+    headerTable = new Table({
+      width: { size: WTW, type: WidthType.DXA },
+      columnWidths: [2400, 5069, 2400],
+      borders: { top:thinBl(),bottom:thinBl(),left:thinBl(),right:thinBl(),insideH:thinBl(),insideV:thinBl() },
+      rows: [new TableRow({ height:{value:820}, children:[
+        new TableCell({
+          width:{size:2400,type:WidthType.DXA}, borders:allBl,
+          shading:{fill:W_BLU,type:ShadingType.CLEAR},
+          verticalAlign:VerticalAlign.CENTER, margins:{top:60,bottom:60,left:100,right:100},
+          children:[para(new ImageRun({ data:logoData, transformation:{width:100,height:44} }), true)]
+        }),
+        new TableCell({
+          width:{size:5069,type:WidthType.DXA}, borders:allBl,
+          shading:{fill:W_BLU,type:ShadingType.CLEAR},
+          verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:60,right:60},
+          children:[para(run('ORDEN DE TRABAJO',{bold:true,sz:28,color:'FFFFFF'}), true)]
+        }),
+        new TableCell({
+          width:{size:2400,type:WidthType.DXA}, borders:allBl,
+          shading:{fill:W_MAG,type:ShadingType.CLEAR},
+          verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:60,right:60},
+          children:[para(run('WOM',{bold:true,sz:36,color:'FFFFFF',italics:true}), true)]
+        })
+      ]})]
+    });
+  } catch(e) { /* logo opcional */ }
+
+  // ── Código Interno (verde si hay valor) ─────────────────
+  const codVal = v(d.codInterno);
+  const codCell = new TableCell({
+    width:{size:wCol*3,type:WidthType.DXA}, columnSpan:3,
+    borders:allW, verticalAlign:VerticalAlign.CENTER,
+    margins:{top:40,bottom:40,left:70,right:40},
+    children:[para(codVal ? run(`INC-${codVal}`,{bold:true,sz:18,color:W_GRN}) : run('',{sz:16}))]
+  });
+
+  // ── Trabajos: split por saltos de línea ─────────────────
+  const trabajosParas = (v(d.trabajos)||'').split('\n').filter(l=>l.trim()).map(line =>
+    new Paragraph({ spacing:{before:0,after:60}, children:[run(line.trim(),{sz:16})] })
+  );
+  if (!trabajosParas.length) trabajosParas.push(new Paragraph({spacing:{before:0,after:0},children:[run('',{sz:16})]}));
+
+  // ── Técnicos ────────────────────────────────────────────
+  const tecnicosStr = (d.tecnicos||[]).filter(Boolean).join('    /    ');
+
+  // ── Fotos ────────────────────────────────────────────────
+  const photos   = d.photos   || [];
+  const captions = d.captions || [];
+  const photoRows = [];
+  for (let r = 0; r < 4; r++) {
+    const i1 = r*2, i2 = r*2+1;
+    const p1 = photos[i1], p2 = photos[i2];
+    if (!p1 && !p2) continue;
+    const mkPhotoCell = (b64) => {
+      const halfW = Math.floor(WTW/2);
+      if (!b64) return new TableCell({
+        width:{size:halfW,type:WidthType.DXA},columnSpan:5,
+        borders:allW,verticalAlign:VerticalAlign.CENTER,
+        margins:{top:40,bottom:40,left:40,right:40},
+        children:[para(run('',{sz:16}))]
+      });
+      try {
+        const buf = Buffer.from(b64.replace(/^data:image\/\w+;base64,/,''),'base64');
+        return new TableCell({
+          width:{size:halfW,type:WidthType.DXA},columnSpan:5,
+          borders:allW,verticalAlign:VerticalAlign.CENTER,
+          margins:{top:40,bottom:40,left:40,right:40},
+          children:[para(new ImageRun({data:buf,transformation:{width:250,height:185}}),true)]
+        });
+      } catch { return new TableCell({
+        width:{size:Math.floor(WTW/2),type:WidthType.DXA},columnSpan:5,
+        borders:allW,children:[para(run('[error foto]',{sz:14}))]
+      }); }
+    };
+    const mkCapCell = (idx) => new TableCell({
+      width:{size:Math.floor(WTW/2),type:WidthType.DXA},columnSpan:5,
+      borders:allW,verticalAlign:VerticalAlign.CENTER,
+      margins:{top:30,bottom:30,left:70,right:40},
+      children:[para(run(captions[idx]||'',{sz:14,italics:true}),true)]
+    });
+    photoRows.push(new TableRow({height:{value:2200},children:[mkPhotoCell(p1),mkPhotoCell(p2)]}));
+    photoRows.push(new TableRow({height:{value:270},children:[mkCapCell(i1),mkCapCell(i2)]}));
+  }
+
+  // ── Tabla principal ──────────────────────────────────────
+  const mainTable = new Table({
+    width:{size:WTW,type:WidthType.DXA},
+    columnWidths: Array(10).fill(wCol),
+    borders:{top:thinW(),bottom:thinW(),left:thinW(),right:thinW(),insideH:thinW(),insideV:thinW()},
+    rows:[
+      new TableRow({height:{value:320},children:[WL('Código Interno',2),codCell,WL('Ticket',2),WV(v(d.ticket),3)]}),
+      new TableRow({height:{value:300},children:[WL('Fecha OT',2),WV(`Inicio:   ${v(d.fechaInicio)}   ${v(d.horaInicio)}`,4),WV(`Término:   ${v(d.fechaTermino)}   ${v(d.horaTermino)}`,4)]}),
+      new TableRow({height:{value:300},children:[WL('Cliente',2),WV('WOM',8,{bold:true})]}),
+      new TableRow({height:{value:300},children:[WL('Infraestructura',2),WV(v(d.infraestructura),8)]}),
+      new TableRow({height:{value:300},children:[WL('Tipo de actividad',2),WV(v(d.tipoActividad),8)]}),
+      new TableRow({height:{value:300},children:[WL('Instalación',2),WV(v(d.instalacion),3),WL('Dirección',2),WV(v(d.direccion),3)]}),
+      wSecRow('Trabajos Realizados'),
+      new TableRow({height:{value:1600},children:[new TableCell({
+        width:{size:WTW,type:WidthType.DXA},columnSpan:10,
+        borders:allW,margins:{top:60,bottom:60,left:100,right:100},
+        children:trabajosParas
+      })]}),
+      wSecRow('Observaciones'),
+      new TableRow({height:{value:1200},children:[new TableCell({
+        width:{size:WTW,type:WidthType.DXA},columnSpan:10,
+        borders:allW,margins:{top:60,bottom:60,left:100,right:100},
+        children:[para(run(v(d.observaciones)||'Sin observaciones adicionales',{sz:16}))]
+      })]}),
+      wSecRow('Técnico(s) Responsable(s)'),
+      new TableRow({height:{value:350},children:[WL('Nombre y Apellido:',2),WV(tecnicosStr,8)]}),
+      new TableRow({height:{value:300},children:[WL('Sala:',1),WV(v(d.sala),2),WL('Equipo:',1),WV(v(d.equipo),2),WL('Marca:',1),WV(v(d.marca),2),WL('Modelo:',1),WV(v(d.modelo),1)]}),
+      wSecRow('RESUMEN DE ACTIVIDAD'),
+      new TableRow({height:{value:1400},children:[
+        new TableCell({width:{size:Math.floor(WTW/2),type:WidthType.DXA},columnSpan:5,borders:allW,margins:{top:60,bottom:60,left:100,right:100},children:[para(run(v(d.resumen1),{sz:16}))]}),
+        new TableCell({width:{size:Math.floor(WTW/2),type:WidthType.DXA},columnSpan:5,borders:allW,margins:{top:60,bottom:60,left:100,right:100},children:[para(run(v(d.resumen2),{sz:16}))]})
+      ]}),
+      ...(photoRows.length ? [wSecRow('REGISTRO FOTOGRÁFICO'),...photoRows] : [])
+    ]
+  });
+
+  const sections = [];
+  if (headerTable) sections.push(headerTable);
+  sections.push(new Paragraph({spacing:{before:0,after:80},children:[]}));
+  sections.push(mainTable);
+
+  const doc = new Document({
+    sections:[{
+      properties:{ page:{ margin:{top:720,right:720,bottom:720,left:720}, size:{width:12240,height:15840} } },
+      children: sections
+    }]
+  });
+  return await Packer.toBuffer(doc);
+}
+
+// ── WOM Routes ─────────────────────────────────────────────────
+app.get('/sitios-rso', (_req, res) => res.json(RSO_SITES));
+app.get('/actividades-wom', (_req, res) => res.json(ACTIVIDADES_WOM));
+
+app.post('/generar-wom', async (req, res) => {
+  try {
+    const d = req.body;
+    const buffer = await buildDocxWom(d);
+    const ticket = (d.ticket||'WOM').replace(/[^a-zA-Z0-9\-_]/g,'_').slice(0,50);
+    const fname  = `${ticket}_WOM.docx`;
+    fs.writeFileSync(path.join(DOCS_DIR_WOM, fname), buffer);
+
+    const db = loadDBWom();
+    const { photos, captions, ...meta } = d;
+    db.unshift({
+      id: Date.now().toString(),
+      fechaCreacion: new Date().toISOString(),
+      ticket: d.ticket, codInterno: d.codInterno,
+      fechaInicio: d.fechaInicio, instalacion: d.instalacion,
+      tipoActividad: d.tipoActividad,
+      tecnicos: (d.tecnicos||[]).filter(Boolean).join(', '),
+      photoCount: (photos||[]).filter(Boolean).length,
+      filename: fname
+    });
+    saveDBWom(db);
+
+    res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
+    res.setHeader('Access-Control-Expose-Headers','Content-Disposition');
+    res.send(buffer);
+  } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
+});
+
+app.get('/registro-wom', (_req, res) => res.json(loadDBWom()));
+
+app.get('/descargar-wom/:id', (req, res) => {
+  const entry = loadDBWom().find(e => e.id === req.params.id);
+  if (!entry) return res.status(404).json({error:'No encontrado'});
+  const fpath = path.join(DOCS_DIR_WOM, entry.filename);
+  if (!fs.existsSync(fpath)) return res.status(404).json({error:'Archivo no encontrado'});
+  res.download(fpath, entry.filename);
+});
+
+app.delete('/registro-wom/:id', (req, res) => {
+  const db  = loadDBWom();
+  const idx = db.findIndex(e => e.id === req.params.id);
+  if (idx === -1) return res.status(404).json({error:'No encontrado'});
+  const [entry] = db.splice(idx, 1);
+  try { const fp = path.join(DOCS_DIR_WOM, entry.filename); if (fs.existsSync(fp)) fs.renameSync(fp, path.join(PAPELERA_DIR_WOM, entry.filename)); } catch(e){}
+  const pap = loadPapeleraWom(); pap.unshift({...entry, deletedAt: new Date().toISOString()});
+  savePapeleraWom(pap); saveDBWom(db);
+  res.json({ok:true});
+});
+
+app.get('/papelera-wom', (_req, res) => res.json(loadPapeleraWom()));
+
+app.post('/papelera-wom/restaurar/:id', (req, res) => {
+  const pap = loadPapeleraWom();
+  const idx = pap.findIndex(e => e.id === req.params.id);
+  if (idx === -1) return res.status(404).json({error:'No encontrado'});
+  const [entry] = pap.splice(idx, 1);
+  const { deletedAt, ...clean } = entry;
+  try { const fp = path.join(PAPELERA_DIR_WOM, clean.filename); if (fs.existsSync(fp)) fs.renameSync(fp, path.join(DOCS_DIR_WOM, clean.filename)); } catch(e){}
+  const db = loadDBWom(); db.unshift(clean);
+  saveDBWom(db); savePapeleraWom(pap);
+  res.json({ok:true});
+});
+
+app.delete('/papelera-wom/:id', (req, res) => {
+  const pap = loadPapeleraWom();
+  const idx = pap.findIndex(e => e.id === req.params.id);
+  if (idx === -1) return res.status(404).json({error:'No encontrado'});
+  const [entry] = pap.splice(idx, 1);
+  try { const fp = path.join(PAPELERA_DIR_WOM, entry.filename); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(e){}
+  savePapeleraWom(pap); res.json({ok:true});
+});
+
+app.delete('/papelera-wom', (_req, res) => {
+  const pap = loadPapeleraWom();
+  pap.forEach(e => { try { const fp = path.join(PAPELERA_DIR_WOM, e.filename); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(err){} });
+  savePapeleraWom([]); res.json({ok:true});
 });
 
 const PORT = 3000;

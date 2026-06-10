@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ICETEL – Selección de Proyecto</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{
+  font-family:'Segoe UI',system-ui,sans-serif;
+  min-height:100vh;
+  background:#0D47A1 url('fondo.png') no-repeat center center fixed;
+  background-size:cover;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* ── HEADER ── */
+header{
+  width:100%;
+  background:linear-gradient(135deg,#0D47A1 0%,#1565C0 60%,#1976D2 100%);
+  padding:18px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 2px 16px rgba(0,0,0,.25);
+}
+.hdr-logo-wrap{background:#fff;border-radius:10px;padding:6px 16px;display:flex;align-items:center;}
+.hdr-logo{height:44px;object-fit:contain;display:block;}
+
+/* ── MAIN ── */
+main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:40px 20px;
+  gap:32px;
+  width:100%;
+  max-width:860px;
+}
+
+.title-block{text-align:center;}
+.title-block h2{
+  font-size:22px;font-weight:700;letter-spacing:-.3px;color:#3a3a3a;
+  text-shadow:0 1px 6px rgba(255,255,255,.8);
+}
+.title-block p{
+  font-size:13px;margin-top:6px;color:#4a4a4a;
+  text-shadow:0 1px 4px rgba(255,255,255,.7);
+}
+
+/* ── CARDS ── */
+.cards{
+  display:flex;
+  gap:24px;
+  width:100%;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.card{
+  flex:1 1 260px;
+  max-width:320px;
+  background:rgba(255,255,255,.97);
+  border-radius:20px;
+  padding:40px 28px 32px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+  box-shadow:0 8px 32px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1);
+  cursor:pointer;
+  text-decoration:none;
+  transition:transform .18s ease, box-shadow .18s ease;
+  position:relative;
+  overflow:hidden;
+  border:2px solid transparent;
+}
+.card::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:5px;
+}
+.card.tigo::before{background:linear-gradient(90deg,#1565C0,#1976D2);}
+.card.wom::before{background:linear-gradient(90deg,#4A148C,#7B1FA2);}
+
+.card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 16px 48px rgba(0,0,0,.22),0 4px 16px rgba(0,0,0,.12);
+}
+.card:active{transform:translateY(-2px);}
+
+.card-logo{
+  height:90px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.card-logo img{max-height:90px;max-width:220px;object-fit:contain;}
+
+/* WOM text logo */
+.wom-text{
+  font-size:64px;
+  font-weight:900;
+  color:#7B1FA2;
+  letter-spacing:-3px;
+  line-height:1;
+  font-style:italic;
+}
+
+.card-label{
+  font-size:14px;
+  font-weight:600;
+  color:#000;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+}
+.card-desc{
+  font-size:13px;
+  color:#000;
+  text-align:center;
+  line-height:1.5;
+}
+
+.card-btn{
+  margin-top:4px;
+  padding:11px 32px;
+  border-radius:50px;
+  font-size:13px;
+  font-weight:700;
+  border:none;
+  cursor:pointer;
+  letter-spacing:.3px;
+  transition:opacity .15s;
+}
+.card-btn:hover{opacity:.88;}
+.card.tigo .card-btn{background:linear-gradient(135deg,#1565C0,#1976D2);color:#fff;}
+.card.wom .card-btn{background:#7B1FA2;color:#fff;}
+
+/* ── FOOTER ── */
+footer{
+  padding:16px;
+  color:rgba(255,255,255,.45);
+  font-size:11px;
+  text-align:center;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-logo-wrap">
+    <img src="icetel-logo.jpeg" alt="ICETEL" class="hdr-logo">
+  </div>
+</header>
+
+<main>
+  <div class="title-block">
+    <h2>Seleccione el Proyecto</h2>
+    <p>Elija el cliente para ingresar al módulo correspondiente</p>
+  </div>
+
+  <div class="cards">
+
+    <!-- TIGO -->
+    <a href="/tigo" class="card tigo">
+      <div class="card-logo">
+        <img src="tigo-logo.png" alt="Tigo">
+      </div>
+      <span class="card-label">Proyecto TIGO</span>
+      <span class="card-desc">Informes de mantenimiento<br>de equipos de clima</span>
+      <button class="card-btn">Ingresar →</button>
+    </a>
+
+    <!-- WOM -->
+    <a href="/wom" class="card wom">
+      <div class="card-logo">
+        <span class="wom-text">wom</span>
+      </div>
+      <span class="card-label">Proyecto WOM</span>
+      <span class="card-desc">Informes de mantenimiento<br>de equipos de clima</span>
+      <button class="card-btn">Ingresar →</button>
+    </a>
+
+  </div>
+</main>
+
+<footer>ICETEL &copy; 2026 — Sistema de Gestión de Informes / Control y Gestión</footer>
+
+</body>
+</html>

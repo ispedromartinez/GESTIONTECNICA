@@ -23,10 +23,14 @@ header{background:linear-gradient(135deg,#0D47A1 0%,#1565C0 60%,#1976D2 100%);co
 .hdr-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;}
 .hdr-left h1{font-size:15px;font-weight:700;letter-spacing:-.2px;}
 .hdr-left p{font-size:11px;opacity:.65;margin-top:2px;}
-.hdr-badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+.hdr-badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-items:center;}
 .badge{font-size:10px;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 10px;font-weight:600;letter-spacing:.2px;border:1px solid rgba(255,255,255,.2);}
 .badge.g{background:rgba(22,163,74,.4);border-color:rgba(22,163,74,.5);}
+.back-btn{font-size:12px;font-weight:600;color:#fff;text-decoration:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 14px;transition:background .15s;}
+.back-btn:hover{background:rgba(255,255,255,.28);}
 .badge.r{background:rgba(220,38,38,.4);border-color:rgba(220,38,38,.5);}
+.srv-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;flex-shrink:0;transition:background .3s;}
+.srv-dot.on{background:#22c55e;}
 
 /* ── TABS ── */
 .tabs{background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:150;box-shadow:0 1px 4px rgba(0,0,0,.05);}
@@ -48,7 +52,7 @@ header{background:linear-gradient(135deg,#0D47A1 0%,#1565C0 60%,#1976D2 100%);co
 .tab.papelera.active .num{background:var(--red);color:#fff;}
 
 /* ── SECTIONS ── */
-.section{display:none;padding:22px 20px;padding-bottom:80px;max-width:var(--max-w);margin:20px auto;background:rgba(240,244,248,.97);border-radius:var(--r);box-shadow:var(--sh-lg);}
+.section{display:none;padding:16px 20px 8px;max-width:var(--max-w);margin:16px auto;}
 .section.active{display:block;}
 
 /* ── CARDS ── */
@@ -239,12 +243,14 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
 
 /* ── NAV / GENERATE ── */
-.nav-bar{display:flex;gap:10px;margin-top:16px;}
-.btn-nav{flex:1;padding:12px;border:2px solid var(--blue);border-radius:9px;background:#fff;color:var(--blue);font-size:13px;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit;}
-.btn-nav:hover{background:#eff6ff;}
-.btn-nav.primary{background:var(--blue);color:#fff;}
-.btn-nav.primary:hover{background:var(--bm);border-color:var(--bm);}
-.btn-nav:active{opacity:.8;transform:scale(.98);}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;justify-content:space-between;align-items:center;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 22px;border-radius:50px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.2px;font-family:inherit;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,var(--bd),var(--blue));color:#fff;box-shadow:0 4px 14px rgba(21,101,192,.3);}
+.btn-primary:hover{opacity:.9;}
+.btn-secondary{background:var(--bl);color:var(--bd);border:1.5px solid var(--blue);}
+.btn-secondary:hover{background:#c7ddf5;}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;}
 .btn-gen{width:100%;background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:17px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(21,101,192,.35);transition:.2s;margin-top:4px;letter-spacing:.2px;font-family:inherit;}
 .btn-gen:hover{background:var(--bm);box-shadow:0 6px 24px rgba(21,101,192,.45);transform:translateY(-1px);}
 .btn-gen:disabled{background:#94a3b8;box-shadow:none;cursor:not-allowed;transform:none;}
@@ -264,7 +270,7 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 .modal-close{background:#f1f5f9;border:none;font-size:16px;cursor:pointer;color:var(--muted);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
 .modal-info{font-size:12px;color:var(--muted);margin-bottom:14px;padding:9px 13px;background:#f8fafc;border-radius:8px;}
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);}
-.app-credit{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.3px;pointer-events:none;z-index:50;text-shadow:0 1px 2px rgba(0,0,0,.25);}
+.app-credit{text-align:center;padding:14px 16px;font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.3px;pointer-events:none;}
 .confirm-overlay.open{display:flex;}
 .confirm-box{background:#fff;border-radius:16px;padding:26px;width:100%;max-width:340px;text-align:center;box-shadow:var(--sh-lg);}
 .confirm-icon{font-size:42px;margin-bottom:12px;}
@@ -287,9 +293,8 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
       <p>Centrales Clima</p>
     </div>
     <div class="hdr-badges">
-      <span class="badge">📄 Word</span>
-      <span class="badge">📷 Fotos</span>
-      <span class="badge" id="srvBadge">⚡ ...</span>
+      <span class="srv-dot" id="srvBadge" title="Servidor inactivo"></span>
+      <a href="/" class="back-btn">← Proyectos</a>
     </div>
   </div>
 </header>
@@ -394,7 +399,10 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
       <div class="field"><label>RED</label><input type="text" id="ticketRED"></div>
     </div>
   </div>
-  <div class="nav-bar"><button class="btn-nav primary" onclick="nextTab(1)">Siguiente: Equipo →</button></div>
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="showTab(0)">← Anterior</button>
+    <button class="btn btn-primary" onclick="nextTab(1)">Siguiente: Equipo →</button>
+  </div>
 </div>
 
 <!-- ══ TAB 2: EQUIPO ══ -->
@@ -409,9 +417,9 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     <div class="field"><label>Marca</label><input type="text" id="eqMarca" placeholder="Ej: Liebert, Stulz, Emerson"></div>
     <div class="field"><label>Modelo / N° de Serie</label><input type="text" id="eqModelo" placeholder="Modelo y número de serie"></div>
   </div>
-  <div class="nav-bar">
-    <button class="btn-nav" onclick="showTab(1)">← Anterior</button>
-    <button class="btn-nav primary" onclick="nextTab(2)">Siguiente →</button>
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="showTab(1)">← Anterior</button>
+    <button class="btn btn-primary" onclick="nextTab(2)">Siguiente →</button>
   </div>
 </div>
 
@@ -452,9 +460,9 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
       </table>
     </div>
   </div>
-  <div class="nav-bar">
-    <button class="btn-nav" onclick="showTab(2)">← Anterior</button>
-    <button class="btn-nav primary" onclick="nextTab(3)">Siguiente →</button>
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="showTab(2)">← Anterior</button>
+    <button class="btn btn-primary" onclick="nextTab(3)">Siguiente →</button>
   </div>
 </div>
 
@@ -468,9 +476,9 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     <div class="card-title">Observaciones y Recomendaciones</div>
     <textarea id="observaciones" rows="5" placeholder="Observaciones, anomalías, recomendaciones..." spellcheck="true" lang="es"></textarea>
   </div>
-  <div class="nav-bar">
-    <button class="btn-nav" onclick="showTab(3)">← Anterior</button>
-    <button class="btn-nav primary" onclick="nextTab(4)">Siguiente: Fotos →</button>
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="showTab(3)">← Anterior</button>
+    <button class="btn btn-primary" onclick="nextTab(4)">Siguiente: Fotos →</button>
   </div>
 </div>
 
@@ -481,9 +489,9 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     <div class="photos-info">📷 Toca cada casilla para elegir desde tu <strong>galería</strong> o tomar una foto. Hasta 12 fotos.</div>
     <div class="photos-grid" id="photosGrid"></div>
   </div>
-  <div class="nav-bar">
-    <button class="btn-nav" onclick="showTab(4)">← Anterior</button>
-    <button class="btn-nav primary" onclick="nextTab(5)">Siguiente: Generar →</button>
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="showTab(4)">← Anterior</button>
+    <button class="btn btn-primary" onclick="nextTab(5)">Siguiente: Generar →</button>
   </div>
 </div>
 
@@ -495,6 +503,9 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     <div class="srv-bar" id="srvStatusGen">
       <span class="dot"></span><span id="srvTxtGen">Verificando servidor...</span>
     </div>
+  </div>
+  <div class="actions" style="margin-bottom:8px;">
+    <button class="btn btn-secondary" onclick="showTab(5)">← Anterior</button>
   </div>
   <div style="padding:4px 0 20px">
     <button class="btn-gen" id="btnDocx" onclick="generateDocx()">⬇ Descargar Informe Word (.docx)</button>
@@ -514,6 +525,9 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     <div class="stat-box"><div class="stat-num" id="sSitios">0</div><div class="stat-lbl">Sitios</div></div>
   </div>
   <div id="histList"></div>
+  <div class="actions" style="margin-top:16px;">
+    <button class="btn btn-secondary" onclick="showTab(0)">← Inicio</button>
+  </div>
 </div>
 
 <!-- ══ TAB 8: PAPELERA ══ -->
@@ -523,6 +537,9 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     <button class="btn-vaciar" onclick="vaciarPapelera()">🗑 Vaciar</button>
   </div>
   <div id="papList"></div>
+  <div class="actions" style="margin-top:16px;">
+    <button class="btn btn-secondary" onclick="showTab(0)">← Inicio</button>
+  </div>
 </div>
 
 <!-- CONFIRM PAPELERA PERMANENTE -->
@@ -782,8 +799,8 @@ async function checkServer(){
 function updateSrvUI(){
   const b=document.getElementById('srvBadge');
   const sg=document.getElementById('srvStatusGen');const tg=document.getElementById('srvTxtGen');
-  if(serverOnline){b.textContent='✅ Servidor activo';b.className='badge g';sg.className='srv-bar on';tg.textContent='Servidor local activo — listo para generar';}
-  else{b.textContent='⚠ Sin servidor';b.className='badge r';sg.className='srv-bar off';tg.innerHTML='Servidor no activo. <strong>Ejecuta: node server.js</strong>';}
+  if(serverOnline){b.className='srv-dot on';b.title='Servidor activo';sg.className='srv-bar on';tg.textContent='Servidor local activo — listo para generar';}
+  else{b.className='srv-dot';b.title='Servidor inactivo';sg.className='srv-bar off';tg.innerHTML='Servidor no activo. <strong>Ejecuta: node server.js</strong>';}
 }
 
 // ══ AUTOCOMPLETE SITE ══

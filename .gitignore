@@ -4,3 +4,12 @@ informes/
 papelera/
 registro.json
 papelera.json
+informes_wom/
+registro_wom.json
+papelera_wom.json
+server.log
+server_err.log
+.claude/
+ref*.xml
+ref*.png
+ref*.jpeg
