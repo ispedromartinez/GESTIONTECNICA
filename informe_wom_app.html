@@ -93,12 +93,14 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 .drop-zone small{color:var(--muted);font-size:11px;}
 .drop-icon{font-size:32px;}
 .foto-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.foto-item{background:#f8fafc;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);position:relative;}
-.foto-item img{width:100%;height:140px;object-fit:cover;display:block;}
+.foto-item{background:#f8fafc;border-radius:10px;border:1.5px solid var(--border);}
+.foto-img-wrap{position:relative;width:100%;height:140px;overflow:hidden;background:#f0f0f0;border-radius:10px 10px 0 0;}
+.foto-item img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0;cursor:grab;transform-origin:center;user-select:none;display:block;}
 .foto-item .cap{padding:8px;display:flex;gap:6px;align-items:center;}
 .foto-item .cap input{flex:1;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;background:#fff;}
-.foto-item .remove{position:absolute;top:6px;right:6px;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
-.foto-num{position:absolute;top:6px;left:6px;background:rgba(226,0,122,.85);color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 6px;}
+.foto-item .remove{position:absolute;top:6px;right:6px;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:4;}
+.foto-rst{position:absolute;top:6px;right:34px;background:rgba(123,31,162,.75);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:4;line-height:1;}
+.foto-num{position:absolute;top:6px;left:6px;background:rgba(226,0,122,.85);color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 6px;z-index:4;pointer-events:none;}
 .foto-count{font-size:12px;color:var(--muted);margin-bottom:10px;}
 .foto-count strong{color:var(--mag);}
 
@@ -196,6 +198,9 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
     <p id="estado-actual-txt" style="font-size:13px;color:var(--muted);line-height:1.6;">
       No hay Informe en progreso. Presiona <strong style="color:var(--mag);">Crear Nuevo Informe</strong> para comenzar.
     </p>
+    <button id="btn-continuar" class="btn btn-secondary" style="width:100%;justify-content:center;margin-top:12px;display:none;" onclick="continuarInforme()">
+      → Continuar Informe en progreso
+    </button>
   </div>
 
   <!-- Cómo funciona -->
@@ -217,9 +222,6 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
     </ol>
   </div>
 
-  <div class="actions">
-    <button class="btn btn-primary" style="margin-left:auto" onclick="goTab(1)">Siguiente →</button>
-  </div>
 
 </div>
 
@@ -362,11 +364,11 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
     <div class="card-title">Resumen de Actividad</div>
     <div class="resumen-grid">
       <div class="field">
-        <label>Columna izquierda</label>
+        <label>Actividad 1</label>
         <textarea id="resumen1" rows="5" placeholder="Descripción de actividad 1..."></textarea>
       </div>
       <div class="field">
-        <label>Columna derecha</label>
+        <label>Actividad 2</label>
         <textarea id="resumen2" rows="5" placeholder="Descripción de actividad 2..."></textarea>
       </div>
     </div>
@@ -475,7 +477,7 @@ function crearNuevaOT() {
   g('tecnicos-list').innerHTML = '';
   addTecnico();
   // Reset photos
-  photos = []; captions = [];
+  photos = []; captions = []; photoTransforms = [];
   renderFotos();
   // Reset tabs (lock tabs 1-3)
   document.querySelectorAll('.tab').forEach((t,i) => { if(i>0 && i<4) t.classList.add('locked'); });
@@ -486,12 +488,31 @@ function crearNuevaOT() {
 function updateEstadoActual() {
   const ticket = ticketCompleto ? ticketCompleto() : '';
   const txt = g('estado-actual-txt');
+  const btnC = g('btn-continuar');
   if (!txt) return;
   if (ticket) {
     txt.innerHTML = `Informe en progreso: <strong style="color:var(--mag);">${ticket}</strong>`;
+    if (btnC) btnC.style.display = '';
   } else {
     txt.innerHTML = `No hay Informe en progreso. Presiona <strong style="color:var(--mag);">Crear Nuevo Informe</strong> para comenzar.`;
+    if (btnC) btnC.style.display = 'none';
   }
+}
+
+function continuarInforme() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.locked && s.locked.length) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        if (s.locked[i] === false) t.classList.remove('locked');
+        else t.classList.add('locked');
+      });
+    }
+    const lastUnlocked = s.locked ? s.locked.slice(1, 4).lastIndexOf(false) : -1;
+    goTab(lastUnlocked >= 0 ? lastUnlocked + 1 : 1);
+  } catch(e) {}
 }
 
 // Foco visual en wrapper del ticket
@@ -555,7 +576,86 @@ function addTecnico(name='') {
 }
 
 // ── Fotos ────────────────────────────────────────────────────
-let photos = [], captions = [];
+let photos = [], captions = [], photoTransforms = [];
+let activeDrag = null;
+
+function applyFotoTransform(i) {
+  const img = g(`foto-img-${i}`);
+  if (!img) return;
+  const t = photoTransforms[i] || {x:0,y:0,scale:1};
+  img.style.transform = `translate(${t.x}px,${t.y}px) scale(${t.scale})`;
+}
+
+function resetFotoTransform(i, e) {
+  e.stopPropagation();
+  photoTransforms[i] = {x:0,y:0,scale:1};
+  applyFotoTransform(i);
+  saveState();
+}
+
+function setupFotoInteractions() {
+  photos.forEach((_, i) => {
+    const img  = g(`foto-img-${i}`);
+    const wrap = g(`foto-wrap-${i}`);
+    if (!img || !wrap) return;
+    let pd = 0, ps = 1;
+
+    img.addEventListener('mousedown', e => {
+      activeDrag = {idx:i, sx:e.clientX, sy:e.clientY, stx:photoTransforms[i].x, sty:photoTransforms[i].y};
+      img.style.cursor = 'grabbing'; e.preventDefault();
+    });
+
+    wrap.addEventListener('wheel', e => {
+      e.preventDefault();
+      const t = photoTransforms[i];
+      t.scale = Math.min(5, Math.max(0.3, t.scale * (e.deltaY < 0 ? 1.1 : 0.9)));
+      applyFotoTransform(i);
+    }, {passive:false});
+
+    wrap.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        activeDrag = {idx:i, sx:e.touches[0].clientX, sy:e.touches[0].clientY, stx:photoTransforms[i].x, sty:photoTransforms[i].y};
+      } else if (e.touches.length === 2) {
+        activeDrag = null;
+        pd = Math.hypot(e.touches[1].clientX-e.touches[0].clientX, e.touches[1].clientY-e.touches[0].clientY);
+        ps = photoTransforms[i].scale;
+      }
+      e.preventDefault();
+    }, {passive:false});
+
+    wrap.addEventListener('touchmove', e => {
+      if (e.touches.length === 1 && activeDrag && activeDrag.idx === i) {
+        photoTransforms[i].x = activeDrag.stx + (e.touches[0].clientX - activeDrag.sx);
+        photoTransforms[i].y = activeDrag.sty + (e.touches[0].clientY - activeDrag.sy);
+        applyFotoTransform(i);
+      } else if (e.touches.length === 2) {
+        const nd = Math.hypot(e.touches[1].clientX-e.touches[0].clientX, e.touches[1].clientY-e.touches[0].clientY);
+        photoTransforms[i].scale = Math.min(5, Math.max(0.3, ps*(nd/pd)));
+        applyFotoTransform(i);
+      }
+      e.preventDefault();
+    }, {passive:false});
+
+    wrap.addEventListener('touchend', e => {
+      if (e.touches.length === 0) { activeDrag = null; saveState(); }
+    });
+  });
+}
+
+document.addEventListener('mousemove', e => {
+  if (!activeDrag) return;
+  const {idx, sx, sy, stx, sty} = activeDrag;
+  photoTransforms[idx].x = stx + (e.clientX - sx);
+  photoTransforms[idx].y = sty + (e.clientY - sy);
+  applyFotoTransform(idx);
+});
+document.addEventListener('mouseup', () => {
+  if (!activeDrag) return;
+  const img = g(`foto-img-${activeDrag.idx}`);
+  if (img) img.style.cursor = 'grab';
+  activeDrag = null;
+  saveState();
+});
 
 function onDragOver(e) { e.preventDefault(); g('drop-zone').classList.add('over'); }
 function onDragLeave()  { g('drop-zone').classList.remove('over'); }
@@ -571,6 +671,7 @@ function addFiles(files) {
     reader.onload = e => {
       photos.push(e.target.result);
       captions.push('');
+      photoTransforms.push({x:0,y:0,scale:1});
       renderFotos();
       saveState();
     };
@@ -582,6 +683,7 @@ function addFiles(files) {
 function removePhoto(i) {
   photos.splice(i, 1);
   captions.splice(i, 1);
+  photoTransforms.splice(i, 1);
   renderFotos();
   saveState();
 }
@@ -589,18 +691,25 @@ function removePhoto(i) {
 function renderFotos() {
   const grid = g('foto-grid');
   g('foto-count-n').textContent = photos.length;
-  grid.innerHTML = photos.map((src, i) => `
+  grid.innerHTML = photos.map((src, i) => {
+    const t = photoTransforms[i] || {x:0,y:0,scale:1};
+    return `
     <div class="foto-item">
-      <span class="foto-num">#${i+1}</span>
-      <button class="remove" onclick="removePhoto(${i})">✕</button>
-      <img src="${src}" alt="Foto ${i+1}">
+      <div class="foto-img-wrap" id="foto-wrap-${i}">
+        <span class="foto-num">#${i+1}</span>
+        <button class="remove" onclick="removePhoto(${i})">✕</button>
+        <button class="foto-rst" onclick="resetFotoTransform(${i},event)" title="Centrar">⟳</button>
+        <img id="foto-img-${i}" src="${src}" alt="Foto ${i+1}" style="transform:translate(${t.x}px,${t.y}px) scale(${t.scale})">
+      </div>
       <div class="cap">
         <input type="text" placeholder="Descripción (opcional)" value="${captions[i]||''}"
           oninput="captions[${i}]=this.value">
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const dz = g('drop-zone');
   dz.style.display = photos.length >= 8 ? 'none' : '';
+  setupFotoInteractions();
 }
 
 // ── Generar informe ───────────────────────────────────────────
@@ -732,6 +841,7 @@ function saveState() {
       tecnicos: tecs,
       photos,
       captions,
+      photoTransforms,
       tabIdx,
       locked
     }));
@@ -762,17 +872,11 @@ function restoreState() {
     g('tecnicos-list').innerHTML = '';
     (s.tecnicos && s.tecnicos.length ? s.tecnicos : ['']).forEach(n => addTecnico(n));
 
-    photos   = s.photos   || [];
-    captions = s.captions || [];
+    photos         = s.photos         || [];
+    captions       = s.captions       || [];
+    photoTransforms = s.photoTransforms || photos.map(() => ({x:0,y:0,scale:1}));
     if (photos.length) renderFotos();
 
-    if (s.locked && s.locked.length) {
-      document.querySelectorAll('.tab').forEach((t, i) => {
-        if (s.locked[i] === false) t.classList.remove('locked');
-        else t.classList.add('locked');
-      });
-    }
-    if (s.tabIdx > 0) goTab(s.tabIdx);
     updateEstadoActual();
     return true;
   } catch(e) { return false; }
