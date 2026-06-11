@@ -641,6 +641,22 @@ app.get('/ping-supabase', async (req, res) => {
   res.json({ ok: true, bucket: SUPABASE_BUCKET });
 });
 
+app.get('/test-insert', async (req, res) => {
+  if (!supabase) return res.json({ ok: false, error: 'Supabase no configurado' });
+  const testId = 'test-' + Date.now();
+  const { error: insertError } = await supabase.from('informes_clima').insert({
+    id: testId, fecha: '2026-01-01', fecha_creacion: new Date().toISOString(),
+    cod_informe: 'TEST-001', nombre_sitio: 'Sitio Test', codigo_sitio: 'TST',
+    tecnico: 'Test', supervisor: 'Test', num_ot: '000',
+    photo_count: 0, filename: 'test.docx'
+  });
+  if (insertError) return res.json({ ok: false, paso: 'insert', error: insertError.message });
+  const { data, error: selectError } = await supabase.from('informes_clima').select('*').eq('id', testId).single();
+  if (selectError) return res.json({ ok: false, paso: 'select', error: selectError.message });
+  await supabase.from('informes_clima').delete().eq('id', testId);
+  res.json({ ok: true, mensaje: 'Insert y select funcionan correctamente', registro: data });
+});
+
 app.get('/version', (req,res) => {
   try {
     const mtime = fs.statSync(path.join(__dirname, 'informe_clima_app.html')).mtimeMs;
