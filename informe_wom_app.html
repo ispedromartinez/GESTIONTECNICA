@@ -4,42 +4,49 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>Informe WOM – ICETEL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --mag:#7B1FA2; --mag-d:#4A148C; --mag-l:#F3E5F5; --mag-b:#CE93D8;
-  --blue:#1565C0; --white:#fff; --bg:#F0F4F8; --text:#1a2332; --muted:#64748b;
-  --green:#16a34a; --red:#dc2626; --border:#e2e8f0; --r:12px;
-  --sh:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
-  --sh-lg:0 4px 8px rgba(0,0,0,.07),0 12px 32px rgba(0,0,0,.1);
+  --mag:#784BD1; --mag-d:#4A148C; --mag-l:#EDE7F6; --mag-b:#B39DDB;
+  --blue:#0073EA; --white:#fff; --bg:#F6F7FB; --text:#323338; --muted:#676879;
+  --green:#00C875; --red:#E2445C; --border:#D0D4E4; --r:12px;
+  --sh:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
+  --sh-lg:0 4px 8px rgba(0,0,0,.08),0 12px 32px rgba(0,0,0,.12);
   --max-w:860px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#2D0060 url('fondo.png') no-repeat center center fixed;background-size:cover;color:var(--text);min-height:100vh;}
+body{font-family:'Poppins',system-ui,sans-serif;background:#F6F7FB;color:var(--text);min-height:100vh;}
 
 /* ── HEADER ── */
-header{background:linear-gradient(135deg,#2D0060 0%,#4A148C 60%,#7B1FA2 100%);color:#fff;padding:13px 18px 11px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25);}
+header{background:#1C1F3B;color:#fff;padding:13px 18px 11px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25);border-bottom:3px solid #784BD1;}
 .hdr-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .hdr-left{display:flex;align-items:center;gap:12px;}
 .hdr-gear{font-size:24px;line-height:1;opacity:.92;flex-shrink:0;}
 .hdr-left h1{font-size:15px;font-weight:700;letter-spacing:-.2px;}
 .hdr-left p{font-size:11px;opacity:.65;margin-top:2px;}
 .hdr-right{display:flex;align-items:center;gap:8px;}
-.back-btn{color:rgba(255,255,255,.8);font-size:12px;font-weight:600;text-decoration:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:6px 14px;transition:background .15s;}
-.back-btn:hover{background:rgba(255,255,255,.25);}
+.back-btn{display:inline-flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:7px 9px;transition:background .15s,border-color .15s;}
+.back-btn:hover{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.4);}
+.back-btn svg{display:block;}
+.hdr-logo-pill{background:#fff;border-radius:8px;padding:5px 12px;display:flex;align-items:center;flex-shrink:0;}
+.hdr-logo-app{height:28px;object-fit:contain;display:block;}
+.hdr-sep{width:1px;height:24px;background:rgba(255,255,255,.18);flex-shrink:0;}
 .badge{font-size:10px;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 10px;font-weight:600;letter-spacing:.2px;border:1px solid rgba(255,255,255,.2);}
 .badge.g{background:rgba(22,163,74,.4);border-color:rgba(22,163,74,.5);}
 .srv-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;flex-shrink:0;transition:background .3s;}
 .srv-dot.on{background:#22c55e;}
 
 /* ── TABS ── */
-.tabs{background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:150;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.tabs{background:#fff;border-bottom:2px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:150;box-shadow:0 2px 8px rgba(0,0,0,.04);}
 .tabs::-webkit-scrollbar{display:none;}
 .tabs-inner{max-width:var(--max-w);margin:0 auto;display:flex;}
-.tab{flex:0 0 auto;padding:12px 15px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:.18s;}
-.tab:hover{color:var(--mag);background:#fdf2f8;}
-.tab.active{color:var(--mag);border-bottom-color:var(--mag);}
+.tab{flex:0 0 auto;padding:13px 17px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.18s;}
+.tab:hover{color:var(--mag);background:#F5F0FC;}
+.tab.active{color:var(--mag);border-bottom-color:var(--mag);font-weight:700;}
 .tab.locked{opacity:.3;cursor:not-allowed;pointer-events:none;}
-.tab .num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:#eef2f8;border-radius:50%;font-size:10px;font-weight:700;margin-right:4px;color:var(--mag);line-height:1;vertical-align:middle;flex-shrink:0;}
+.tab .num{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;background:#EDE7F6;border-radius:10px;font-size:10px;font-weight:700;margin-right:6px;padding:0 4px;color:var(--mag);line-height:1;vertical-align:middle;flex-shrink:0;}
 .tab.active .num{background:var(--mag);color:#fff;}
 .tab .num.num-star{font-size:11px;padding-bottom:1px;}
 .tab .num.num-win{font-size:0;padding:0;}
@@ -50,15 +57,15 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 .panel{display:none;} .panel.active{display:block;}
 
 /* ── CARDS ── */
-.card{background:rgba(255,255,255,.97);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px;}
-.card-title{font-size:12px;font-weight:700;color:var(--mag);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
-.card-title::before{content:'';display:inline-block;width:3px;height:14px;background:var(--mag);border-radius:2px;}
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px;border:1px solid var(--border);}
+.card-title{font-size:11px;font-weight:700;color:#323338;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';display:inline-block;width:4px;height:16px;background:var(--mag);border-radius:3px;}
 
 /* ── FORM ELEMENTS ── */
 .field{margin-bottom:13px;}
 .field label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
 .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;transition:border-color .18s,box-shadow .18s;outline:none;}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--mag);box-shadow:0 0 0 3px rgba(226,0,122,.1);}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--mag);box-shadow:0 0 0 3px rgba(120,75,209,.12);}
 .field input:read-only{background:#f8fafc;color:var(--muted);}
 .field textarea{resize:vertical;min-height:90px;line-height:1.5;}
 .field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
@@ -107,12 +114,12 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 /* ── BOTONES ACCIÓN ── */
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;justify-content:space-between;align-items:center;}
 .actions-right{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 22px;border-radius:50px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.2px;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.1px;}
 .btn:active{transform:scale(.97);}
-.btn-primary{background:linear-gradient(135deg,var(--mag-d),var(--mag));color:#fff;box-shadow:0 4px 14px rgba(226,0,122,.3);}
+.btn-primary{background:var(--mag);color:#fff;box-shadow:0 4px 14px rgba(120,75,209,.25);}
 .btn-primary:hover{opacity:.9;}
-.btn-secondary{background:var(--mag-l);color:var(--mag);border:1.5px solid var(--mag-b);}
-.btn-secondary:hover{background:#ead5f0;}
+.btn-secondary{background:#fff;color:var(--mag);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--mag-l);border-color:var(--mag-b);}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;}
 
 /* ── HISTORIAL ── */
@@ -150,15 +157,16 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 <header>
   <div class="hdr-inner">
     <div class="hdr-left">
-      <span class="hdr-gear">⚙</span>
+      <div class="hdr-logo-pill"><img src="icetel-logo.png" alt="ICETEL" class="hdr-logo-app"></div>
+      <span class="hdr-sep"></span>
       <div>
         <h1>Informe de Trabajos WOM</h1>
-        <p>Informes de Trabajos — Mantenimiento Clima</p>
+        <p>WOM — Mantenimiento Clima</p>
       </div>
     </div>
     <div class="hdr-right">
       <span class="srv-dot" id="badge-estado" title="Servidor inactivo"></span>
-      <a href="/" class="back-btn">← Proyectos</a>
+      <a href="/" class="back-btn" title="Inicio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></a>
     </div>
   </div>
 </header>
@@ -181,8 +189,7 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
   <!-- Nuevo Informe -->
   <div class="card" style="border:1.5px solid var(--mag-b);background:linear-gradient(135deg,var(--mag-l) 0%,#fff 100%);">
     <div style="text-align:center;margin-bottom:14px;">
-      <div style="font-size:28px;margin-bottom:6px;">✨</div>
-      <div style="font-size:17px;font-weight:800;color:var(--mag);">Nuevo Informe de Trabajo</div>
+      <div style="font-size:17px;font-weight:800;color:var(--mag);display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Nuevo Informe de Trabajo</div>
       <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">
         Inicia un nuevo Informe WOM desde cero.<br>Todos los campos serán limpiados.
       </p>
