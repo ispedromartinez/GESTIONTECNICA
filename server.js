@@ -13,6 +13,16 @@ const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_KEY)
   : null;
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'documentos-word';
 
+if (supabase) {
+  supabase.from('informes_clima').select('id').limit(1)
+    .then(({ error }) => {
+      if (error) console.error('⚠️  Supabase conectado pero error de acceso:', error.message);
+      else console.log('✅ Supabase conectado correctamente');
+    });
+} else {
+  console.warn('⚠️  Supabase NO configurado — falta SUPABASE_URL o SUPABASE_KEY. Usando archivos locales.');
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '80mb' }));
@@ -623,6 +633,13 @@ async function buildDocx(d) {
 
 // ── Routes ────────────────────────────────────────────────
 app.get('/ping', (req,res) => res.json({ok:true}));
+
+app.get('/ping-supabase', async (req, res) => {
+  if (!supabase) return res.json({ ok: false, error: 'SUPABASE_URL o SUPABASE_KEY no configuradas' });
+  const { error } = await supabase.from('informes_clima').select('id').limit(1);
+  if (error) return res.json({ ok: false, error: error.message });
+  res.json({ ok: true, bucket: SUPABASE_BUCKET });
+});
 
 app.get('/version', (req,res) => {
   try {
