@@ -13,27 +13,41 @@ const dashboardRoutes = require('./routes/dashboard');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '80mb' }));
-app.use(express.static(__dirname));
 
-// ── Rutas de autenticación
+// ── Rutas de autenticación y negocio (ANTES de los archivos estáticos)
 app.use('/auth', authRoutes);
-
-// ── Rutas de negocio
 app.use('/', tigoRoutes);
 app.use('/', womRoutes);
 app.use('/', proyectosRoutes);
 app.use('/', dashboardRoutes);
 
-// ── Páginas HTML
-app.get('/',              (_req, res) => res.sendFile(path.join(__dirname, 'landing.html')));
-app.get('/login',         (_req, res) => res.sendFile(path.join(__dirname, 'login.html')));
-app.get('/selector',      (_req, res) => res.sendFile(path.join(__dirname, 'selector.html')));
-app.get('/tigo',          (_req, res) => res.sendFile(path.join(__dirname, 'informe_clima_app.html')));
-app.get('/wom',           (_req, res) => res.sendFile(path.join(__dirname, 'informe_wom_app.html')));
-app.get('/admin',         (_req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
-app.get('/dashboard',     (_req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
-app.get('/nuevo-proyecto',(_req, res) => res.sendFile(path.join(__dirname, 'nuevo_proyecto.html')));
-app.get('/proyecto/:slug',(_req, res) => res.sendFile(path.join(__dirname, 'proyecto.html')));
+// ── Formularios legacy (en iframe dentro de la SPA)
+app.get('/tigo-frame', (_req, res) => res.sendFile(path.join(__dirname, 'informe_clima_app.html')));
+app.get('/wom-frame',  (_req, res) => res.sendFile(path.join(__dirname, 'informe_wom_app.html')));
+
+// ── SPA Vue (en producción)
+const distDir = path.join(__dirname, 'dist');
+const spaIndex = path.join(distDir, 'index.html');
+if (fs.existsSync(spaIndex)) {
+  app.use(express.static(distDir));
+  const spaRoutes = ['/', '/login', '/selector', '/dashboard', '/admin', '/nuevo-proyecto', '/tigo', '/wom'];
+  spaRoutes.forEach(r => app.get(r, (_req, res) => res.sendFile(spaIndex)));
+  app.get('/proyecto/:slug', (_req, res) => res.sendFile(spaIndex));
+} else {
+  // Fallback: HTML originales cuando aún no existe dist/
+  app.get('/',               (_req, res) => res.sendFile(path.join(__dirname, 'landing.html')));
+  app.get('/login',          (_req, res) => res.sendFile(path.join(__dirname, 'login.html')));
+  app.get('/selector',       (_req, res) => res.sendFile(path.join(__dirname, 'selector.html')));
+  app.get('/tigo',           (_req, res) => res.sendFile(path.join(__dirname, 'informe_clima_app.html')));
+  app.get('/wom',            (_req, res) => res.sendFile(path.join(__dirname, 'informe_wom_app.html')));
+  app.get('/admin',          (_req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+  app.get('/dashboard',      (_req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+  app.get('/nuevo-proyecto', (_req, res) => res.sendFile(path.join(__dirname, 'nuevo_proyecto.html')));
+  app.get('/proyecto/:slug', (_req, res) => res.sendFile(path.join(__dirname, 'proyecto.html')));
+}
+
+// ── Archivos estáticos legacy (informes/, logos/, assets/)
+app.use(express.static(__dirname));
 
 // ── Utilitarios
 app.get('/ping', (_req, res) => res.json({ ok: true }));

@@ -1,0 +1,1 @@
+import{_ as a,c as r,a as o,o as s}from"./index-DrefCqrt.js";const t={},c={class:"frame-wrap"};function n(l,e){return s(),r("div",c,[...e[0]||(e[0]=[o("iframe",{src:"/tigo-frame",class:"full-frame",allow:"camera; microphone",title:"Informe TIGO"},null,-1)])])}const m=a(t,[["render",n],["__scopeId","data-v-47d82ab1"]]);export{m as default};

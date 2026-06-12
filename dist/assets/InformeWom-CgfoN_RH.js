@@ -1,0 +1,1 @@
+import{_ as a,c as o,a as r,o as s}from"./index-DrefCqrt.js";const c={},t={class:"frame-wrap"};function n(m,e){return s(),o("div",t,[...e[0]||(e[0]=[r("iframe",{src:"/wom-frame",class:"full-frame",allow:"camera; microphone",title:"Informe WOM"},null,-1)])])}const l=a(c,[["render",n],["__scopeId","data-v-bd156c24"]]);export{l as default};
