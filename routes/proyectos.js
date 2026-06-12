@@ -9,14 +9,18 @@ const { dbWomList } = require('../db/wom-db');
 const router = express.Router();
 
 const PROYECTOS_FILE = path.join(__dirname, '..', 'proyectos.json');
+const PAPELERA_FILE  = path.join(__dirname, '..', 'papelera.json');
 const LOGOS_DIR      = path.join(__dirname, '..', 'logos');
 const CONTACTO_FILE  = path.join(__dirname, '..', 'contactos.json');
 
 if (!fs.existsSync(PROYECTOS_FILE)) fs.writeFileSync(PROYECTOS_FILE, '[]');
+if (!fs.existsSync(PAPELERA_FILE))  fs.writeFileSync(PAPELERA_FILE,  '[]');
 if (!fs.existsSync(LOGOS_DIR))      fs.mkdirSync(LOGOS_DIR);
 
 function loadProyectos()  { try { return JSON.parse(fs.readFileSync(PROYECTOS_FILE, 'utf8')); } catch (e) { return []; } }
 function saveProyectos(d) { fs.writeFileSync(PROYECTOS_FILE, JSON.stringify(d, null, 2)); }
+function loadPapelera()   { try { return JSON.parse(fs.readFileSync(PAPELERA_FILE,  'utf8')); } catch (e) { return []; } }
+function savePapelera(d)  { fs.writeFileSync(PAPELERA_FILE,  JSON.stringify(d, null, 2)); }
 function loadContactos()  { try { return JSON.parse(fs.readFileSync(CONTACTO_FILE, 'utf8'));  } catch (e) { return []; } }
 function uuidSimple() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -28,28 +32,36 @@ function uuidSimple() {
 router.use('/logos', express.static(LOGOS_DIR));
 
 router.post('/api/contacto', (req, res) => {
-  const { nombre, empresa, email, tel, mensaje, fecha } = req.body || {};
-  if (!nombre || !email) return res.status(400).json({ error: 'nombre y email requeridos' });
-  const lista = loadContactos();
-  lista.push({ nombre, empresa, email, tel, mensaje, fecha: fecha || new Date().toISOString() });
-  fs.writeFileSync(CONTACTO_FILE, JSON.stringify(lista, null, 2));
-  console.log(`📬 Nuevo contacto: ${nombre} <${email}>`);
-  res.json({ ok: true });
+  try {
+    const { nombre, empresa, email, tel, mensaje, fecha } = req.body || {};
+    if (!nombre || !email) return res.status(400).json({ error: 'nombre y email requeridos' });
+    const lista = loadContactos();
+    lista.push({ nombre, empresa, email, tel, mensaje, fecha: fecha || new Date().toISOString() });
+    fs.writeFileSync(CONTACTO_FILE, JSON.stringify(lista, null, 2));
+    console.log(`📬 Nuevo contacto: ${nombre} <${email}>`);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── Proyectos ──────────────────────────────────────────────────────────────────
+
 router.get('/api/proyectos', authMiddleware, (req, res) => {
-  res.json(loadProyectos().map(p => ({
-    id: p.id, slug: p.slug, nombre: p.nombre, logo: p.logo, template: p.template,
-    color: p.color, totalSitios: p.sitios?.length || 0,
-    totalTecnicos: p.tecnicos?.length || 0, totalSupervisores: p.supervisores?.length || 0,
-    creado_en: p.creado_en
-  })));
+  try {
+    res.json(loadProyectos().map(p => ({
+      id: p.id, slug: p.slug, nombre: p.nombre, logo: p.logo, template: p.template,
+      color: p.color, totalSitios: p.sitios?.length || 0,
+      totalTecnicos: p.tecnicos?.length || 0, totalSupervisores: p.supervisores?.length || 0,
+      creado_en: p.creado_en
+    })));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/api/proyectos/:slug', authMiddleware, (req, res) => {
-  const p = loadProyectos().find(x => x.slug === req.params.slug);
-  if (!p) return res.status(404).json({ error: 'Proyecto no encontrado' });
-  res.json(p);
+  try {
+    const p = loadProyectos().find(x => x.slug === req.params.slug);
+    if (!p) return res.status(404).json({ error: 'Proyecto no encontrado' });
+    res.json(p);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.post('/api/proyectos', authMiddleware, requireRol('superadmin'), (req, res) => {
@@ -80,14 +92,71 @@ router.post('/api/proyectos', authMiddleware, requireRol('superadmin'), (req, re
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/api/proyectos/:slug', authMiddleware, requireRol('superadmin'), (req, res) => {
-  const ps = loadProyectos();
-  const idx = ps.findIndex(p => p.slug === req.params.slug);
-  if (idx === -1) return res.status(404).json({ error: 'No encontrado' });
-  ps.splice(idx, 1);
-  saveProyectos(ps);
-  res.json({ ok: true });
+router.patch('/api/proyectos/:slug', authMiddleware, requireRol('superadmin'), (req, res) => {
+  try {
+    const ps = loadProyectos();
+    const idx = ps.findIndex(p => p.slug === req.params.slug);
+    if (idx === -1) return res.status(404).json({ error: 'No encontrado' });
+    const { nombre, empresa, color, sitios, tecnicos, supervisores } = req.body;
+    if (nombre      !== undefined) ps[idx].nombre      = nombre.trim();
+    if (empresa     !== undefined) ps[idx].empresa     = empresa;
+    if (color       !== undefined) ps[idx].color       = color;
+    if (sitios      !== undefined) ps[idx].sitios      = sitios;
+    if (tecnicos    !== undefined) ps[idx].tecnicos    = tecnicos;
+    if (supervisores !== undefined) ps[idx].supervisores = supervisores;
+    saveProyectos(ps);
+    res.json({ ok: true, proyecto: ps[idx] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+router.delete('/api/proyectos/:slug', authMiddleware, requireRol('superadmin'), (req, res) => {
+  try {
+    const ps = loadProyectos();
+    const idx = ps.findIndex(p => p.slug === req.params.slug);
+    if (idx === -1) return res.status(404).json({ error: 'No encontrado' });
+    const [eliminado] = ps.splice(idx, 1);
+    saveProyectos(ps);
+    const papelera = loadPapelera();
+    papelera.unshift({ ...eliminado, eliminado_en: new Date().toISOString() });
+    savePapelera(papelera);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Papelera ──────────────────────────────────────────────────────────────────
+
+router.get('/api/papelera', authMiddleware, requireRol('superadmin'), (req, res) => {
+  try { res.json(loadPapelera()); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/api/papelera/:slug/restaurar', authMiddleware, requireRol('superadmin'), (req, res) => {
+  try {
+    const papelera = loadPapelera();
+    const idx = papelera.findIndex(p => p.slug === req.params.slug);
+    if (idx === -1) return res.status(404).json({ error: 'No encontrado en papelera' });
+    const [proyecto] = papelera.splice(idx, 1);
+    delete proyecto.eliminado_en;
+    savePapelera(papelera);
+    const ps = loadProyectos();
+    if (ps.find(p => p.slug === proyecto.slug)) return res.status(409).json({ error: 'Ya existe un proyecto activo con ese slug' });
+    ps.push(proyecto);
+    saveProyectos(ps);
+    res.json({ ok: true, proyecto });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/api/papelera/:slug', authMiddleware, requireRol('superadmin'), (req, res) => {
+  try {
+    const papelera = loadPapelera();
+    const idx = papelera.findIndex(p => p.slug === req.params.slug);
+    if (idx === -1) return res.status(404).json({ error: 'No encontrado en papelera' });
+    papelera.splice(idx, 1);
+    savePapelera(papelera);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Dashboard ──────────────────────────────────────────────────────────────────
 
 router.get('/api/dashboard', authMiddleware, async (req, res) => {
   try {

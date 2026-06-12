@@ -6,7 +6,6 @@ const { requireRol } = require('../middleware/roles');
 
 const router = express.Router();
 
-// ── Fuente de datos: Supabase si está disponible y USE_LOCAL_DB != true ──
 let supabaseClient = null;
 try {
   if (
@@ -24,7 +23,6 @@ try {
 
 const localDB = require('../db/local');
 
-// Abstracción: mismas funciones, distinta fuente
 const db = {
   async findUserByEmail(email) {
     if (supabaseClient) {
@@ -108,12 +106,32 @@ const db = {
 
   async listUsuarios(empresa_id) {
     if (supabaseClient) {
-      let q = supabaseClient.from('usuarios').select('id,nombre,email,rol,activo,empresa_id');
+      let q = supabaseClient.from('usuarios').select('id,nombre,email,rol,activo,empresa_id,empresa_nombre,jefe_id,tecnicos_ids');
       if (empresa_id) q = q.eq('empresa_id', empresa_id);
       const { data } = await q;
       return data || [];
     }
     return localDB.usuarios.list(empresa_id);
+  },
+
+  async findUsuarioById(id) {
+    if (supabaseClient) {
+      const { data } = await supabaseClient
+        .from('usuarios')
+        .select('id,nombre,email,rol,activo,empresa_id,empresa_nombre,jefe_id,tecnicos_ids')
+        .eq('id', id).single();
+      return data || null;
+    }
+    return localDB.usuarios.findById(id) || null;
+  },
+
+  async updateUsuario(id, fields) {
+    if (supabaseClient) {
+      const { error } = await supabaseClient.from('usuarios').update(fields).eq('id', id);
+      if (error) throw new Error(error.message);
+      return;
+    }
+    localDB.usuarios.update(id, fields);
   },
 
   async listAreasByEmpresa(empresa_id) {
@@ -143,7 +161,6 @@ const db = {
   }
 };
 
-// ── POST /auth/login ─────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
     const { email, password, empresa: empresaSlug } = req.body;
@@ -158,7 +175,6 @@ router.post('/login', async (req, res) => {
     const ok = await bcrypt.compare(password, usuario.password_hash);
     if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
 
-    // Validar empresa si se envió en el formulario
     // superadmin no tiene empresa asignada → se omite la validación
     if (empresaSlug && usuario.rol !== 'superadmin') {
       const empresa = await db.findEmpresaBySlug(empresaSlug.toLowerCase().trim());
@@ -169,9 +185,6 @@ router.post('/login', async (req, res) => {
         return res.status(401).json({ error: 'Credenciales inválidas' });
       }
     }
-
-    // Si no es superadmin y no envió empresa, igual puede entrar
-    // (el campo es opcional en el frontend para mantener compatibilidad)
 
     let areas_permitidas = [];
     if (usuario.rol === 'supervisor' || usuario.rol === 'tecnico') {
@@ -195,8 +208,26 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ── POST /auth/register-superadmin ────────────────────────────
-// Solo dev; crea el primer superadmin
+router.get('/dev-token', async (req, res) => {
+  if (process.env.DEV_AUTO_LOGIN !== 'true')
+    return res.status(403).json({ error: 'No disponible' });
+
+  const email = process.env.DEV_AUTO_EMAIL || '';
+  const usuario = await db.findUserByEmail(email.toLowerCase().trim());
+  if (!usuario) return res.status(404).json({ error: 'Usuario dev no encontrado' });
+
+  const payload = {
+    usuario_id:      usuario.id,
+    nombre:          usuario.nombre,
+    email:           usuario.email,
+    rol:             usuario.rol,
+    empresa_id:      usuario.empresa_id || null,
+    areas_permitidas: []
+  };
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+  res.json({ token, usuario: payload });
+});
+
 router.post('/register-superadmin', async (req, res) => {
   try {
     if (process.env.NODE_ENV === 'production')
@@ -221,7 +252,6 @@ router.post('/register-superadmin', async (req, res) => {
   }
 });
 
-// ── POST /auth/crear-empresa ──────────────────────────────────
 router.post('/crear-empresa', authMiddleware, requireRol('superadmin'), async (req, res) => {
   try {
     const { nombre, slug } = req.body;
@@ -235,7 +265,6 @@ router.post('/crear-empresa', authMiddleware, requireRol('superadmin'), async (r
   }
 });
 
-// ── POST /auth/crear-usuario ──────────────────────────────────
 router.post('/crear-usuario', authMiddleware, async (req, res) => {
   try {
     const { rol: rolCreador, empresa_id: empresaCreador } = req.user;
@@ -276,7 +305,6 @@ router.post('/crear-usuario', authMiddleware, async (req, res) => {
   }
 });
 
-// ── POST /auth/crear-area ─────────────────────────────────────
 router.post('/crear-area', authMiddleware, requireRol('superadmin', 'admin_empresa'), async (req, res) => {
   try {
     const { nombre, empresa_id } = req.body;
@@ -291,7 +319,6 @@ router.post('/crear-area', authMiddleware, requireRol('superadmin', 'admin_empre
   }
 });
 
-// ── POST /auth/asignar-area ───────────────────────────────────
 router.post('/asignar-area', authMiddleware, requireRol('superadmin', 'admin_empresa'), async (req, res) => {
   try {
     const { usuario_id, area_id } = req.body;
@@ -311,7 +338,6 @@ router.post('/asignar-area', authMiddleware, requireRol('superadmin', 'admin_emp
   }
 });
 
-// ── GET /auth/empresas ────────────────────────────────────────
 router.get('/empresas', authMiddleware, requireRol('superadmin'), async (req, res) => {
   try {
     res.json(await db.listEmpresas());
@@ -320,7 +346,6 @@ router.get('/empresas', authMiddleware, requireRol('superadmin'), async (req, re
   }
 });
 
-// ── GET /auth/usuarios ────────────────────────────────────────
 router.get('/usuarios', authMiddleware, async (req, res) => {
   try {
     const { rol, empresa_id } = req.user;
@@ -331,7 +356,6 @@ router.get('/usuarios', authMiddleware, async (req, res) => {
   }
 });
 
-// ── GET /auth/areas ───────────────────────────────────────────
 router.get('/areas', authMiddleware, async (req, res) => {
   try {
     const { rol, empresa_id } = req.user;
@@ -344,22 +368,61 @@ router.get('/areas', authMiddleware, async (req, res) => {
   }
 });
 
-// ── GET /auth/personal ────────────────────────────────────────
-// Lista supervisores y técnicos para los dropdowns del formulario
 router.get('/personal', authMiddleware, async (req, res) => {
   try {
     const { rol, empresa_id } = req.user;
     const filtro = rol === 'superadmin' ? null : empresa_id;
     const todos = await db.listUsuarios(filtro);
     const personal = todos.filter(u => ['supervisor','tecnico'].includes(u.rol) && u.activo);
-    res.json(personal.map(u => ({ id: u.id, nombre: u.nombre, rol: u.rol })));
+    res.json(personal.map(u => ({
+      id: u.id, nombre: u.nombre, email: u.email, rol: u.rol,
+      empresa_nombre: u.empresa_nombre || '',
+      jefe_id: u.jefe_id || null,
+      tecnicos_ids: (() => { try { return JSON.parse(u.tecnicos_ids || '[]'); } catch { return []; } })()
+    })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── DELETE /auth/usuarios/:id ─────────────────────────────────
-// Solo superadmin puede eliminar usuarios
+router.get('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (req, res) => {
+  try {
+    const u = await db.findUsuarioById(req.params.id);
+    if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({
+      id: u.id, nombre: u.nombre, email: u.email, rol: u.rol,
+      empresa_nombre: u.empresa_nombre || '',
+      jefe_id: u.jefe_id || null,
+      tecnicos_ids: (() => { try { return JSON.parse(u.tecnicos_ids || '[]'); } catch { return []; } })()
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id === req.user.usuario_id)
+      return res.status(400).json({ error: 'No puedes editarte a ti mismo desde aquí' });
+
+    const { nombre, email, password, empresa_nombre, jefe_id, tecnicos_ids } = req.body;
+    const fields = {};
+    if (nombre)          fields.nombre          = nombre.trim();
+    if (email)           fields.email           = email.toLowerCase().trim();
+    if (empresa_nombre !== undefined) fields.empresa_nombre = empresa_nombre;
+    if (jefe_id    !== undefined) fields.jefe_id    = jefe_id || null;
+    if (tecnicos_ids !== undefined) fields.tecnicos_ids = JSON.stringify(tecnicos_ids || []);
+    if (password && password.length >= 6) {
+      const bcrypt = require('bcryptjs');
+      fields.password_hash = await bcrypt.hash(password, 12);
+    }
+    if (!Object.keys(fields).length)
+      return res.status(400).json({ error: 'Sin campos para actualizar' });
+
+    await db.updateUsuario(id, fields);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.delete('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -372,7 +435,6 @@ router.delete('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (
   }
 });
 
-// ── GET /auth/me ──────────────────────────────────────────────
 router.get('/me', authMiddleware, (req, res) => {
   res.json({ usuario: req.user });
 });

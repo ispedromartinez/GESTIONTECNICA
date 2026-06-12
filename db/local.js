@@ -4,11 +4,9 @@ const path = require('path');
 const DB_PATH = path.join(__dirname, '..', 'auth.db');
 const db = new Database(DB_PATH);
 
-// Habilitar foreign keys y WAL para mejor rendimiento
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-// ── Crear tablas si no existen ────────────────────────────────
 db.exec(`
   CREATE TABLE IF NOT EXISTS empresas (
     id        TEXT PRIMARY KEY,
@@ -47,6 +45,11 @@ db.exec(`
   );
 `);
 
+// Columnas extra para supervisores — agregadas de forma no destructiva
+try { db.exec("ALTER TABLE usuarios ADD COLUMN empresa_nombre TEXT");         } catch {}
+try { db.exec("ALTER TABLE usuarios ADD COLUMN jefe_id TEXT");                } catch {}
+try { db.exec("ALTER TABLE usuarios ADD COLUMN tecnicos_ids TEXT DEFAULT '[]'"); } catch {}
+
 function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = Math.random() * 16 | 0;
@@ -54,10 +57,7 @@ function uuid() {
   });
 }
 
-// ── API compatible con los mismos datos que Supabase devuelve ─
-
 const local = {
-  // Usuarios
   usuarios: {
     findByEmail(email) {
       return db.prepare('SELECT * FROM usuarios WHERE email = ?').get(email);
@@ -73,18 +73,29 @@ const local = {
       `).run(id, u.empresa_id || null, u.nombre, u.email, u.password_hash, u.rol);
       return db.prepare('SELECT id, nombre, email, rol, empresa_id FROM usuarios WHERE id = ?').get(id);
     },
+    update(id, fields) {
+      // Solo actualiza los campos permitidos
+      const allowed = ['nombre', 'email', 'password_hash', 'empresa_nombre', 'jefe_id', 'tecnicos_ids'];
+      const sets = Object.keys(fields).filter(k => allowed.includes(k));
+      if (!sets.length) return;
+      const sql = `UPDATE usuarios SET ${sets.map(k => `${k} = ?`).join(', ')} WHERE id = ?`;
+      db.prepare(sql).run(...sets.map(k => fields[k]), id);
+    },
     delete(id) {
       db.prepare('DELETE FROM usuarios WHERE id = ?').run(id);
     },
     list(empresa_id) {
       if (empresa_id) {
-        return db.prepare('SELECT id, nombre, email, rol, activo FROM usuarios WHERE empresa_id = ?').all(empresa_id);
+        return db.prepare(
+          'SELECT id, nombre, email, rol, activo, empresa_nombre, jefe_id, tecnicos_ids FROM usuarios WHERE empresa_id = ?'
+        ).all(empresa_id);
       }
-      return db.prepare('SELECT id, nombre, email, rol, activo, empresa_id FROM usuarios').all();
+      return db.prepare(
+        'SELECT id, nombre, email, rol, activo, empresa_id, empresa_nombre, jefe_id, tecnicos_ids FROM usuarios'
+      ).all();
     }
   },
 
-  // Empresas
   empresas: {
     insert(e) {
       const id = uuid();
@@ -99,7 +110,6 @@ const local = {
     }
   },
 
-  // Areas
   areas: {
     insert(a) {
       const id = uuid();
@@ -114,7 +124,6 @@ const local = {
     }
   },
 
-  // Usuario_areas
   usuario_areas: {
     getByUsuario(usuario_id) {
       return db.prepare('SELECT area_id FROM usuario_areas WHERE usuario_id = ?').all(usuario_id);

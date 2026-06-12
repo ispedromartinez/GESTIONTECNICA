@@ -127,6 +127,19 @@ body{font-family:'Poppins',system-ui,sans-serif;background:#F0F2F8;color:#323338
 .btn-new-proj .np-label{font-size:13px;font-weight:700;}
 .btn-new-proj .np-sub{font-size:11px;opacity:.7;}
 
+.proj-card{position:relative;}
+.proj-del-btn{
+  position:absolute;top:14px;right:12px;
+  width:28px;height:28px;border-radius:7px;
+  background:rgba(255,255,255,.92);border:1.5px solid #E8EAED;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;opacity:0;transition:opacity .15s,background .15s,border-color .15s;
+  color:#D83A3A;z-index:5;
+}
+.proj-card:hover .proj-del-btn{opacity:1;}
+.proj-del-btn:hover{background:#FFF0F0;border-color:#D83A3A;}
+.proj-del-btn svg{width:13px;height:13px;display:block;}
+
 .proj-logo-img{max-height:60px;max-width:160px;object-fit:contain;}
 .proj-divider{width:100%;padding:0 18px;margin:4px 0;display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;color:#9ba1b0;text-transform:uppercase;letter-spacing:.8px;}
 .proj-divider::before,.proj-divider::after{content:'';flex:1;height:1px;background:#E6E9EF;}
@@ -334,38 +347,9 @@ tbody tr:hover{background:#F8FAFF;}
         <h1 id="welcomeMsg">Bienvenido</h1>
         <p>Selecciona un proyecto para crear o gestionar informes</p>
       </div>
-      <div class="projects-grid">
-
-        <a href="/tigo" class="proj-card proj-tigo">
-          <div class="proj-top"></div>
-          <div class="proj-inner">
-            <div class="proj-icon">
-              <img src="tigo-logo.png" alt="Tigo" onerror="this.outerHTML='<span style=\'font-size:48px\'>📡</span>'">
-            </div>
-            <span class="proj-name">Proyecto Tigo</span>
-            <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
-          </div>
-          <button class="proj-btn">Ingresar →</button>
-        </a>
-
-        <a href="/wom" class="proj-card proj-wom">
-          <div class="proj-top"></div>
-          <div class="proj-inner">
-            <div class="proj-icon">
-              <span class="wom-text">wom</span>
-            </div>
-            <span class="proj-name">Proyecto WOM</span>
-            <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
-          </div>
-          <button class="proj-btn">Ingresar →</button>
-        </a>
-
-      </div>
-
-      <!-- Proyectos personalizados -->
-      <div id="proyCustomWrap" style="display:none;max-width:860px;margin-top:24px;">
-        <div class="proj-divider">Proyectos adicionales</div>
-        <div class="projects-grid" id="proyCustomGrid" style="margin-top:14px;"></div>
+      <!-- Proyectos (cargados dinámicamente) -->
+      <div class="projects-grid" id="proyGridMain">
+        <div style="color:#9ba1b0;font-size:13px;grid-column:1/-1;padding:20px 0;">Cargando proyectos…</div>
       </div>
 
       <!-- Botón nuevo proyecto (solo superadmin) -->
@@ -488,6 +472,21 @@ tbody tr:hover{background:#F8FAFF;}
 
 <div id="toast"></div>
 
+<!-- Confirm eliminar proyecto -->
+<div id="dashConfirmOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;max-width:390px;width:100%;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <div style="width:44px;height:44px;background:#FFF0F0;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+      <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#D83A3A" stroke-width="1.5"><polyline points="2 4 14 4"/><path d="M5 4V3h6v1"/><path d="M6 7v5m4-5v5"/><rect x="3" y="4" width="10" height="9" rx="1.5"/></svg>
+    </div>
+    <div style="font-size:15px;font-weight:700;color:#1C1F3B;margin-bottom:8px;">¿Eliminar proyecto?</div>
+    <div id="dashConfirmMsg" style="font-size:13px;color:#676879;margin-bottom:20px;line-height:1.6;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="cerrarConfirm()" style="padding:9px 18px;border-radius:9px;border:1.5px solid #E8EAED;background:#fff;color:#676879;font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;cursor:pointer;">Cancelar</button>
+      <button onclick="ejecutarBorrar()" style="padding:9px 18px;border-radius:9px;border:none;background:#D83A3A;color:#fff;font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;cursor:pointer;">Mover a papelera</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
@@ -531,41 +530,87 @@ async function init() {
       document.getElementById('cardTecnicos').style.display = 'none';
     }
     if (miRol === 'superadmin') {
+      _esSuperadmin = true;
       document.getElementById('wrapNuevoProyecto').style.display = 'block';
     }
 
-    // Cargar proyectos personalizados
-    await cargarProyectosCustom();
+    // Cargar todos los proyectos dinámicamente
+    await cargarProyectos();
   } catch(e) { toast('Error de sesión: ' + e.message); }
 }
 
-async function cargarProyectosCustom() {
+let _esSuperadmin = false;
+
+async function cargarProyectos() {
   try {
     const r = await fetch('/api/proyectos', { headers: authH() });
     if (!r.ok) return;
     const proyectos = await r.json();
-    if (!proyectos.length) return;
-
-    const grid = document.getElementById('proyCustomGrid');
+    const grid = document.getElementById('proyGridMain');
+    if (!proyectos.length) {
+      grid.innerHTML = '<div style="color:#9ba1b0;font-size:13px;grid-column:1/-1;padding:20px 0;">No hay proyectos disponibles.</div>';
+      return;
+    }
     grid.innerHTML = proyectos.map(p => {
-      const color = p.color || '#323338';
-      const logo = p.logo
+      const isTigo = p.template === 'tigo';
+      const isWom  = p.template === 'wom';
+      const color  = p.color || (isTigo ? '#0073EA' : isWom ? '#6161FF' : '#323338');
+      const topClass = isTigo ? 'proj-tigo' : isWom ? 'proj-wom' : 'proj-custom';
+      const styleAttr = (!isTigo && !isWom) ? `style="--proj-color:${color}"` : '';
+      const btnStyle  = (!isTigo && !isWom) ? `style="background:${color};color:#fff"` : '';
+      const logoHtml = p.logo
         ? `<img src="${p.logo}" class="proj-logo-img" alt="${p.nombre}">`
-        : `<span style="font-size:36px;font-weight:800;color:${color}">${p.nombre.substring(0,2).toUpperCase()}</span>`;
-      return `
-        <a href="/proyecto/${p.slug}" class="proj-card proj-custom" style="--proj-color:${color}">
-          <div class="proj-top"></div>
-          <div class="proj-inner">
-            <div class="proj-icon">${logo}</div>
-            <span class="proj-name">${p.nombre}</span>
-            <span class="proj-desc">${p.totalSitios} sitios · ${p.totalTecnicos} técnicos<br>Formato ${p.template === 'tigo' ? 'Tigo' : 'WOM'}</span>
-          </div>
-          <button class="proj-btn">Ingresar →</button>
-        </a>`;
+        : isTigo
+          ? `<img src="tigo-logo.png" class="proj-logo-img" alt="Tigo" onerror="this.outerHTML='<span style=font-size:48px>📡</span>'">`
+          : isWom
+            ? `<span class="wom-text">wom</span>`
+            : `<span style="font-size:36px;font-weight:800;color:${color}">${p.nombre.substring(0,2).toUpperCase()}</span>`;
+      const url = isTigo ? '/tigo' : isWom ? '/wom' : `/proyecto/${p.slug}`;
+      const slugSafe   = p.slug.replace(/'/g, "\\'");
+      const nombreSafe = p.nombre.replace(/'/g, "\\'");
+      const delBtn = _esSuperadmin
+        ? `<button class="proj-del-btn" title="Eliminar proyecto" onclick="confirmarBorrar(event,'${slugSafe}','${nombreSafe}')">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2 4 14 4"/><path d="M5 4V3h6v1"/><path d="M6 7v5m4-5v5"/><rect x="3" y="4" width="10" height="9" rx="1.5"/></svg>
+          </button>`
+        : '';
+      return `<a href="${url}" class="proj-card ${topClass}" ${styleAttr}>
+        ${delBtn}
+        <div class="proj-top"></div>
+        <div class="proj-inner">
+          <div class="proj-icon">${logoHtml}</div>
+          <span class="proj-name">${p.nombre}</span>
+          <span class="proj-desc">${p.totalSitios||0} sitios · ${p.totalTecnicos||0} técnicos</span>
+        </div>
+        <button class="proj-btn" ${btnStyle}>Ingresar →</button>
+      </a>`;
     }).join('');
-
-    document.getElementById('proyCustomWrap').style.display = 'block';
   } catch(e) { /* silencioso */ }
+}
+
+// ── Borrar proyecto desde dashboard ──────────────────────────────
+let _delSlug = null;
+function confirmarBorrar(e, slug, nombre) {
+  e.preventDefault(); e.stopPropagation();
+  _delSlug = slug;
+  document.getElementById('dashConfirmMsg').textContent =
+    `El proyecto "${nombre}" se moverá a la papelera. Podrás restaurarlo desde el selector.`;
+  document.getElementById('dashConfirmOverlay').style.display = 'flex';
+}
+function cerrarConfirm() {
+  document.getElementById('dashConfirmOverlay').style.display = 'none';
+  _delSlug = null;
+}
+async function ejecutarBorrar() {
+  if (!_delSlug) return;
+  const slug = _delSlug;
+  cerrarConfirm();
+  try {
+    const r = await fetch(`/api/proyectos/${slug}`, { method:'DELETE', headers: authH() });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error || 'Error al eliminar'); return; }
+    toast('Proyecto movido a papelera');
+    cargarProyectos();
+  } catch { toast('Error de conexión'); }
 }
 
 // ── Vistas ────────────────────────────────────────────────────────
