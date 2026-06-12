@@ -121,9 +121,6 @@ main{
 }
 .card.tigo .card-top{background:linear-gradient(90deg,#0073EA,#1976D2);}
 .card.wom .card-top{background:linear-gradient(90deg,#6161FF,#7B1FA2);}
-.card.admin .card-top{background:linear-gradient(90deg,#00C875,#00897B);}
-.card.admin .card-btn{background:#00C875;color:#fff;}
-.card.admin{display:none;}
 
 .card-inner{
   display:flex;flex-direction:column;align-items:center;
@@ -184,26 +181,6 @@ footer{
 </style>
 </head>
 <body>
-<script>
-// Guard de autenticación y permisos de la tarjeta admin
-(function(){
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (!token) { window.location.replace('/login'); throw ''; }
-  fetch('/auth/me', { headers: { Authorization: 'Bearer ' + token } })
-    .then(r => {
-      if (!r.ok) { localStorage.removeItem('token'); sessionStorage.removeItem('token'); window.location.replace('/login'); return; }
-      return r.json();
-    })
-    .then(data => {
-      if (!data) return;
-      const rol = data.usuario && data.usuario.rol;
-      if (['superadmin','admin_empresa','supervisor'].includes(rol)) {
-        document.getElementById('cardAdmin').style.display = 'flex';
-      }
-    })
-    .catch(() => window.location.replace('/login'));
-})();
-</script>
 
 <header>
   <div class="hdr-logo-wrap">
@@ -248,32 +225,10 @@ footer{
       <button class="card-btn">Ingresar →</button>
     </a>
 
-    <!-- DASHBOARD (todos los roles) -->
-    <a href="/dashboard" class="card admin" style="display:flex;--top:linear-gradient(90deg,#1C1F3B,#2D3060);">
-      <div class="card-top" style="background:linear-gradient(90deg,#1C1F3B,#2D3060);"></div>
-      <div class="card-inner">
-        <div class="card-logo" style="font-size:52px;line-height:1;">📊</div>
-        <span class="card-label">Dashboard</span>
-        <span class="card-desc">Resumen y registro<br>de todos tus informes</span>
-      </div>
-      <button class="card-btn" style="background:#1C1F3B;">Ver panel →</button>
-    </a>
-
-    <!-- ADMIN (solo supervisor+) -->
-    <a href="/admin" class="card admin" id="cardAdmin">
-      <div class="card-top"></div>
-      <div class="card-inner">
-        <div class="card-logo" style="font-size:52px;line-height:1;">👥</div>
-        <span class="card-label">Personal</span>
-        <span class="card-desc">Gestión de supervisores<br>y técnicos del sistema</span>
-      </div>
-      <button class="card-btn">Administrar →</button>
-    </a>
-
   </div>
 </main>
 
-<footer>Plataforma de Gestión de Mantenimiento &copy; 2026</footer>
+<footer>ICETEL &copy; 2026 — Sistema de Gestión de Informes / Control y Gestión</footer>
 
 </body>
 </html>
