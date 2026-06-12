@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-CAMBIAR-en-produccion';
 
-// Valida el Bearer token y adjunta req.user
 function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -17,9 +16,6 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Verifica que el usuario tenga acceso al área solicitada.
-// superadmin y admin_empresa pasan siempre.
-// supervisor y tecnico deben tener el area_id en su lista.
 function requireArea(paramName = 'area_id') {
   return (req, res, next) => {
     const { rol, areas_permitidas } = req.user;

@@ -6,6 +6,7 @@ const { sanitizeSearch, storageUpload, storageDownload, storageMove, storageRemo
 const { dbWomList, dbWomInsert, dbWomFind, dbWomDelete,
         dbPapeleraWomList, dbPapeleraWomInsert, dbPapeleraWomFind, dbPapeleraWomDelete, dbPapeleraWomClear } = require('../db/wom-db');
 const { buildDocxWom } = require('../lib/docx-wom');
+const { buildPdf: buildPdfWom } = require('../lib/pdf-wom');
 const { RSO_SITES, ACTIVIDADES_WOM } = require('../data/wom');
 
 const router = express.Router();
@@ -41,6 +42,19 @@ router.post('/generar-wom', authMiddleware, async (req, res) => {
     await dbWomInsert(entry);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.send(buffer);
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.post('/generar-pdf-wom', authMiddleware, async (req, res) => {
+  try {
+    const d = req.body;
+    const buffer = await buildPdfWom(d);
+    const ticket = (d.ticket || 'WOM').replace(/[^a-zA-Z0-9\-_]/g, '_').slice(0, 50);
+    const fname  = `${ticket}_WOM.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.send(buffer);

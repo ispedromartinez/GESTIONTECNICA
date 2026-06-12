@@ -7,6 +7,7 @@ const { sanitizeSearch, storageUpload, storageDownload, storageMove, storageRemo
 const { dbClimaList, dbClimaInsert, dbClimaFind, dbClimaDelete,
         dbPapeleraList, dbPapeleraInsert, dbPapeleraFind, dbPapeleraDelete, dbPapeleraClear } = require('../db/clima');
 const { buildDocx } = require('../lib/docx-clima');
+const { buildPdf }  = require('../lib/pdf-clima');
 
 const router = express.Router();
 
@@ -37,6 +38,19 @@ router.post('/generar', authMiddleware, async (req, res) => {
     await dbClimaInsert(entry);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.send(buffer);
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.post('/generar-pdf', authMiddleware, async (req, res) => {
+  try {
+    const d = req.body;
+    const buffer = await buildPdf(d);
+    const sitePart = (d.nombreSitio || 'Clima').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 25);
+    const fname = `${d.codInforme || 'Informe'}_${sitePart}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.send(buffer);

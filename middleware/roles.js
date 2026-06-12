@@ -5,7 +5,6 @@ const JERARQUIA = {
   tecnico:       1
 };
 
-// Permite solo los roles listados
 function requireRol(...roles) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'No autenticado' });
@@ -18,8 +17,6 @@ function requireRol(...roles) {
   };
 }
 
-// Permite roles con nivel >= nivelMinimo
-// Ej: requireNivel(3) => admin_empresa o superadmin
 function requireNivel(nivelMinimo) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'No autenticado' });
@@ -31,8 +28,6 @@ function requireNivel(nivelMinimo) {
   };
 }
 
-// Garantiza que el usuario solo opere dentro de su propia empresa.
-// Si la ruta tiene :empresa_id o body.empresa_id, lo compara con el del token.
 function requireMismaEmpresa(req, res, next) {
   const { rol, empresa_id } = req.user;
   if (rol === 'superadmin') return next();
