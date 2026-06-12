@@ -4,10 +4,11 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { supabase, SUPABASE_BUCKET } = require('./db/supabase');
-const authRoutes     = require('./routes/auth');
-const tigoRoutes     = require('./routes/tigo');
-const womRoutes      = require('./routes/wom');
+const authRoutes      = require('./routes/auth');
+const tigoRoutes      = require('./routes/tigo');
+const womRoutes       = require('./routes/wom');
 const proyectosRoutes = require('./routes/proyectos');
+const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 app.use(cors());
@@ -21,6 +22,7 @@ app.use('/auth', authRoutes);
 app.use('/', tigoRoutes);
 app.use('/', womRoutes);
 app.use('/', proyectosRoutes);
+app.use('/', dashboardRoutes);
 
 // ── Páginas HTML
 app.get('/',              (_req, res) => res.sendFile(path.join(__dirname, 'landing.html')));
