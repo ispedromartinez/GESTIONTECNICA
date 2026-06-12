@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -7,19 +8,165 @@ const { createClient } = require('@supabase/supabase-js');
 const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
         ImageRun, AlignmentType, WidthType, BorderStyle, ShadingType,
         VerticalAlign, Header } = require('docx');
+const authRoutes = require('./routes/auth');
+const { authMiddleware } = require('./middleware/auth');
+const { requireRol, requireNivel } = require('./middleware/roles');
 
 const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_KEY)
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
   : null;
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'documentos-word';
 
+if (supabase) {
+  supabase.from('informes_clima').select('id').limit(1)
+    .then(({ error }) => {
+      if (error) console.error('⚠️  Supabase conectado pero error de acceso:', error.message);
+      else console.log('✅ Supabase conectado correctamente');
+    });
+} else {
+  console.warn('⚠️  Supabase NO configurado — falta SUPABASE_URL o SUPABASE_KEY. Usando archivos locales.');
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '80mb' }));
 app.use(express.static(__dirname));
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'selector.html')));
+
+// ── Auth routes (públicas: /auth/login, /auth/register-superadmin)
+app.use('/auth', authRoutes);
+
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'landing.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
+app.get('/selector', (req, res) => res.sendFile(path.join(__dirname, 'selector.html')));
 app.get('/tigo', (req, res) => res.sendFile(path.join(__dirname, 'informe_clima_app.html')));
 app.get('/wom', (req, res) => res.sendFile(path.join(__dirname, 'informe_wom_app.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+app.get('/nuevo-proyecto', (req, res) => res.sendFile(path.join(__dirname, 'nuevo_proyecto.html')));
+app.get('/proyecto/:slug', (req, res) => res.sendFile(path.join(__dirname, 'proyecto.html')));
+
+// ── Proyectos personalizados ──────────────────────────────────
+const PROYECTOS_FILE = path.join(__dirname, 'proyectos.json');
+const LOGOS_DIR = path.join(__dirname, 'logos');
+if (!fs.existsSync(PROYECTOS_FILE)) fs.writeFileSync(PROYECTOS_FILE, '[]');
+if (!fs.existsSync(LOGOS_DIR)) fs.mkdirSync(LOGOS_DIR);
+app.use('/logos', express.static(LOGOS_DIR));
+
+function loadProyectos() { try { return JSON.parse(fs.readFileSync(PROYECTOS_FILE,'utf8')); } catch(e) { return []; } }
+function saveProyectos(d) { fs.writeFileSync(PROYECTOS_FILE, JSON.stringify(d, null, 2)); }
+function uuidSimple() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r=Math.random()*16|0; return(c==='x'?r:(r&0x3|0x8)).toString(16); }); }
+
+const CONTACTO_FILE = path.join(__dirname, 'contactos.json');
+function loadContactos() { try { return JSON.parse(fs.readFileSync(CONTACTO_FILE,'utf8')); } catch(e) { return []; } }
+app.post('/api/contacto', express.json(), (req, res) => {
+  const { nombre, empresa, email, tel, mensaje, fecha } = req.body || {};
+  if (!nombre || !email) return res.status(400).json({ error: 'nombre y email requeridos' });
+  const lista = loadContactos();
+  lista.push({ nombre, empresa, email, tel, mensaje, fecha: fecha || new Date().toISOString() });
+  fs.writeFileSync(CONTACTO_FILE, JSON.stringify(lista, null, 2));
+  console.log(`📬 Nuevo contacto: ${nombre} <${email}>`);
+  res.json({ ok: true });
+});
+
+app.get('/api/proyectos', authMiddleware, (req, res) => {
+  res.json(loadProyectos().map(p => ({
+    id:p.id, slug:p.slug, nombre:p.nombre, logo:p.logo, template:p.template,
+    color:p.color, totalSitios:p.sitios?.length||0,
+    totalTecnicos:p.tecnicos?.length||0, totalSupervisores:p.supervisores?.length||0,
+    creado_en:p.creado_en
+  })));
+});
+
+app.get('/api/proyectos/:slug', authMiddleware, (req, res) => {
+  const p = loadProyectos().find(x => x.slug === req.params.slug);
+  if (!p) return res.status(404).json({ error: 'Proyecto no encontrado' });
+  res.json(p);
+});
+
+app.post('/api/proyectos', authMiddleware, requireRol('superadmin'), (req, res) => {
+  try {
+    const { nombre, slug, template, color, sitios, tecnicos, supervisores, logo } = req.body;
+    if (!nombre || !slug || !template) return res.status(400).json({ error: 'nombre, slug y template requeridos' });
+    const proyectos = loadProyectos();
+    if (proyectos.find(p => p.slug === slug)) return res.status(409).json({ error: 'Ya existe un proyecto con ese identificador' });
+    let logoPath = null;
+    if (logo && logo.startsWith('data:image/')) {
+      const ext = (logo.match(/data:image\/(\w+);/)||[])[1]||'png';
+      const fname = `${slug}.${ext}`;
+      fs.writeFileSync(path.join(LOGOS_DIR, fname), Buffer.from(logo.replace(/^data:image\/\w+;base64,/,''), 'base64'));
+      logoPath = `/logos/${fname}`;
+    }
+    const proyecto = {
+      id: uuidSimple(), slug: slug.toLowerCase().replace(/\s+/g,'-'),
+      nombre, logo: logoPath, template,
+      color: color || (template==='tigo'?'#0073EA':'#6161FF'),
+      sitios: sitios||[], tecnicos: tecnicos||[], supervisores: supervisores||[],
+      creado_en: new Date().toISOString()
+    };
+    proyectos.push(proyecto);
+    saveProyectos(proyectos);
+    const regFile = path.join(__dirname, `registro_${proyecto.slug}.json`);
+    if (!fs.existsSync(regFile)) fs.writeFileSync(regFile, '[]');
+    res.json({ ok:true, proyecto });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/proyectos/:slug', authMiddleware, requireRol('superadmin'), (req, res) => {
+  const ps = loadProyectos();
+  const idx = ps.findIndex(p => p.slug === req.params.slug);
+  if (idx===-1) return res.status(404).json({ error: 'No encontrado' });
+  ps.splice(idx,1); saveProyectos(ps);
+  res.json({ ok:true });
+});
+
+// ── GET /api/dashboard – datos unificados por rol ─────────────
+app.get('/api/dashboard', authMiddleware, async (req, res) => {
+  try {
+    const { nombre, rol } = req.user;
+    const [tigo, wom] = await Promise.all([dbClimaList(null), dbWomList(null)]);
+
+    const tigoNorm = tigo.map(r => ({
+      id: r.id, proyecto: 'TIGO',
+      sitio: r.nombreSitio || '—',
+      tecnico: r.tecnico || '—',
+      supervisor: r.supervisor || null,
+      fecha: r.fecha || (r.fechaCreacion || '').slice(0,10),
+      codInforme: r.codInforme || '—'
+    }));
+    const womNorm = wom.map(r => {
+      const tecs = Array.isArray(r.tecnicos) ? r.tecnicos : (r.tecnicos||'').split(',').map(s=>s.trim());
+      return {
+        id: r.id, proyecto: 'WOM',
+        sitio: r.instalacion || '—',
+        tecnico: tecs.filter(Boolean).join(', ') || '—',
+        supervisor: null,
+        fecha: (r.fechaInicio || r.fechaCreacion || '').slice(0,10),
+        codInforme: r.ticket || r.codInterno || '—'
+      };
+    });
+
+    let todos = [...tigoNorm, ...womNorm].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+
+    const nombreLow = (nombre||'').toLowerCase();
+    if (rol === 'tecnico') {
+      todos = todos.filter(r => r.tecnico.toLowerCase().includes(nombreLow));
+    } else if (rol === 'supervisor') {
+      todos = todos.filter(r =>
+        (r.supervisor && r.supervisor.toLowerCase().includes(nombreLow)) ||
+        r.tecnico.toLowerCase().includes(nombreLow)
+      );
+    }
+
+    const now = new Date();
+    const totalMes = todos.filter(r => {
+      const d = new Date(r.fecha); return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+    }).length;
+
+    const tecnicosUnicos = [...new Set(todos.map(r=>r.tecnico).filter(t=>t&&t!=='—'))].length;
+
+    res.json({ informes: todos, stats: { totalMes, total: todos.length, tecnicos: tecnicosUnicos } });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
 
 const DOCS_DIR      = path.join(__dirname, 'informes');
 const PAPELERA_DIR  = path.join(__dirname, 'papelera');
@@ -30,6 +177,25 @@ if (!fs.existsSync(DOCS_DIR))     fs.mkdirSync(DOCS_DIR);
 if (!fs.existsSync(PAPELERA_DIR)) fs.mkdirSync(PAPELERA_DIR);
 if (!fs.existsSync(DB_FILE))      fs.writeFileSync(DB_FILE, '[]');
 if (!fs.existsSync(PAPELERA_FILE))fs.writeFileSync(PAPELERA_FILE, '[]');
+
+// ── Seguridad: sanitización de búsquedas ──────────────────────
+// El texto del buscador NUNCA se interpola en SQL — viaja como
+// parámetro ($1) para que el motor lo trate como dato, no como código.
+function sanitizeSearch(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  const clean = raw
+    .replace(/\0/g, '')        // null bytes (vector de ataque clásico)
+    .replace(/[,()]/g, ' ')    // delimitadores de sintaxis PostgREST/SQL
+    .trim()
+    .slice(0, 100);            // longitud máxima — evita queries enormes
+  return clean || null;
+}
+
+// Escapa wildcards de LIKE para que el texto sea literal en BD
+// sin esto, buscar "50%" filtraría registros que empiecen con 50
+function escapeLike(s) {
+  return s.replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
 
 // ── Local fallback helpers ─────────────────────────────────────
 function loadDBLocal()       { try { return JSON.parse(fs.readFileSync(DB_FILE,'utf8')); }       catch { return []; } }
@@ -86,17 +252,20 @@ async function storageRemove(paths) {
 // ── Async DB – Informes Clima ──────────────────────────────────
 async function dbClimaList(q) {
   if (supabase) {
-    const { data, error } = await supabase.from('informes_clima')
+    let query = supabase.from('informes_clima')
       .select('*').order('fecha_creacion', { ascending: false });
-    if (!error) {
-      const rows = (data||[]).map(fromClima);
-      if (!q) return rows;
-      const ql = q.toLowerCase();
-      return rows.filter(r => ['nombreSitio','codInforme','tecnico','numOT']
-        .some(k => (r[k]||'').toLowerCase().includes(ql)));
+    if (q) {
+      // El valor viaja como parámetro $1 vía PostgREST — nunca interpolado en SQL
+      const like = `%${escapeLike(q)}%`;
+      query = query.or(
+        `nombre_sitio.ilike.${like},cod_informe.ilike.${like},tecnico.ilike.${like},num_ot.ilike.${like}`
+      );
     }
+    const { data, error } = await query;
+    if (!error) return (data||[]).map(fromClima);
     console.error('dbClimaList:', error.message);
   }
+  // Fallback JSON local: filtrado en JS puro — sin SQL, sin riesgo de inyección
   const db = loadDBLocal();
   if (!q) return db;
   const ql = q.toLowerCase();
@@ -134,15 +303,16 @@ async function dbClimaDelete(id) {
 // ── Async DB – Papelera Clima ──────────────────────────────────
 async function dbPapeleraList(q) {
   if (supabase) {
-    const { data, error } = await supabase.from('papelera_clima')
+    let query = supabase.from('papelera_clima')
       .select('*').order('fecha_eliminado', { ascending: false });
-    if (!error) {
-      const rows = (data||[]).map(r => ({ ...fromClima(r), fechaEliminado: r.fecha_eliminado }));
-      if (!q) return rows;
-      const ql = q.toLowerCase();
-      return rows.filter(r => ['nombreSitio','codInforme','tecnico']
-        .some(k => (r[k]||'').toLowerCase().includes(ql)));
+    if (q) {
+      const like = `%${escapeLike(q)}%`;
+      query = query.or(
+        `nombre_sitio.ilike.${like},cod_informe.ilike.${like},tecnico.ilike.${like}`
+      );
     }
+    const { data, error } = await query;
+    if (!error) return (data||[]).map(r => ({ ...fromClima(r), fechaEliminado: r.fecha_eliminado }));
     console.error('dbPapeleraList:', error.message);
   }
   const p = loadPapeleraLocal();
@@ -624,6 +794,29 @@ async function buildDocx(d) {
 // ── Routes ────────────────────────────────────────────────
 app.get('/ping', (req,res) => res.json({ok:true}));
 
+app.get('/ping-supabase', async (req, res) => {
+  if (!supabase) return res.json({ ok: false, error: 'SUPABASE_URL o SUPABASE_KEY no configuradas' });
+  const { error } = await supabase.from('informes_clima').select('id').limit(1);
+  if (error) return res.json({ ok: false, error: error.message });
+  res.json({ ok: true, bucket: SUPABASE_BUCKET });
+});
+
+app.get('/test-insert', async (req, res) => {
+  if (!supabase) return res.json({ ok: false, error: 'Supabase no configurado' });
+  const testId = 'test-' + Date.now();
+  const { error: insertError } = await supabase.from('informes_clima').insert({
+    id: testId, fecha: '2026-01-01', fecha_creacion: new Date().toISOString(),
+    cod_informe: 'TEST-001', nombre_sitio: 'Sitio Test', codigo_sitio: 'TST',
+    tecnico: 'Test', supervisor: 'Test', num_ot: '000',
+    photo_count: 0, filename: 'test.docx'
+  });
+  if (insertError) return res.json({ ok: false, paso: 'insert', error: insertError.message });
+  const { data, error: selectError } = await supabase.from('informes_clima').select('*').eq('id', testId).single();
+  if (selectError) return res.json({ ok: false, paso: 'select', error: selectError.message });
+  await supabase.from('informes_clima').delete().eq('id', testId);
+  res.json({ ok: true, mensaje: 'Insert y select funcionan correctamente', registro: data });
+});
+
 app.get('/version', (req,res) => {
   try {
     const mtime = fs.statSync(path.join(__dirname, 'informe_clima_app.html')).mtimeMs;
@@ -631,7 +824,7 @@ app.get('/version', (req,res) => {
   } catch { res.json({ v: 0 }); }
 });
 
-app.post('/generar', async (req,res) => {
+app.post('/generar', authMiddleware, async (req,res) => {
   try {
     const d = req.body;
     const buffer = await buildDocx(d);
@@ -659,12 +852,12 @@ app.post('/generar', async (req,res) => {
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
 });
 
-app.get('/registro', async (req,res) => {
-  const q = (req.query.q||'').toLowerCase().trim();
-  res.json(await dbClimaList(q || null));
+app.get('/registro', authMiddleware, async (req,res) => {
+  const q = sanitizeSearch(req.query.q);
+  res.json(await dbClimaList(q));
 });
 
-app.get('/descargar/:id', async (req,res) => {
+app.get('/descargar/:id', authMiddleware, async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   let buffer = await storageDownload(`clima/${entry.filename}`);
@@ -678,7 +871,7 @@ app.get('/descargar/:id', async (req,res) => {
   res.send(buffer);
 });
 
-app.post('/enviar/:id', async (req,res) => {
+app.post('/enviar/:id', authMiddleware, async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   let buffer = await storageDownload(`clima/${entry.filename}`);
@@ -699,7 +892,7 @@ app.post('/enviar/:id', async (req,res) => {
 });
 
 // Mover a papelera (soft delete)
-app.delete('/registro/:id', async (req,res) => {
+app.delete('/registro/:id', authMiddleware, async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   await storageMove(`clima/${entry.filename}`, `clima/papelera/${entry.filename}`);
@@ -713,13 +906,13 @@ app.delete('/registro/:id', async (req,res) => {
 });
 
 // List papelera
-app.get('/papelera', async (req,res) => {
-  const q = (req.query.q||'').toLowerCase().trim();
-  res.json(await dbPapeleraList(q || null));
+app.get('/papelera', authMiddleware, async (req,res) => {
+  const q = sanitizeSearch(req.query.q);
+  res.json(await dbPapeleraList(q));
 });
 
 // Restore from papelera
-app.post('/papelera/restaurar/:id', async (req,res) => {
+app.post('/papelera/restaurar/:id', authMiddleware, async (req,res) => {
   const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   await storageMove(`clima/papelera/${entry.filename}`, `clima/${entry.filename}`);
@@ -734,7 +927,7 @@ app.post('/papelera/restaurar/:id', async (req,res) => {
 });
 
 // Delete permanently from papelera
-app.delete('/papelera/:id', async (req,res) => {
+app.delete('/papelera/:id', authMiddleware, async (req,res) => {
   const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   await storageRemove([`clima/papelera/${entry.filename}`]);
@@ -747,7 +940,7 @@ app.delete('/papelera/:id', async (req,res) => {
 });
 
 // Empty entire papelera
-app.delete('/papelera', async (req,res) => {
+app.delete('/papelera', authMiddleware, async (req,res) => {
   const papelera = await dbPapeleraList(null);
   if (papelera.length) {
     await storageRemove(papelera.map(e => `clima/papelera/${e.filename}`));
@@ -795,14 +988,25 @@ const toWom = e => ({
 });
 
 // ── Async DB – Informes WOM ────────────────────────────────────
-async function dbWomList() {
+async function dbWomList(q) {
   if (supabase) {
-    const { data, error } = await supabase.from('informes_wom')
+    let query = supabase.from('informes_wom')
       .select('*').order('fecha_creacion', { ascending: false });
+    if (q) {
+      const like = `%${escapeLike(q)}%`;
+      query = query.or(
+        `ticket.ilike.${like},cod_interno.ilike.${like},instalacion.ilike.${like}`
+      );
+    }
+    const { data, error } = await query;
     if (!error) return (data||[]).map(fromWom);
     console.error('dbWomList:', error.message);
   }
-  return loadDBWomLocal();
+  const db = loadDBWomLocal();
+  if (!q) return db;
+  const ql = q.toLowerCase();
+  return db.filter(r => ['ticket','codInterno','instalacion','tipoActividad']
+    .some(k => (r[k]||'').toLowerCase().includes(ql)));
 }
 
 async function dbWomInsert(entry) {
@@ -1391,7 +1595,7 @@ async function buildDocxWom_UNUSED(d) {
 app.get('/sitios-rso', (_req, res) => res.json(RSO_SITES));
 app.get('/actividades-wom', (_req, res) => res.json(ACTIVIDADES_WOM));
 
-app.post('/generar-wom', async (req, res) => {
+app.post('/generar-wom', authMiddleware, async (req, res) => {
   try {
     const d = req.body;
     const buffer = await buildDocxWom(d);
@@ -1420,9 +1624,12 @@ app.post('/generar-wom', async (req, res) => {
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
 });
 
-app.get('/registro-wom', async (_req, res) => res.json(await dbWomList()));
+app.get('/registro-wom', authMiddleware, async (req, res) => {
+  const q = sanitizeSearch(req.query.q);
+  res.json(await dbWomList(q));
+});
 
-app.get('/descargar-wom/:id', async (req, res) => {
+app.get('/descargar-wom/:id', authMiddleware, async (req, res) => {
   const entry = await dbWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   let buffer = await storageDownload(`wom/${entry.filename}`);
@@ -1436,7 +1643,7 @@ app.get('/descargar-wom/:id', async (req, res) => {
   res.send(buffer);
 });
 
-app.delete('/registro-wom/:id', async (req, res) => {
+app.delete('/registro-wom/:id', authMiddleware, async (req, res) => {
   const entry = await dbWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   await storageMove(`wom/${entry.filename}`, `wom/papelera/${entry.filename}`);
@@ -1449,9 +1656,9 @@ app.delete('/registro-wom/:id', async (req, res) => {
   res.json({ok:true});
 });
 
-app.get('/papelera-wom', async (_req, res) => res.json(await dbPapeleraWomList()));
+app.get('/papelera-wom', authMiddleware, async (_req, res) => res.json(await dbPapeleraWomList()));
 
-app.post('/papelera-wom/restaurar/:id', async (req, res) => {
+app.post('/papelera-wom/restaurar/:id', authMiddleware, async (req, res) => {
   const entry = await dbPapeleraWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   await storageMove(`wom/papelera/${entry.filename}`, `wom/${entry.filename}`);
@@ -1465,7 +1672,7 @@ app.post('/papelera-wom/restaurar/:id', async (req, res) => {
   res.json({ok:true});
 });
 
-app.delete('/papelera-wom/:id', async (req, res) => {
+app.delete('/papelera-wom/:id', authMiddleware, async (req, res) => {
   const entry = await dbPapeleraWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   await storageRemove([`wom/papelera/${entry.filename}`]);
@@ -1477,7 +1684,7 @@ app.delete('/papelera-wom/:id', async (req, res) => {
   res.json({ok:true});
 });
 
-app.delete('/papelera-wom', async (_req, res) => {
+app.delete('/papelera-wom', authMiddleware, async (_req, res) => {
   const papelera = await dbPapeleraWomList();
   if (papelera.length) {
     await storageRemove(papelera.map(e => `wom/papelera/${e.filename}`));

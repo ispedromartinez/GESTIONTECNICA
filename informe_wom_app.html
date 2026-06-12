@@ -4,42 +4,49 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>Informe WOM – ICETEL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --mag:#7B1FA2; --mag-d:#4A148C; --mag-l:#F3E5F5; --mag-b:#CE93D8;
-  --blue:#1565C0; --white:#fff; --bg:#F0F4F8; --text:#1a2332; --muted:#64748b;
-  --green:#16a34a; --red:#dc2626; --border:#e2e8f0; --r:12px;
-  --sh:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
-  --sh-lg:0 4px 8px rgba(0,0,0,.07),0 12px 32px rgba(0,0,0,.1);
+  --mag:#784BD1; --mag-d:#4A148C; --mag-l:#EDE7F6; --mag-b:#B39DDB;
+  --blue:#0073EA; --white:#fff; --bg:#F6F7FB; --text:#323338; --muted:#676879;
+  --green:#00C875; --red:#E2445C; --border:#D0D4E4; --r:12px;
+  --sh:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
+  --sh-lg:0 4px 8px rgba(0,0,0,.08),0 12px 32px rgba(0,0,0,.12);
   --max-w:860px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#2D0060 url('fondo.png') no-repeat center center fixed;background-size:cover;color:var(--text);min-height:100vh;}
+body{font-family:'Poppins',system-ui,sans-serif;background:#F6F7FB;color:var(--text);min-height:100vh;}
 
 /* ── HEADER ── */
-header{background:linear-gradient(135deg,#2D0060 0%,#4A148C 60%,#7B1FA2 100%);color:#fff;padding:13px 18px 11px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25);}
+header{background:#1C1F3B;color:#fff;padding:13px 18px 11px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25);border-bottom:3px solid #784BD1;}
 .hdr-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .hdr-left{display:flex;align-items:center;gap:12px;}
 .hdr-gear{font-size:24px;line-height:1;opacity:.92;flex-shrink:0;}
 .hdr-left h1{font-size:15px;font-weight:700;letter-spacing:-.2px;}
 .hdr-left p{font-size:11px;opacity:.65;margin-top:2px;}
 .hdr-right{display:flex;align-items:center;gap:8px;}
-.back-btn{color:rgba(255,255,255,.8);font-size:12px;font-weight:600;text-decoration:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:6px 14px;transition:background .15s;}
-.back-btn:hover{background:rgba(255,255,255,.25);}
+.back-btn{display:inline-flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:7px 9px;transition:background .15s,border-color .15s;}
+.back-btn:hover{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.4);}
+.back-btn svg{display:block;}
+.hdr-logo-pill{background:#fff;border-radius:8px;padding:5px 12px;display:flex;align-items:center;flex-shrink:0;}
+.hdr-logo-app{height:28px;object-fit:contain;display:block;}
+.hdr-sep{width:1px;height:24px;background:rgba(255,255,255,.18);flex-shrink:0;}
 .badge{font-size:10px;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 10px;font-weight:600;letter-spacing:.2px;border:1px solid rgba(255,255,255,.2);}
 .badge.g{background:rgba(22,163,74,.4);border-color:rgba(22,163,74,.5);}
 .srv-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;flex-shrink:0;transition:background .3s;}
 .srv-dot.on{background:#22c55e;}
 
 /* ── TABS ── */
-.tabs{background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:150;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.tabs{background:#fff;border-bottom:2px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:150;box-shadow:0 2px 8px rgba(0,0,0,.04);}
 .tabs::-webkit-scrollbar{display:none;}
 .tabs-inner{max-width:var(--max-w);margin:0 auto;display:flex;}
-.tab{flex:0 0 auto;padding:12px 15px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:.18s;}
-.tab:hover{color:var(--mag);background:#fdf2f8;}
-.tab.active{color:var(--mag);border-bottom-color:var(--mag);}
+.tab{flex:0 0 auto;padding:13px 17px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.18s;}
+.tab:hover{color:var(--mag);background:#F5F0FC;}
+.tab.active{color:var(--mag);border-bottom-color:var(--mag);font-weight:700;}
 .tab.locked{opacity:.3;cursor:not-allowed;pointer-events:none;}
-.tab .num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:#eef2f8;border-radius:50%;font-size:10px;font-weight:700;margin-right:4px;color:var(--mag);line-height:1;vertical-align:middle;flex-shrink:0;}
+.tab .num{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;background:#EDE7F6;border-radius:10px;font-size:10px;font-weight:700;margin-right:6px;padding:0 4px;color:var(--mag);line-height:1;vertical-align:middle;flex-shrink:0;}
 .tab.active .num{background:var(--mag);color:#fff;}
 .tab .num.num-star{font-size:11px;padding-bottom:1px;}
 .tab .num.num-win{font-size:0;padding:0;}
@@ -50,15 +57,15 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 .panel{display:none;} .panel.active{display:block;}
 
 /* ── CARDS ── */
-.card{background:rgba(255,255,255,.97);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px;}
-.card-title{font-size:12px;font-weight:700;color:var(--mag);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
-.card-title::before{content:'';display:inline-block;width:3px;height:14px;background:var(--mag);border-radius:2px;}
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px;border:1px solid var(--border);}
+.card-title{font-size:11px;font-weight:700;color:#323338;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';display:inline-block;width:4px;height:16px;background:var(--mag);border-radius:3px;}
 
 /* ── FORM ELEMENTS ── */
 .field{margin-bottom:13px;}
 .field label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
 .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;transition:border-color .18s,box-shadow .18s;outline:none;}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--mag);box-shadow:0 0 0 3px rgba(226,0,122,.1);}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--mag);box-shadow:0 0 0 3px rgba(120,75,209,.12);}
 .field input:read-only{background:#f8fafc;color:var(--muted);}
 .field textarea{resize:vertical;min-height:90px;line-height:1.5;}
 .field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
@@ -100,6 +107,7 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 .foto-item .cap input{flex:1;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;background:#fff;}
 .foto-item .remove{position:absolute;top:6px;right:6px;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:4;}
 .foto-rst{position:absolute;top:6px;right:34px;background:rgba(123,31,162,.75);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:4;line-height:1;}
+.foto-rot{position:absolute;top:6px;right:62px;background:rgba(0,140,80,.8);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:4;line-height:1;}
 .foto-num{position:absolute;top:6px;left:6px;background:rgba(226,0,122,.85);color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 6px;z-index:4;pointer-events:none;}
 .foto-count{font-size:12px;color:var(--muted);margin-bottom:10px;}
 .foto-count strong{color:var(--mag);}
@@ -107,12 +115,12 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 /* ── BOTONES ACCIÓN ── */
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;justify-content:space-between;align-items:center;}
 .actions-right{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 22px;border-radius:50px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.2px;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.1px;}
 .btn:active{transform:scale(.97);}
-.btn-primary{background:linear-gradient(135deg,var(--mag-d),var(--mag));color:#fff;box-shadow:0 4px 14px rgba(226,0,122,.3);}
+.btn-primary{background:var(--mag);color:#fff;box-shadow:0 4px 14px rgba(120,75,209,.25);}
 .btn-primary:hover{opacity:.9;}
-.btn-secondary{background:var(--mag-l);color:var(--mag);border:1.5px solid var(--mag-b);}
-.btn-secondary:hover{background:#ead5f0;}
+.btn-secondary{background:#fff;color:var(--mag);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--mag-l);border-color:var(--mag-b);}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;}
 
 /* ── HISTORIAL ── */
@@ -132,7 +140,7 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 .btn-dl:hover{background:#f9d0e8;}
 .btn-del{background:#fff0f0;color:var(--red);border:1.5px solid #fecaca;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;transition:background .15s;}
 .btn-del:hover{background:#fee2e2;}
-.hist-empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+.hist-empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:12px 22px;border-radius:50px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.25);transition:transform .3s ease;z-index:9999;pointer-events:none;white-space:nowrap;}
@@ -146,19 +154,29 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 </style>
 </head>
 <body>
+<script>
+(function(){
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (!token) { window.location.replace('/login'); throw ''; }
+  fetch('/auth/me', { headers: { Authorization: 'Bearer ' + token } })
+    .then(r => { if (!r.ok) { localStorage.removeItem('token'); sessionStorage.removeItem('token'); window.location.replace('/login'); } })
+    .catch(() => window.location.replace('/login'));
+})();
+</script>
 
 <header>
   <div class="hdr-inner">
     <div class="hdr-left">
-      <span class="hdr-gear">⚙</span>
+      <div class="hdr-logo-pill"><img src="icetel-logo.png" alt="ICETEL" class="hdr-logo-app"></div>
+      <span class="hdr-sep"></span>
       <div>
         <h1>Informe de Trabajos WOM</h1>
-        <p>Informes de Trabajos — Mantenimiento Clima</p>
+        <p>WOM — Mantenimiento Clima</p>
       </div>
     </div>
     <div class="hdr-right">
       <span class="srv-dot" id="badge-estado" title="Servidor inactivo"></span>
-      <a href="/" class="back-btn">← Proyectos</a>
+      <a href="/" class="back-btn" title="Inicio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></a>
     </div>
   </div>
 </header>
@@ -181,8 +199,7 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
   <!-- Nuevo Informe -->
   <div class="card" style="border:1.5px solid var(--mag-b);background:linear-gradient(135deg,var(--mag-l) 0%,#fff 100%);">
     <div style="text-align:center;margin-bottom:14px;">
-      <div style="font-size:28px;margin-bottom:6px;">✨</div>
-      <div style="font-size:17px;font-weight:800;color:var(--mag);">Nuevo Informe de Trabajo</div>
+      <div style="font-size:17px;font-weight:800;color:var(--mag);display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Nuevo Informe de Trabajo</div>
       <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">
         Inicia un nuevo Informe WOM desde cero.<br>Todos los campos serán limpiados.
       </p>
@@ -376,13 +393,13 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 
   <div class="card">
     <div class="card-title">Registro Fotográfico</div>
-    <p class="foto-count">Fotos: <strong id="foto-count-n">0</strong> / 8</p>
+    <p class="foto-count">Fotos: <strong id="foto-count-n">0</strong> / 30</p>
 
     <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
          ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragleave="onDragLeave(event)">
       <div class="drop-icon">📷</div>
       <p>Toca para agregar fotos</p>
-      <small>O arrastra hasta aquí · máx. 8 fotos · JPG/PNG</small>
+      <small>O arrastra hasta aquí · máx. 30 fotos · JPG/PNG</small>
     </div>
     <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="onFileSelect(event)">
 
@@ -477,7 +494,7 @@ function crearNuevaOT() {
   g('tecnicos-list').innerHTML = '';
   addTecnico();
   // Reset photos
-  photos = []; captions = []; photoTransforms = [];
+  photos = []; captions = []; photoTransforms = []; photoRotations = [];
   renderFotos();
   // Reset tabs (lock tabs 1-3)
   document.querySelectorAll('.tab').forEach((t,i) => { if(i>0 && i<4) t.classList.add('locked'); });
@@ -526,6 +543,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Helpers ──────────────────────────────────────────────────
 const g = id => document.getElementById(id);
+function authH(extra={}) {
+  const t = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+  return { Authorization: 'Bearer ' + t, ...extra };
+}
 
 function toast(msg, type='ok') {
   const el = g('toast');
@@ -576,14 +597,15 @@ function addTecnico(name='') {
 }
 
 // ── Fotos ────────────────────────────────────────────────────
-let photos = [], captions = [], photoTransforms = [];
+let photos = [], captions = [], photoTransforms = [], photoRotations = [];
 let activeDrag = null;
 
 function applyFotoTransform(i) {
   const img = g(`foto-img-${i}`);
   if (!img) return;
   const t = photoTransforms[i] || {x:0,y:0,scale:1};
-  img.style.transform = `translate(${t.x}px,${t.y}px) scale(${t.scale})`;
+  const r = photoRotations[i] || 0;
+  img.style.transform = `translate(${t.x}px,${t.y}px) scale(${t.scale}) rotate(${r}deg)`;
 }
 
 function resetFotoTransform(i, e) {
@@ -591,6 +613,35 @@ function resetFotoTransform(i, e) {
   photoTransforms[i] = {x:0,y:0,scale:1};
   applyFotoTransform(i);
   saveState();
+}
+
+function rotateFoto(i, e) {
+  e.stopPropagation();
+  photoRotations[i] = ((photoRotations[i] || 0) + 90) % 360;
+  applyFotoTransform(i);
+  saveState();
+}
+
+function getFotoForExport(i) {
+  if (!photos[i]) return null;
+  const img = g(`foto-img-${i}`);
+  if (!img || !img.naturalWidth) return photos[i];
+  const t = photoTransforms[i] || {x:0,y:0,scale:1};
+  const rot = photoRotations[i] || 0;
+  const EW = 800, EH = 600;
+  const iW = img.naturalWidth, iH = img.naturalHeight;
+  const effW = rot % 180 === 0 ? iW : iH, effH = rot % 180 === 0 ? iH : iW;
+  const bs = Math.min(EW / effW, EH / effH);
+  const canvas = document.createElement('canvas');
+  canvas.width = EW; canvas.height = EH;
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.translate(EW / 2 + t.x, EH / 2 + t.y);
+  ctx.rotate(rot * Math.PI / 180);
+  ctx.scale(t.scale, t.scale);
+  ctx.drawImage(img, -(iW * bs) / 2, -(iH * bs) / 2, iW * bs, iH * bs);
+  ctx.restore();
+  try { return canvas.toDataURL('image/jpeg', 0.92); } catch(e) { return photos[i]; }
 }
 
 function setupFotoInteractions() {
@@ -664,14 +715,15 @@ function onFileSelect(e){ addFiles(e.target.files); e.target.value = ''; }
 
 function addFiles(files) {
   const arr = [...files].filter(f => f.type.startsWith('image/'));
-  const slots = 8 - photos.length;
-  if (slots <= 0) { toast('Máximo 8 fotos permitidas','err'); return; }
+  const slots = 30 - photos.length;
+  if (slots <= 0) { toast('Máximo 30 fotos permitidas','err'); return; }
   arr.slice(0, slots).forEach(f => {
     const reader = new FileReader();
     reader.onload = e => {
       photos.push(e.target.result);
       captions.push('');
       photoTransforms.push({x:0,y:0,scale:1});
+      photoRotations.push(0);
       renderFotos();
       saveState();
     };
@@ -684,6 +736,7 @@ function removePhoto(i) {
   photos.splice(i, 1);
   captions.splice(i, 1);
   photoTransforms.splice(i, 1);
+  photoRotations.splice(i, 1);
   renderFotos();
   saveState();
 }
@@ -693,13 +746,15 @@ function renderFotos() {
   g('foto-count-n').textContent = photos.length;
   grid.innerHTML = photos.map((src, i) => {
     const t = photoTransforms[i] || {x:0,y:0,scale:1};
+    const r = photoRotations[i] || 0;
     return `
     <div class="foto-item">
       <div class="foto-img-wrap" id="foto-wrap-${i}">
         <span class="foto-num">#${i+1}</span>
         <button class="remove" onclick="removePhoto(${i})">✕</button>
         <button class="foto-rst" onclick="resetFotoTransform(${i},event)" title="Centrar">⟳</button>
-        <img id="foto-img-${i}" src="${src}" alt="Foto ${i+1}" style="transform:translate(${t.x}px,${t.y}px) scale(${t.scale})">
+        <button class="foto-rot" onclick="rotateFoto(${i},event)" title="Rotar">↻</button>
+        <img id="foto-img-${i}" src="${src}" alt="Foto ${i+1}" style="transform:translate(${t.x}px,${t.y}px) scale(${t.scale}) rotate(${r}deg)">
       </div>
       <div class="cap">
         <input type="text" placeholder="Descripción (opcional)" value="${captions[i]||''}"
@@ -708,7 +763,7 @@ function renderFotos() {
     </div>`;
   }).join('');
   const dz = g('drop-zone');
-  dz.style.display = photos.length >= 8 ? 'none' : '';
+  dz.style.display = photos.length >= 30 ? 'none' : '';
   setupFotoInteractions();
 }
 
@@ -740,14 +795,14 @@ async function generarInforme() {
     modelo:        g('modelo').value.trim(),
     resumen1:      g('resumen1').value.trim(),
     resumen2:      g('resumen2').value.trim(),
-    photos,
+    photos: photos.map((_, i) => getFotoForExport(i) || photos[i]),
     captions
   };
 
   try {
     const resp = await fetch('/generar-wom', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authH({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload)
     });
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error||'Error del servidor'); }
@@ -776,7 +831,7 @@ async function loadHistorial() {
   if (!body) return;
   body.innerHTML = '<div class="hist-empty">Cargando...</div>';
   try {
-    const data = await fetch('/registro-wom').then(r=>r.json());
+    const data = await fetch('/registro-wom',{headers:authH()}).then(r=>r.json());
     g('hist-count').textContent = `${data.length} informe(s)`;
     if (!data.length) { body.innerHTML = '<div class="hist-empty">No hay informes generados aún.</div>'; return; }
     body.innerHTML = data.map(e => `
@@ -798,14 +853,24 @@ async function loadHistorial() {
 }
 
 async function descargar(id) {
-  window.location.href = `/descargar-wom/${id}`;
+  try {
+    const r = await fetch(`/descargar-wom/${id}`, {headers:authH()});
+    if (!r.ok) throw new Error('Error al descargar');
+    const blob = await r.blob();
+    const cd = r.headers.get('Content-Disposition') || '';
+    const name = cd.match(/filename="?([^"]+)"?/)?.[1] || `informe-${id}.docx`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { toast('Error al descargar: '+e.message,'err'); }
 }
 
 async function eliminar(id, btn) {
   if (!confirm('¿Mover este informe a la papelera?')) return;
   btn.disabled = true;
   try {
-    await fetch(`/registro-wom/${id}`, { method:'DELETE' });
+    await fetch(`/registro-wom/${id}`, { method:'DELETE', headers:authH() });
     toast('Informe movido a papelera');
     loadHistorial();
   } catch { toast('Error al eliminar','err'); btn.disabled = false; }
@@ -842,6 +907,7 @@ function saveState() {
       photos,
       captions,
       photoTransforms,
+      photoRotations,
       tabIdx,
       locked
     }));
@@ -872,9 +938,10 @@ function restoreState() {
     g('tecnicos-list').innerHTML = '';
     (s.tecnicos && s.tecnicos.length ? s.tecnicos : ['']).forEach(n => addTecnico(n));
 
-    photos         = s.photos         || [];
-    captions       = s.captions       || [];
+    photos          = s.photos          || [];
+    captions        = s.captions        || [];
     photoTransforms = s.photoTransforms || photos.map(() => ({x:0,y:0,scale:1}));
+    photoRotations  = s.photoRotations  || photos.map(() => 0);
     if (photos.length) renderFotos();
 
     updateEstadoActual();
