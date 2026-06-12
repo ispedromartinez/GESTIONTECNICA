@@ -85,7 +85,7 @@ textarea{resize:vertical;min-height:88px;line-height:1.6;}
 .site-wrap{position:relative;}
 .site-in{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 36px;font-size:14px;color:var(--text);background:#fff;transition:.18s;-webkit-appearance:none;font-family:inherit;}
 .site-in:focus{outline:none;border-color:var(--bm);box-shadow:0 0 0 3px rgba(25,118,210,.1);}
-.site-in.sel{border-color:var(--green);background:#f0fdf4;cursor:pointer;}
+.site-in.sel{border-color:var(--green);background:#f0fdf4;}
 .s-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;transition:.15s;}
 .site-wrap:focus-within .s-ico{opacity:0;pointer-events:none;}
 .site-wrap:focus-within .site-in{padding-left:13px;}
@@ -105,7 +105,7 @@ textarea{resize:vertical;min-height:88px;line-height:1.6;}
 .sup-wrap{position:relative;}
 .sup-in{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 36px 10px 13px;font-size:14px;color:var(--text);background:#fff;transition:.18s;-webkit-appearance:none;cursor:pointer;font-family:inherit;}
 .sup-in:focus{outline:none;border-color:var(--bm);box-shadow:0 0 0 3px rgba(25,118,210,.1);}
-.sup-in.sel{border-color:var(--green);background:#f0fdf4;cursor:pointer;}
+.sup-in.sel{border-color:var(--green);background:#f0fdf4;}
 .sup-arr{position:absolute;right:11px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:12px;}
 .sup-dd{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--bm);border-radius:10px;box-shadow:var(--sh-lg);max-height:220px;overflow-y:auto;z-index:999;display:none;}
 .sup-dd.open{display:block;}
@@ -115,7 +115,7 @@ textarea{resize:vertical;min-height:88px;line-height:1.6;}
 .tec-wrap{position:relative;}
 .tec-in{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 36px 10px 13px;font-size:14px;color:var(--text);background:#fff;transition:.18s;-webkit-appearance:none;cursor:pointer;font-family:inherit;}
 .tec-in:focus{outline:none;border-color:var(--bm);box-shadow:0 0 0 3px rgba(25,118,210,.1);}
-.tec-in.sel{border-color:var(--green);background:#f0fdf4;cursor:pointer;}
+.tec-in.sel{border-color:var(--green);background:#f0fdf4;}
 .tec-arr{position:absolute;right:11px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:12px;}
 .tec-dd{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--bm);border-radius:10px;box-shadow:var(--sh-lg);max-height:220px;overflow-y:auto;z-index:999;display:none;}
 .tec-dd.open{display:block;}
@@ -129,10 +129,7 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 /* ── COD PREVIEW ── */
 .cod-auto{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:11px 14px;font-size:13px;color:var(--bd);font-weight:700;letter-spacing:.3px;word-break:break-all;}
 .cod-auto small{font-size:10px;font-weight:400;color:var(--muted);display:block;margin-top:2px;letter-spacing:0;}
-.addr-disp{width:100%;border:1.5px solid #f1f5f9;border-radius:8px;padding:10px 13px;font-size:13px;color:var(--muted);background:#f8fafc;min-height:40px;font-family:inherit;outline:none;transition:border-color .15s,background .15s,color .15s;cursor:default;}
-.addr-disp:not([readonly]){border-color:var(--border);background:#fff;color:var(--text);cursor:text;}
-.addr-disp:not([readonly]):focus{border-color:var(--blue);background:#eff6ff;}
-.addr-disp::placeholder{color:#94a3b8;}
+.addr-disp{width:100%;border:1.5px solid #f1f5f9;border-radius:8px;padding:10px 13px;font-size:13px;color:var(--muted);background:#f8fafc;min-height:40px;}
 
 /* ── MEDICIONES TABLE ── */
 .med-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border);}
@@ -165,8 +162,6 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .pslot.filled .rm-btn{display:flex;}
 .rst-btn{position:absolute;top:5px;right:33px;background:rgba(21,101,192,.75);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:13px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:4;line-height:1;}
 .pslot.filled .rst-btn{display:flex;}
-.rot-btn{position:absolute;top:5px;right:61px;background:rgba(0,140,80,.75);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:4;line-height:1;}
-.pslot.filled .rot-btn{display:flex;}
 .ph-lb{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(21,101,192,.85);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;display:none;pointer-events:none;}
 .pslot.filled .ph-lb{display:block;}
 
@@ -298,15 +293,6 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 </style>
 </head>
 <body>
-<script>
-(function(){
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (!token) { window.location.replace('/login'); throw ''; }
-  fetch('/auth/me', { headers: { Authorization: 'Bearer ' + token } })
-    .then(r => { if (!r.ok) { localStorage.removeItem('token'); sessionStorage.removeItem('token'); window.location.replace('/login'); } })
-    .catch(() => window.location.replace('/login'));
-})();
-</script>
 
 <header>
   <div class="hdr-inner">
@@ -381,7 +367,8 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     <div class="field"><label>Código de Sitio</label><input type="text" id="codigoSitio" placeholder="CDN-001"></div>
     <div class="field">
       <label>Dirección</label>
-      <input type="text" class="addr-disp" id="direccion" placeholder="Dirección del sitio..." autocomplete="off" spellcheck="false" readonly>
+      <div class="addr-disp" id="addrDisp">—</div>
+      <input type="hidden" id="direccion">
     </div>
   </div>
   <div class="card">
@@ -512,7 +499,7 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 <div class="section" id="tab5">
   <div class="card">
     <div class="card-title">Registro Fotográfico</div>
-    <div class="photos-info">📷 Toca cada casilla para elegir desde tu <strong>galería</strong> o tomar una foto. Hasta 30 fotos.</div>
+    <div class="photos-info">📷 Toca cada casilla para elegir desde tu <strong>galería</strong> o tomar una foto. Hasta 12 fotos.</div>
     <div class="photos-grid" id="photosGrid"></div>
   </div>
   <div class="actions">
@@ -629,10 +616,6 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 
 <script>
 const SERVER=window.location.origin;
-function authH(extra={}) {
-  const t = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-  return { Authorization: 'Bearer ' + t, ...extra };
-}
 let serverOnline=false, allRecords=[], pendingDeleteId=null, pendingEmailId=null;
 
 // ══ SUPERVISORS list ══
@@ -650,7 +633,6 @@ const SITES=[
   ['ABRAZO DE MAIPU','4 PONIENTE 145'],
   ['AGUSTINAS ESPERANZA','ESPERANZA 56-58-60'],
   ['ANTONIO VARAS','MANUEL BARROS BORGOÑO 316'],
-  ['ANTOFAGASTA 6','AV LAS PALMERAS N°50 JARDINES DEL NORTE, ANTOFAGASTA'],
   ['ARAUCARIA DE BUIN','CAMINO CAMPO DE GOLF'],
   ['ARCAYA DE COLINA','CARRETERA G. SAN MARTIN, LOTE NN, LT 2'],
   ['BATUCO ERRAZURIZ MZ 2','ERRAZURIZ MZ 29 SITIO 46'],
@@ -848,32 +830,25 @@ siteInput.addEventListener('input',function(){
   if(!q){closeDD();siteCnt.textContent='';return;}
   const nq=norm(q);renderDD(SITES.filter(([n,a])=>norm(n).includes(nq)||norm(a).includes(nq)),q);
 });
-siteInput.addEventListener('mousedown',()=>{
-  if(siteInput.readOnly){
-    siteInput.readOnly=false;
-    siteInput.value='';
-    siteInput.classList.remove('sel');
-    siteClear.classList.remove('show');
-    document.getElementById('nombreSitio').value='';
-    const dir=document.getElementById('direccion');dir.value='';dir.setAttribute('readonly','');
-    document.getElementById('codigoSitio').value='';
-    siteCnt.textContent='';previewCod();
-  }
-});
-siteInput.addEventListener('focus',()=>{if(!siteInput.value&&!siteInput.readOnly)renderDD(SITES.slice(0,25),'');});
+siteInput.addEventListener('focus',()=>{if(!siteInput.value)renderDD(SITES.slice(0,25),'');});
 siteInput.addEventListener('keydown',e=>{
   const items=siteDD.querySelectorAll('.di');
-  const isOpen=siteDD.classList.contains('open');
   if(e.key==='ArrowDown'){e.preventDefault();hiIdx=Math.min(hiIdx+1,items.length-1);hilight(items);}
   else if(e.key==='ArrowUp'){e.preventDefault();hiIdx=Math.max(hiIdx-1,-1);hilight(items);}
+  else if((e.key==='Enter'||e.key==='Tab')&&hiIdx>=0){e.preventDefault();items[hiIdx]?.click();}
   else if(e.key==='Escape')closeDD();
-  else if((e.key==='Enter'||e.key==='Tab')&&isOpen){
-    const pick=hiIdx>=0?items[hiIdx]:[...items].find(el=>el.dataset.name);
-    if(pick&&pick.dataset.name){
-      e.preventDefault();pick.click();
-      if(e.key==='Tab')document.getElementById('codigoSitio').focus();
+});
+siteInput.addEventListener('focusout',e=>{
+  setTimeout(()=>{
+    if(!document.activeElement?.closest?.('.site-wrap')){
+      const val=siteInput.value.trim();
+      if(val&&!siteInput.classList.contains('sel')){
+        const found=SITES.find(([n])=>n.toLowerCase()===val.toLowerCase());
+        if(found)selectSite(found[0],found[1]);
+        else{document.getElementById('nombreSitio').value=val;siteInput.classList.add('sel');closeDD();previewCod();}
+      }else closeDD();
     }
-  }
+  },0);
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.site-wrap'))closeDD();if(!e.target.closest('.sup-wrap'))closeSupDD();if(!e.target.closest('.tec-wrap'))closeTecDD();});
 function renderDD(matches,q){
@@ -885,38 +860,34 @@ function renderDD(matches,q){
   html+='<div class="dd-otros">+ Otro sitio (escribir nombre)</div>';
   siteDD.innerHTML=html;
   siteDD.querySelectorAll('.di').forEach(el=>{
+    el.addEventListener('mousedown',e=>e.preventDefault());
     el.addEventListener('click',()=>selectSite(el.dataset.name,el.dataset.addr));
     el.addEventListener('mouseenter',function(){hiIdx=+this.dataset.i;hilight(siteDD.querySelectorAll('.di'));});
   });
+  siteDD.querySelector('.dd-otros').addEventListener('mousedown',e=>e.preventDefault());
   siteDD.querySelector('.dd-otros').addEventListener('click',selectOtrosSite);
   siteDD.classList.add('open');
 }
 function selectOtrosSite(){
   siteInput.value='';document.getElementById('nombreSitio').value='';
-  const dir=document.getElementById('direccion');
-  dir.value='';dir.removeAttribute('readonly');
-  document.getElementById('codigoSitio').value='';
+  document.getElementById('direccion').value='';document.getElementById('addrDisp').textContent='—';
   siteInput.classList.remove('sel');siteClear.classList.remove('show');
-  siteCnt.textContent='Escribe el nombre del sitio y luego la dirección';
+  siteCnt.textContent='Escribe el nombre del sitio';
   closeDD();siteInput.focus();previewCod();
 }
 function hilight(items){items.forEach((el,i)=>el.classList.toggle('hi',i===hiIdx));if(hiIdx>=0)items[hiIdx]?.scrollIntoView({block:'nearest'});}
 function selectSite(name,addr){
   const idx=SITES.findIndex(([n])=>n===name);
   const code=idx>=0?'CC-'+String(idx+1).padStart(3,'0'):'';
-  siteInput.value=name;siteInput.readOnly=true;
-  document.getElementById('nombreSitio').value=name;
-  const dir=document.getElementById('direccion');
-  dir.value=addr||'';dir.setAttribute('readonly','');
+  siteInput.value=name;document.getElementById('nombreSitio').value=name;
+  document.getElementById('direccion').value=addr;document.getElementById('addrDisp').textContent=addr||'—';
   document.getElementById('codigoSitio').value=code;
   siteInput.classList.add('sel');siteClear.classList.add('show');siteCnt.textContent='✓ Sitio seleccionado';
   closeDD();previewCod();
 }
 function clearSite(){
-  siteInput.value='';siteInput.readOnly=false;
-  document.getElementById('nombreSitio').value='';
-  const dir=document.getElementById('direccion');
-  dir.value='';dir.setAttribute('readonly','');
+  siteInput.value='';document.getElementById('nombreSitio').value='';
+  document.getElementById('direccion').value='';document.getElementById('addrDisp').textContent='—';
   document.getElementById('codigoSitio').value='';
   siteInput.classList.remove('sel');siteClear.classList.remove('show');siteCnt.textContent='';
   closeDD();siteInput.focus();previewCod();
@@ -943,21 +914,21 @@ function renderSupDD(matches,q){
   html+='<div class="dd-otros">+ Otro supervisor (escribir nombre)</div>';
   supDD.innerHTML=html;
   supDD.querySelectorAll('.sup-di').forEach(el=>{
+    el.addEventListener('mousedown',e=>e.preventDefault());
     el.addEventListener('click',()=>selectSup(el.dataset.name));
     el.addEventListener('mouseenter',function(){supHiIdx=+this.dataset.i;hilightSup(supDD.querySelectorAll('.sup-di'));});
   });
+  supDD.querySelector('.dd-otros').addEventListener('mousedown',e=>e.preventDefault());
   supDD.querySelector('.dd-otros').addEventListener('click',selectOtrosSup);
   supDD.classList.add('open');
 }
 function selectOtrosSup(){
-  supInput.value='';supInput.readOnly=false;
-  document.getElementById('supervisor').value='';
+  supInput.value='';document.getElementById('supervisor').value='';
   supInput.classList.remove('sel');closeSupDD();supInput.focus();previewCod();
 }
 function hilightSup(items){items.forEach((el,i)=>el.classList.toggle('hi',i===supHiIdx));}
 function selectSup(name){
-  supInput.value=name;supInput.readOnly=true;
-  document.getElementById('supervisor').value=name;
+  supInput.value=name;document.getElementById('supervisor').value=name;
   supInput.classList.add('sel');closeSupDD();previewCod();
 }
 function closeSupDD(){supDD.classList.remove('open');supDD.innerHTML='';supHiIdx=-1;}
@@ -981,65 +952,65 @@ function renderTecDD(matches,q){
   html+='<div class="dd-otros">+ Otro técnico (escribir nombre)</div>';
   tecDD.innerHTML=html;
   tecDD.querySelectorAll('.sup-di').forEach(el=>{
+    el.addEventListener('mousedown',e=>e.preventDefault());
     el.addEventListener('click',()=>selectTec(el.dataset.name));
     el.addEventListener('mouseenter',function(){tecHiIdx=+this.dataset.i;hilightTec(tecDD.querySelectorAll('.sup-di'));});
   });
+  tecDD.querySelector('.dd-otros').addEventListener('mousedown',e=>e.preventDefault());
   tecDD.querySelector('.dd-otros').addEventListener('click',selectOtrosTec);
   tecDD.classList.add('open');
 }
 function hilightTec(items){items.forEach((el,i)=>el.classList.toggle('hi',i===tecHiIdx));}
 function selectTec(name){
-  tecInput.value=name;tecInput.readOnly=true;
-  document.getElementById('tecnico').value=name;
+  tecInput.value=name;document.getElementById('tecnico').value=name;
   tecInput.classList.add('sel');closeTecDD();previewCod();
 }
 function selectOtrosTec(){
-  tecInput.value='';tecInput.readOnly=false;
-  document.getElementById('tecnico').value='';
+  tecInput.value='';document.getElementById('tecnico').value='';
   tecInput.classList.remove('sel');closeTecDD();tecInput.focus();
 }
 function closeTecDD(){tecDD.classList.remove('open');tecDD.innerHTML='';tecHiIdx=-1;}
-tecInput.addEventListener('mousedown',()=>{
-  if(tecInput.readOnly){
-    tecInput.readOnly=false;tecInput.value='';
-    tecInput.classList.remove('sel');
-    document.getElementById('tecnico').value='';previewCod();
-  }
-});
-supInput.addEventListener('mousedown',()=>{
-  if(supInput.readOnly){
-    supInput.readOnly=false;supInput.value='';
-    supInput.classList.remove('sel');
-    document.getElementById('supervisor').value='';previewCod();
-  }
-});
 tecInput.addEventListener('keydown',e=>{
+  if(tecInput.classList.contains('sel')&&(e.key.length===1||e.key==='Backspace'||e.key==='Delete'||(e.ctrlKey&&'vxVX'.includes(e.key)))){e.preventDefault();return;}
   const items=tecDD.querySelectorAll('.sup-di');
-  const isOpen=tecDD.classList.contains('open');
   if(e.key==='ArrowDown'){e.preventDefault();tecHiIdx=Math.min(tecHiIdx+1,items.length-1);hilightTec(items);}
   else if(e.key==='ArrowUp'){e.preventDefault();tecHiIdx=Math.max(tecHiIdx-1,-1);hilightTec(items);}
-  else if(e.key==='Escape')closeTecDD();
-  else if((e.key==='Enter'||e.key==='Tab')&&isOpen){
-    const pick=tecHiIdx>=0?items[tecHiIdx]:[...items].find(el=>el.dataset.name);
-    if(pick&&pick.dataset.name){
-      e.preventDefault();pick.click();
-      if(e.key==='Tab')supInput.focus();
-    }
+  else if(e.key==='Enter'||e.key==='Tab'){
+    const hasHi=tecHiIdx>=0;
+    if(hasHi){e.preventDefault();items[tecHiIdx]?.click();}
+    if(hasHi||tecInput.value.trim()){e.preventDefault();document.getElementById('supervisorInput').focus();}
   }
+  else if(e.key==='Escape')closeTecDD();
+});
+tecInput.addEventListener('paste',e=>{if(tecInput.classList.contains('sel'))e.preventDefault();});
+tecInput.addEventListener('focusout',e=>{
+  setTimeout(()=>{
+    if(!document.activeElement?.closest?.('.tec-wrap')){
+      if(tecInput.value.trim())selectTec(tecInput.value.trim());
+      else closeTecDD();
+    }
+  },0);
 });
 supInput.addEventListener('keydown',e=>{
+  if(supInput.classList.contains('sel')&&(e.key.length===1||e.key==='Backspace'||e.key==='Delete'||(e.ctrlKey&&'vxVX'.includes(e.key)))){e.preventDefault();return;}
   const items=supDD.querySelectorAll('.sup-di');
-  const isOpen=supDD.classList.contains('open');
   if(e.key==='ArrowDown'){e.preventDefault();supHiIdx=Math.min(supHiIdx+1,items.length-1);hilightSup(items);}
   else if(e.key==='ArrowUp'){e.preventDefault();supHiIdx=Math.max(supHiIdx-1,-1);hilightSup(items);}
-  else if(e.key==='Escape')closeSupDD();
-  else if((e.key==='Enter'||e.key==='Tab')&&isOpen){
-    const pick=supHiIdx>=0?items[supHiIdx]:[...items].find(el=>el.dataset.name);
-    if(pick&&pick.dataset.name){
-      e.preventDefault();pick.click();
-      if(e.key==='Tab')document.getElementById('numOT').focus();
-    }
+  else if(e.key==='Enter'||e.key==='Tab'){
+    const hasHi=supHiIdx>=0;
+    if(hasHi){e.preventDefault();items[supHiIdx]?.click();}
+    if(hasHi||supInput.value.trim()){e.preventDefault();document.getElementById('numOT').focus();}
   }
+  else if(e.key==='Escape')closeSupDD();
+});
+supInput.addEventListener('paste',e=>{if(supInput.classList.contains('sel'))e.preventDefault();});
+supInput.addEventListener('focusout',e=>{
+  setTimeout(()=>{
+    if(!document.activeElement?.closest?.('.sup-wrap')){
+      if(supInput.value.trim())selectSup(supInput.value.trim());
+      else closeSupDD();
+    }
+  },0);
 });
 
 // ══ CÓDIGO CORRELATIVO ══
@@ -1061,7 +1032,7 @@ async function buildCodigoFinal(){
   const base=buildCodigo();
   if(!base)return null;
   try{
-    const r=await fetch(SERVER+'/registro',{headers:authH()});
+    const r=await fetch(SERVER+'/registro');
     const records=await r.json();
     const existing=records.map(x=>x.codInforme||'').filter(c=>c.startsWith(base));
     if(!existing.length)return base;
@@ -1097,11 +1068,11 @@ function nuevoInforme(){
   // Clear site
   clearSite();
   // Clear supervisor
-  supInput.value='';supInput.readOnly=false;document.getElementById('supervisor').value='';supInput.classList.remove('sel');
-  if(typeof tecInput!=='undefined'){tecInput.value='';tecInput.readOnly=false;tecInput.classList.remove('sel');}
+  supInput.value='';document.getElementById('supervisor').value='';supInput.classList.remove('sel');
+  if(typeof tecInput!=='undefined'){tecInput.value='';tecInput.classList.remove('sel');}
   // Clear photos
-  for(let i=0;i<30;i++){
-    photoFiles[i]=null;photoDataUrls[i]=null;photoDescs[i]='';photoTransforms[i]={x:0,y:0,scale:1};photoRotations[i]=0;
+  for(let i=0;i<12;i++){
+    photoFiles[i]=null;photoDataUrls[i]=null;photoDescs[i]='';photoTransforms[i]={x:0,y:0,scale:1};
     const img=document.getElementById(`img${i}`);if(img){img.src='';img.style.transform='';}
     const slot=document.getElementById(`slot${i}`);if(slot)slot.classList.remove('filled');
     const fi=document.getElementById(`fi${i}`);if(fi)fi.value='';
@@ -1192,17 +1163,15 @@ function showTab(idx){
 }
 
 // ══ PHOTOS ══
-const photoFiles=new Array(30).fill(null);
-const photoDataUrls=new Array(30).fill(null);
-const photoDescs=new Array(30).fill('');
-const photoTransforms=new Array(30).fill(null).map(()=>({x:0,y:0,scale:1}));
-const photoRotations=new Array(30).fill(0);
+const photoFiles=new Array(12).fill(null);
+const photoDataUrls=new Array(12).fill(null);
+const photoDescs=new Array(12).fill('');
+const photoTransforms=new Array(12).fill(null).map(()=>({x:0,y:0,scale:1}));
 
 function applyTransform(idx){
   const img=document.getElementById(`img${idx}`);if(!img)return;
   const t=photoTransforms[idx];
-  const r=photoRotations[idx]||0;
-  img.style.transform=`translate(${t.x}px,${t.y}px) scale(${t.scale}) rotate(${r}deg)`;
+  img.style.transform=`translate(${t.x}px,${t.y}px) scale(${t.scale})`;
 }
 function resetPhotoTransform(idx,e){
   if(e)e.stopPropagation();
@@ -1210,30 +1179,23 @@ function resetPhotoTransform(idx,e){
   photoTransforms[idx]={x:0,y:0,scale:1,refW:t.refW,refH:t.refH};
   applyTransform(idx);
 }
-function rotatePhoto(idx,e){
-  e.stopPropagation();
-  photoRotations[idx]=((photoRotations[idx]||0)+90)%360;
-  applyTransform(idx);
-}
 function getPhotoForExport(idx){
   if(!photoDataUrls[idx])return null;
   const img=document.getElementById(`img${idx}`);
   if(!img||!img.naturalWidth||!img.naturalHeight)return photoDataUrls[idx];
   const t=photoTransforms[idx];
-  const rot=(photoRotations[idx]||0);
+  // Dimensiones fijas 4:3 para el Word — independiente de si el tab está visible
   const EW=800,EH=600;
   const refW=t.refW||EW, refH=t.refH||EH;
+  // Escalar la traslación del slot visual al canvas de exportación
   const tx=t.x*(EW/refW), ty=t.y*(EH/refH);
   const canvas=document.createElement('canvas');
   canvas.width=EW;canvas.height=EH;
   const ctx=canvas.getContext('2d');
   const iW=img.naturalWidth,iH=img.naturalHeight;
-  // Al rotar 90/270 las dimensiones efectivas se invierten
-  const effW=rot%180===0?iW:iH, effH=rot%180===0?iH:iW;
-  const bs=Math.min(EW/effW,EH/effH);
+  const bs=Math.min(EW/iW,EH/iH);
   ctx.save();
   ctx.translate(EW/2+tx,EH/2+ty);
-  ctx.rotate(rot*Math.PI/180);
   ctx.scale(t.scale,t.scale);
   ctx.drawImage(img,-(iW*bs)/2,-(iH*bs)/2,iW*bs,iH*bs);
   ctx.restore();
@@ -1303,7 +1265,7 @@ function createPhotoSlot(i){
   const grid=document.getElementById('photosGrid');
   const wrap=document.createElement('div');wrap.className='pslot-wrap';
   const s=document.createElement('div');s.className='pslot';s.id=`slot${i}`;
-  s.innerHTML=`<input class="fi" type="file" accept="image/*" multiple id="fi${i}"><img id="img${i}" alt=""><div class="ph-pl"><span class="ph-ic">🖼</span><span class="ph-fg">Fig. ${i+1}</span><span class="ph-ht">Toca para agregar</span></div><button class="rot-btn" title="Rotar" onclick="rotatePhoto(${i},event)">↻</button><button class="rst-btn" title="Centrar" onclick="resetPhotoTransform(${i},event)">⟳</button><button class="rm-btn" onclick="removePhoto(${i},event)">✕</button><span class="ph-lb">Fig. ${i+1}</span>`;
+  s.innerHTML=`<input class="fi" type="file" accept="image/*" multiple id="fi${i}"><img id="img${i}" alt=""><div class="ph-pl"><span class="ph-ic">🖼</span><span class="ph-fg">Fig. ${i+1}</span><span class="ph-ht">Toca para agregar</span></div><button class="rst-btn" title="Centrar" onclick="resetPhotoTransform(${i},event)">⟳</button><button class="rm-btn" onclick="removePhoto(${i},event)">✕</button><span class="ph-lb">Fig. ${i+1}</span>`;
   s.querySelector('.fi').addEventListener('change',e=>handlePhoto(i,e));
   setupPhotoInteraction(i);
   const desc=document.createElement('input');
@@ -1317,11 +1279,11 @@ function buildPhotoSlots(){
   const grid=document.getElementById('photosGrid');grid.innerHTML='';
   createPhotoSlot(0);
 }
-// Mantiene siempre visible una única casilla vacía al final (hasta el máximo de 30)
+// Mantiene siempre visible una única casilla vacía al final (hasta el máximo de 12)
 function ensureTrailingSlot(){
   let next=0;
-  while(next<30 && photoFiles[next])next++;
-  if(next<30)createPhotoSlot(next);
+  while(next<12 && photoFiles[next])next++;
+  if(next<12)createPhotoSlot(next);
 }
 function loadPhotoFile(idx,file,focusDesc){
   createPhotoSlot(idx);
@@ -1348,8 +1310,8 @@ function handlePhoto(idx,e){
   const files=Array.from(e.target.files||[]);if(!files.length)return;
   let target=idx;
   files.forEach(file=>{
-    while(target<30 && photoFiles[target])target++;
-    if(target>=30)return;
+    while(target<12 && photoFiles[target])target++;
+    if(target>=12)return;
     loadPhotoFile(target,file,files.length===1);
     target++;
   });
@@ -1357,7 +1319,7 @@ function handlePhoto(idx,e){
 }
 function removePhoto(idx,e){
   e.stopPropagation();photoFiles[idx]=null;photoDataUrls[idx]=null;photoDescs[idx]='';
-  photoTransforms[idx]={x:0,y:0,scale:1};photoRotations[idx]=0;
+  photoTransforms[idx]={x:0,y:0,scale:1};
   const im=document.getElementById(`img${idx}`);im.src='';im.style.transform='';
   document.getElementById(`slot${idx}`).classList.remove('filled');
   document.getElementById(`fi${idx}`).value='';
@@ -1380,7 +1342,7 @@ function buildSummary(){
     ['Técnico',g('tecnico')],
     ['Supervisor',document.getElementById('supervisor').value||supInput.value],
     ['Equipo N°',g('eqNumero')],['Marca',g('eqMarca')],
-    ['OT',g('numOT')],['Fotos',`${pc} / 30`]
+    ['OT',g('numOT')],['Fotos',`${pc} / 12`]
   ];
   let html=`<div class="cod-badge">📄 ${cod} <span style="font-size:10px;opacity:.7">(+correlativo si duplicado)</span></div>`;
   html+='<table class="summary-table">';
@@ -1423,7 +1385,7 @@ async function generateDocx(){
     photoDescs:photoDescs
   };
   try{
-    const resp=await fetch(SERVER+'/generar',{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(payload)});
+    const resp=await fetch(SERVER+'/generar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!resp.ok)throw new Error(`Error del servidor: ${resp.status}`);
     const blob=await resp.blob();
     const disp=resp.headers.get('Content-Disposition')||'';
@@ -1444,7 +1406,7 @@ async function loadHist(silent=false){
   try{
     const q=document.getElementById('histSearch')?.value||'';
     const url=q?`${SERVER}/registro?q=${encodeURIComponent(q)}`:SERVER+'/registro';
-    const r=await fetch(url,{headers:authH()});allRecords=await r.json();renderHist(allRecords);
+    const r=await fetch(url);allRecords=await r.json();renderHist(allRecords);
   }catch{
     if(!silent)document.getElementById('histList').innerHTML='<div class="hist-empty"><div class="ei">⚠️</div><p>No se pudo conectar al servidor.<br><strong>Ejecuta: node server.js</strong></p></div>';
   }
@@ -1499,20 +1461,10 @@ function renderHist(records){
   }).join('');
 }
 function toggleInf(id){document.getElementById(`body_${id}`).classList.toggle('open');}
-async function downloadRecord(id){
-  try{
-    const r=await fetch(`${SERVER}/descargar/${id}`,{headers:authH()});
-    if(!r.ok)throw new Error('Error al descargar');
-    const blob=await r.blob();
-    const disp=r.headers.get('Content-Disposition')||'';
-    const fn=(disp.match(/filename="(.+)"/)||[])[1]||`informe-${id}.docx`;
-    const url=URL.createObjectURL(blob);const a=document.createElement('a');
-    a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url);
-  }catch(e){alert('Error al descargar: '+e.message);}
-}
+async function downloadRecord(id){const a=document.createElement('a');a.href=`${SERVER}/descargar/${id}`;a.click();}
 function openConfirm(id,sitio){pendingDeleteId=id;document.getElementById('confirmMsg').textContent=`Se eliminará el informe de "${sitio}". Esta acción no se puede deshacer.`;document.getElementById('confirmDel').classList.add('open');}
 function closeConfirm(){document.getElementById('confirmDel').classList.remove('open');pendingDeleteId=null;}
-async function confirmDelete(){if(!pendingDeleteId)return;closeConfirm();try{await fetch(`${SERVER}/registro/${pendingDeleteId}`,{method:'DELETE',headers:authH()});await loadHist();}catch(e){alert('Error: '+e.message);}}
+async function confirmDelete(){if(!pendingDeleteId)return;closeConfirm();try{await fetch(`${SERVER}/registro/${pendingDeleteId}`,{method:'DELETE'});await loadHist();}catch(e){alert('Error: '+e.message);}}
 function openEmailModal(id,sitio,cod){pendingEmailId=id;document.getElementById('emailModalInfo').textContent=`Informe: ${cod} — Sitio: ${sitio}`;document.getElementById('emailStatus').style.display='none';document.getElementById('emailModal').classList.add('open');}
 function closeEmailModal(){document.getElementById('emailModal').classList.remove('open');pendingEmailId=null;}
 async function sendEmail(){
@@ -1520,7 +1472,7 @@ async function sendEmail(){
   if(!to){st.className='status err';st.textContent='⚠ Ingresa un correo destinatario.';return;}
   st.className='status loading';st.textContent='📤 Enviando...';
   try{
-    const r=await fetch(`${SERVER}/enviar/${pendingEmailId}`,{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify({to,smtpHost:document.getElementById('smtpHost').value,smtpPort:+document.getElementById('smtpPort').value,smtpUser:document.getElementById('smtpUser').value,smtpPass:document.getElementById('smtpPass').value})});
+    const r=await fetch(`${SERVER}/enviar/${pendingEmailId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to,smtpHost:document.getElementById('smtpHost').value,smtpPort:+document.getElementById('smtpPort').value,smtpUser:document.getElementById('smtpUser').value,smtpPass:document.getElementById('smtpPass').value})});
     const d=await r.json();if(!r.ok)throw new Error(d.error||'Error al enviar');
     st.className='status ok';st.textContent='✅ Informe enviado correctamente';setTimeout(closeEmailModal,2000);
   }catch(e){st.className='status err';st.textContent='❌ '+e.message;}
@@ -1536,7 +1488,7 @@ async function loadPapelera(silent=false) {
   try {
     const q = document.getElementById('papSearch')?.value||'';
     const url = q ? `${SERVER}/papelera?q=${encodeURIComponent(q)}` : SERVER+'/papelera';
-    const r = await fetch(url,{headers:authH()});
+    const r = await fetch(url);
     allPapelera = await r.json();
     renderPapelera(allPapelera);
   } catch {
@@ -1586,7 +1538,7 @@ function togglePap(id){ document.getElementById(`pbody_${id}`)?.classList.toggle
 
 async function restaurar(id) {
   try {
-    const r = await fetch(`${SERVER}/papelera/restaurar/${id}`, {method:'POST',headers:authH()});
+    const r = await fetch(`${SERVER}/papelera/restaurar/${id}`, {method:'POST'});
     if(!r.ok) throw new Error('Error al restaurar');
     await loadPapelera();
     await loadHist(true);
@@ -1610,7 +1562,7 @@ async function confirmPermDelete() {
   if(!pendingPermId) return;
   closeConfirmPerm();
   try {
-    await fetch(`${SERVER}/papelera/${pendingPermId}`, {method:'DELETE',headers:authH()});
+    await fetch(`${SERVER}/papelera/${pendingPermId}`, {method:'DELETE'});
     await loadPapelera();
   } catch(e){ alert('Error: '+e.message); }
 }
@@ -1620,7 +1572,7 @@ function closeConfirmVaciar(){ document.getElementById('confirmVaciar').classLis
 async function confirmVaciar(){
   closeConfirmVaciar();
   try{
-    await fetch(`${SERVER}/papelera`, {method:'DELETE',headers:authH()});
+    await fetch(`${SERVER}/papelera`, {method:'DELETE'});
     await loadPapelera();
   } catch(e){ alert('Error: '+e.message); }
 }
@@ -1638,7 +1590,7 @@ async function confirmDelete(){
   allRecords=allRecords.filter(r=>r.id!==id);
   document.getElementById('histTabNum').textContent=allRecords.length||'0';
   try{
-    await fetch(`${SERVER}/registro/${id}`,{method:'DELETE',headers:authH()});
+    await fetch(`${SERVER}/registro/${id}`,{method:'DELETE'});
     await loadHist(true);
     await loadPapelera(true);
   }catch(e){alert('Error al mover a papelera: '+e.message);}
