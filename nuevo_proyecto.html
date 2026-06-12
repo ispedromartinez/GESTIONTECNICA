@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Nuevo Proyecto – GestiónTécnica</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Poppins',sans-serif;background:#F0F2F8;color:#323338;min-height:100vh;}
+
+header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
+.h-brand{display:flex;align-items:center;gap:10px;}
+.h-gt{width:32px;height:32px;background:linear-gradient(135deg,#0073EA,#6161FF);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;}
+.h-title{font-size:14px;font-weight:700;color:#fff;}
+.h-back{color:rgba(255,255,255,.55);font-size:12px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:6px 14px;border-radius:7px;transition:.15s;}
+.h-back:hover{background:rgba(255,255,255,.1);color:#fff;}
+
+.wizard-wrap{max-width:760px;margin:32px auto;padding:0 16px 60px;}
+
+/* STEPS */
+.steps{display:flex;align-items:center;margin-bottom:32px;gap:0;}
+.step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+.step:not(:last-child)::after{content:'';position:absolute;top:17px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;background:#D0D4E4;z-index:0;}
+.step.done:not(:last-child)::after,.step.active:not(:last-child)::after{background:#0073EA;}
+.step-circle{width:34px;height:34px;border-radius:50%;border:2px solid #D0D4E4;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#9ba1b0;position:relative;z-index:1;transition:.2s;}
+.step.done .step-circle{background:#0073EA;border-color:#0073EA;color:#fff;}
+.step.active .step-circle{border-color:#0073EA;color:#0073EA;box-shadow:0 0 0 4px rgba(0,115,234,.15);}
+.step-label{font-size:10px;font-weight:600;color:#9ba1b0;margin-top:6px;text-align:center;white-space:nowrap;}
+.step.active .step-label{color:#0073EA;}
+.step.done .step-label{color:#323338;}
+
+/* CARD */
+.card{background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.04);border:1px solid #E6E9EF;}
+.card-title{font-size:18px;font-weight:800;color:#1C1F3B;margin-bottom:6px;}
+.card-sub{font-size:13px;color:#676879;margin-bottom:28px;}
+
+/* FIELDS */
+.field{margin-bottom:18px;}
+.field label{display:block;font-size:11px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid #E6E9EF;border-radius:9px;padding:10px 14px;font-size:14px;color:#323338;font-family:inherit;outline:none;transition:.15s;background:#fff;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#0073EA;box-shadow:0 0 0 3px rgba(0,115,234,.1);}
+.field textarea{resize:vertical;min-height:80px;line-height:1.6;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field-hint{font-size:11px;color:#9ba1b0;margin-top:5px;}
+
+/* SLUG PREVIEW */
+.slug-preview{font-size:12px;background:#F0F2F8;padding:8px 12px;border-radius:7px;margin-top:6px;color:#676879;font-family:monospace;}
+.slug-preview strong{color:#0073EA;}
+
+/* COLOR */
+.color-row{display:flex;align-items:center;gap:10px;}
+.color-row input[type=color]{width:44px;height:36px;border:1.5px solid #E6E9EF;border-radius:8px;cursor:pointer;padding:2px;background:#fff;}
+.color-row input[type=text]{flex:1;}
+
+/* TEMPLATE SELECTOR */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px;}
+.tpl-card{border:2px solid #E6E9EF;border-radius:12px;padding:20px;cursor:pointer;transition:.15s;position:relative;}
+.tpl-card:hover{border-color:#b3c8e8;background:#F8FAFF;}
+.tpl-card.sel{border-color:#0073EA;background:#EEF5FF;}
+.tpl-card input[type=radio]{position:absolute;opacity:0;}
+.tpl-name{font-size:14px;font-weight:700;color:#323338;margin-bottom:4px;display:flex;align-items:center;gap:7px;}
+.tpl-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.tb-tigo{background:#EEF5FF;color:#0073EA;}
+.tb-wom{background:#F3F0FF;color:#6161FF;}
+.tpl-desc{font-size:12px;color:#676879;line-height:1.6;}
+.tpl-check{position:absolute;top:12px;right:12px;width:20px;height:20px;border-radius:50%;background:#0073EA;color:#fff;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.tpl-card.sel .tpl-check{display:flex;}
+.tpl-preview{margin-top:12px;border:1px solid #E6E9EF;border-radius:8px;overflow:hidden;background:#F8F9FC;}
+.tpl-preview-bar{height:4px;}
+.tpl-preview-bar.blue{background:linear-gradient(90deg,#0073EA,#1976D2);}
+.tpl-preview-bar.purple{background:linear-gradient(90deg,#6161FF,#7B1FA2);}
+.tpl-preview-rows{padding:10px 12px;display:flex;flex-direction:column;gap:5px;}
+.tpl-row{height:8px;border-radius:4px;background:#E6E9EF;}
+.tpl-row.w80{width:80%;}
+.tpl-row.w60{width:60%;}
+.tpl-row.w40{width:40%;}
+
+/* LOGO UPLOAD */
+.logo-zone{border:2px dashed #D0D4E4;border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:.15s;position:relative;background:#FAFBFC;}
+.logo-zone:hover{border-color:#0073EA;background:#EEF5FF;}
+.logo-zone.has{border-style:solid;border-color:#0073EA;background:#fff;}
+.logo-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.logo-ic{font-size:36px;margin-bottom:8px;}
+.logo-hint{font-size:12px;color:#9ba1b0;}
+.logo-preview{max-height:80px;max-width:200px;object-fit:contain;display:none;}
+.logo-zone.has .logo-ic,.logo-zone.has .logo-hint{display:none;}
+.logo-zone.has .logo-preview{display:block;margin:0 auto;}
+.logo-clear{position:absolute;top:8px;right:8px;background:#fef2f2;color:#E2445C;border:1px solid #fca5a5;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;display:none;z-index:2;}
+.logo-zone.has .logo-clear{display:block;}
+
+/* SITIOS */
+.sitios-section{display:flex;flex-direction:column;gap:10px;}
+.sitio-row{display:grid;grid-template-columns:1fr 1.5fr auto;gap:8px;align-items:center;}
+.sitio-row input{border:1.5px solid #E6E9EF;border-radius:8px;padding:9px 12px;font-size:13px;color:#323338;font-family:inherit;outline:none;background:#fff;width:100%;transition:.15s;}
+.sitio-row input:focus{border-color:#0073EA;}
+.btn-rm-row{background:#fef2f2;color:#E2445C;border:1px solid #fca5a5;border-radius:7px;width:30px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.btn-rm-row:hover{background:#fee2e2;}
+.btn-add-row{background:#f0fdf4;color:#00A86B;border:1px solid #bbf7d0;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;width:fit-content;transition:.15s;}
+.btn-add-row:hover{background:#dcfce7;}
+.upload-csv{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#F8F9FC;border:1.5px dashed #D0D4E4;border-radius:9px;cursor:pointer;position:relative;}
+.upload-csv input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.upload-csv-ic{font-size:20px;}
+.upload-csv-txt{font-size:12px;color:#676879;font-weight:500;}
+.upload-csv-txt strong{color:#0073EA;}
+.sitios-count{font-size:12px;color:#676879;font-weight:500;}
+.sitios-preview{max-height:180px;overflow-y:auto;border:1px solid #E6E9EF;border-radius:8px;padding:0;}
+.sitios-preview tr:last-child td{border-bottom:none;}
+.sitios-preview table{width:100%;border-collapse:collapse;font-size:12px;}
+.sitios-preview th{background:#F8F9FC;padding:7px 12px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #E6E9EF;}
+.sitios-preview td{padding:7px 12px;border-bottom:1px solid #F6F7FB;color:#323338;}
+
+/* EQUIPO */
+.persona-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.persona-row input{flex:1;border:1.5px solid #E6E9EF;border-radius:8px;padding:9px 12px;font-size:13px;color:#323338;font-family:inherit;outline:none;background:#fff;transition:.15s;}
+.persona-row input:focus{border-color:#0073EA;}
+.personas-list{display:flex;flex-direction:column;}
+
+/* REVIEW */
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.review-item{background:#F8F9FC;border-radius:10px;padding:14px 16px;}
+.review-label{font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.review-val{font-size:14px;font-weight:600;color:#323338;}
+.review-sub{font-size:12px;color:#676879;margin-top:2px;}
+.logo-review{height:40px;object-fit:contain;margin-top:6px;}
+.color-dot{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+
+/* NAV BUTTONS */
+.wizard-nav{display:flex;justify-content:space-between;align-items:center;margin-top:28px;}
+.btn-prev{background:#fff;border:1.5px solid #E6E9EF;color:#676879;border-radius:9px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn-prev:hover{border-color:#b3c8e8;color:#323338;}
+.btn-next{background:#0073EA;color:#fff;border:none;border-radius:9px;padding:11px 28px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px;}
+.btn-next:hover{background:#005bb5;}
+.btn-next:disabled{opacity:.5;cursor:not-allowed;}
+.btn-crear{background:linear-gradient(135deg,#0073EA,#6161FF);color:#fff;border:none;border-radius:9px;padding:13px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn-crear:hover{opacity:.88;}
+
+/* ERROR */
+.err-msg{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;color:#E2445C;margin-bottom:14px;display:none;}
+
+/* TOAST */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#323338;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.ok{background:#00A86B;}
+#toast.err{background:#E2445C;}
+
+@media(max-width:600px){
+  .row2,.tpl-grid,.review-grid{grid-template-columns:1fr;}
+  .sitio-row{grid-template-columns:1fr auto;}
+  .sitio-row input:nth-child(2){display:none;}
+  .steps .step-label{display:none;}
+  .card{padding:20px 16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- Guard superadmin -->
+<script>
+(function(){
+  const t = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (!t) { window.location.replace('/login'); throw ''; }
+  fetch('/auth/me', { headers: { Authorization: 'Bearer ' + t } })
+    .then(r => r.json())
+    .then(d => {
+      if (d.usuario?.rol !== 'superadmin') { window.location.replace('/dashboard'); throw ''; }
+    })
+    .catch(() => window.location.replace('/login'));
+})();
+</script>
+
+<header>
+  <div class="h-brand">
+    <div class="h-gt">GT</div>
+    <span class="h-title">Nuevo Proyecto</span>
+  </div>
+  <a href="/dashboard" class="h-back">← Volver</a>
+</header>
+
+<div class="wizard-wrap">
+
+  <!-- STEPS INDICATOR -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="s1"><div class="step-circle">1</div><div class="step-label">Básico</div></div>
+    <div class="step" id="s2"><div class="step-circle">2</div><div class="step-label">Logo</div></div>
+    <div class="step" id="s3"><div class="step-circle">3</div><div class="step-label">Formato</div></div>
+    <div class="step" id="s4"><div class="step-circle">4</div><div class="step-label">Sitios</div></div>
+    <div class="step" id="s5"><div class="step-circle">5</div><div class="step-label">Equipo</div></div>
+    <div class="step" id="s6"><div class="step-circle" style="font-size:14px">✓</div><div class="step-label">Revisar</div></div>
+  </div>
+
+  <div class="err-msg" id="errMsg"></div>
+
+  <!-- ══ PASO 1: BÁSICO ══ -->
+  <div class="card" id="paso1">
+    <div class="card-title">Información básica</div>
+    <div class="card-sub">Nombre e identificador del nuevo proyecto</div>
+    <div class="field">
+      <label>Nombre del proyecto *</label>
+      <input type="text" id="pNombre" placeholder="Ej: Claro, Entel, Movistar..." oninput="autoSlug()">
+    </div>
+    <div class="field">
+      <label>Identificador (slug) *</label>
+      <input type="text" id="pSlug" placeholder="claro" oninput="cleanSlug()">
+      <div class="slug-preview">URL del proyecto: <strong>/proyecto/<span id="slugPreview">—</span></strong></div>
+    </div>
+    <div class="field">
+      <label>Color principal</label>
+      <div class="color-row">
+        <input type="color" id="pColor" value="#0073EA" oninput="syncColorText()">
+        <input type="text" id="pColorText" value="#0073EA" placeholder="#0073EA" oninput="syncColorPicker()">
+      </div>
+      <div class="field-hint">Se usa en botones y acentos del proyecto</div>
+    </div>
+    <div class="wizard-nav">
+      <span></span>
+      <button class="btn-next" onclick="irPaso(2)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══ PASO 2: LOGO ══ -->
+  <div class="card" id="paso2" style="display:none">
+    <div class="card-title">Logo del proyecto</div>
+    <div class="card-sub">Sube una imagen PNG sin fondo (transparente)</div>
+    <div class="logo-zone" id="logoZone">
+      <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange="handleLogo(event)">
+      <div class="logo-ic">🖼️</div>
+      <div style="font-size:14px;font-weight:600;color:#676879;margin-bottom:4px;">Arrastra o haz clic para subir</div>
+      <div class="logo-hint">PNG sin fondo recomendado · Máx. 2 MB</div>
+      <img class="logo-preview" id="logoPreview" src="" alt="Logo">
+      <button class="logo-clear" onclick="clearLogo(event)">✕ Quitar</button>
+    </div>
+    <div class="field-hint" style="margin-top:10px">El logo aparecerá en el encabezado del proyecto y en los informes Word generados.</div>
+    <div class="wizard-nav">
+      <button class="btn-prev" onclick="irPaso(1)">← Anterior</button>
+      <button class="btn-next" onclick="irPaso(3)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══ PASO 3: FORMATO ══ -->
+  <div class="card" id="paso3" style="display:none">
+    <div class="card-title">Formato del informe</div>
+    <div class="card-sub">Elige la estructura de los campos y del documento Word generado</div>
+    <div class="tpl-grid">
+
+      <label class="tpl-card" id="tplTigo" onclick="selTpl('tigo')">
+        <input type="radio" name="tpl" value="tigo">
+        <div class="tpl-check">✓</div>
+        <div class="tpl-name"><span class="tpl-badge tb-tigo">TIGO</span> Formato Tigo</div>
+        <div class="tpl-desc">Mantenimiento preventivo/correctivo. Incluye sala, equipo, mediciones técnicas, checklist y fotografías.</div>
+        <div class="tpl-preview">
+          <div class="tpl-preview-bar blue"></div>
+          <div class="tpl-preview-rows">
+            <div class="tpl-row w80"></div>
+            <div class="tpl-row w60"></div>
+            <div class="tpl-row w40"></div>
+            <div class="tpl-row w80"></div>
+            <div class="tpl-row w60"></div>
+          </div>
+        </div>
+      </label>
+
+      <label class="tpl-card" id="tplWom" onclick="selTpl('wom')">
+        <input type="radio" name="tpl" value="wom">
+        <div class="tpl-check">✓</div>
+        <div class="tpl-name"><span class="tpl-badge tb-wom">WOM</span> Formato WOM</div>
+        <div class="tpl-desc">Correctivo / tickets de servicio. Incluye N° ticket, tipo de actividad, técnicos múltiples y fotografías.</div>
+        <div class="tpl-preview">
+          <div class="tpl-preview-bar purple"></div>
+          <div class="tpl-preview-rows">
+            <div class="tpl-row w60"></div>
+            <div class="tpl-row w80"></div>
+            <div class="tpl-row w40"></div>
+            <div class="tpl-row w60"></div>
+            <div class="tpl-row w80"></div>
+          </div>
+        </div>
+      </label>
+
+    </div>
+    <div class="wizard-nav" style="margin-top:24px">
+      <button class="btn-prev" onclick="irPaso(2)">← Anterior</button>
+      <button class="btn-next" onclick="irPaso(4)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══ PASO 4: SITIOS ══ -->
+  <div class="card" id="paso4" style="display:none">
+    <div class="card-title">Sitios del proyecto</div>
+    <div class="card-sub">Agrega los sitios manualmente o importa desde un archivo CSV/Excel</div>
+
+    <!-- Upload CSV -->
+    <div class="upload-csv" style="margin-bottom:14px">
+      <input type="file" accept=".csv,.xlsx,.xls,.txt" onchange="parseSitiosFile(event)">
+      <span class="upload-csv-ic">📄</span>
+      <div>
+        <div class="upload-csv-txt"><strong>Subir planilla</strong> – CSV o Excel</div>
+        <div class="upload-csv-txt">Formato: columna A = nombre del sitio, columna B = dirección</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span class="sitios-count">Sitios cargados: <strong id="sitiosCount">0</strong></span>
+      <button class="btn-add-row" onclick="addSitioRow()">+ Agregar sitio</button>
+    </div>
+
+    <!-- Preview cargados desde CSV -->
+    <div id="sitiosPreviewWrap" style="display:none;margin-bottom:12px">
+      <div class="sitios-preview" id="sitiosPreviewTbl"></div>
+    </div>
+
+    <!-- Sitios manuales -->
+    <div id="sitiosManual">
+      <div style="display:grid;grid-template-columns:1fr 1.5fr auto;gap:8px;padding:0 0 6px;font-size:10px;font-weight:700;color:#9ba1b0;text-transform:uppercase;letter-spacing:.5px;">
+        <span>Nombre del sitio</span><span>Dirección</span><span></span>
+      </div>
+      <div class="sitios-section" id="sitiosRows"></div>
+    </div>
+
+    <div class="wizard-nav">
+      <button class="btn-prev" onclick="irPaso(3)">← Anterior</button>
+      <button class="btn-next" onclick="irPaso(5)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══ PASO 5: EQUIPO ══ -->
+  <div class="card" id="paso5" style="display:none">
+    <div class="card-title">Equipo de trabajo</div>
+    <div class="card-sub">Agrega los supervisores y técnicos que trabajarán en este proyecto</div>
+
+    <div class="field">
+      <label>Supervisores</label>
+      <div class="personas-list" id="supList"></div>
+      <button class="btn-add-row" onclick="addPersona('sup')" style="margin-top:8px">+ Agregar supervisor</button>
+    </div>
+
+    <div class="field">
+      <label>Técnicos</label>
+      <div class="personas-list" id="tecList"></div>
+      <button class="btn-add-row" onclick="addPersona('tec')" style="margin-top:8px">+ Agregar técnico</button>
+    </div>
+
+    <div class="wizard-nav">
+      <button class="btn-prev" onclick="irPaso(4)">← Anterior</button>
+      <button class="btn-next" onclick="irPaso(6)">Revisar →</button>
+    </div>
+  </div>
+
+  <!-- ══ PASO 6: REVISAR ══ -->
+  <div class="card" id="paso6" style="display:none">
+    <div class="card-title">Revisar y crear proyecto</div>
+    <div class="card-sub">Verifica la información antes de crear el proyecto</div>
+
+    <div class="review-grid">
+      <div class="review-item">
+        <div class="review-label">Nombre</div>
+        <div class="review-val" id="rv-nombre">—</div>
+      </div>
+      <div class="review-item">
+        <div class="review-label">Identificador</div>
+        <div class="review-val" id="rv-slug" style="font-family:monospace;color:#0073EA">—</div>
+      </div>
+      <div class="review-item">
+        <div class="review-label">Color</div>
+        <div class="review-val" id="rv-color">—</div>
+      </div>
+      <div class="review-item">
+        <div class="review-label">Formato</div>
+        <div class="review-val" id="rv-tpl">—</div>
+      </div>
+      <div class="review-item">
+        <div class="review-label">Logo</div>
+        <div id="rv-logo"><span style="color:#9ba1b0;font-size:13px;">Sin logo</span></div>
+      </div>
+      <div class="review-item">
+        <div class="review-label">Sitios</div>
+        <div class="review-val" id="rv-sitios">0</div>
+      </div>
+      <div class="review-item">
+        <div class="review-label">Supervisores</div>
+        <div class="review-val" id="rv-sups">0</div>
+        <div class="review-sub" id="rv-sups-names"></div>
+      </div>
+      <div class="review-item">
+        <div class="review-label">Técnicos</div>
+        <div class="review-val" id="rv-tecs">0</div>
+        <div class="review-sub" id="rv-tecs-names"></div>
+      </div>
+    </div>
+
+    <div class="wizard-nav" style="margin-top:28px">
+      <button class="btn-prev" onclick="irPaso(5)">← Editar</button>
+      <button class="btn-crear" id="btnCrear" onclick="crearProyecto()">✓ Crear proyecto</button>
+    </div>
+  </div>
+
+</div><!-- /wizard-wrap -->
+<div id="toast"></div>
+
+<script>
+const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
+
+// ── Estado ──────────────────────────────────────────────────────
+let state = {
+  nombre:'', slug:'', color:'#0073EA', logo: null,
+  template: null, sitios: [], supervisores: [], tecnicos: []
+};
+let sitiosCSV = []; // sitios importados desde archivo
+
+// ── Pasos ────────────────────────────────────────────────────────
+let pasoActual = 1;
+
+function irPaso(n) {
+  if (!validarPaso(pasoActual)) return;
+  pasoActual = n;
+  for (let i=1;i<=6;i++) {
+    document.getElementById('paso'+i).style.display = i===n?'block':'none';
+    const s = document.getElementById('s'+i);
+    s.className = 'step' + (i<n?' done':i===n?' active':'');
+    s.querySelector('.step-circle').textContent = i<n ? '✓' : i;
+  }
+  if (n===6) buildReview();
+  document.querySelector('.wizard-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errMsg');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display='none', 4000);
+}
+
+function validarPaso(n) {
+  if (n===1) {
+    const nom = document.getElementById('pNombre').value.trim();
+    const sl  = document.getElementById('pSlug').value.trim();
+    if (!nom) { showErr('El nombre del proyecto es requerido.'); return false; }
+    if (!sl)  { showErr('El identificador es requerido.'); return false; }
+    if (!/^[a-z0-9-]+$/.test(sl)) { showErr('El identificador solo puede contener letras minúsculas, números y guiones.'); return false; }
+    state.nombre = nom; state.slug = sl;
+    state.color  = document.getElementById('pColor').value;
+  }
+  if (n===3) {
+    if (!state.template) { showErr('Selecciona un formato de informe.'); return false; }
+  }
+  return true;
+}
+
+// ── Paso 1 helpers ──────────────────────────────────────────────
+function autoSlug() {
+  const val = document.getElementById('pNombre').value
+    .toLowerCase().trim()
+    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i')
+    .replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  document.getElementById('pSlug').value = val;
+  document.getElementById('slugPreview').textContent = val || '—';
+}
+function cleanSlug() {
+  const v = document.getElementById('pSlug').value.toLowerCase().replace(/[^a-z0-9-]/g,'');
+  document.getElementById('pSlug').value = v;
+  document.getElementById('slugPreview').textContent = v || '—';
+}
+function syncColorText() { document.getElementById('pColorText').value = document.getElementById('pColor').value; }
+function syncColorPicker() {
+  const v = document.getElementById('pColorText').value;
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById('pColor').value = v;
+}
+
+// ── Paso 2: Logo ────────────────────────────────────────────────
+function handleLogo(e) {
+  const file = e.target.files[0]; if (!file) return;
+  if (file.size > 2*1024*1024) { toast('Imagen demasiado grande (máx. 2 MB)','err'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.logo = ev.target.result;
+    const img = document.getElementById('logoPreview');
+    img.src = ev.target.result;
+    document.getElementById('logoZone').classList.add('has');
+  };
+  reader.readAsDataURL(file);
+}
+function clearLogo(e) {
+  e.stopPropagation();
+  state.logo = null;
+  document.getElementById('logoPreview').src = '';
+  document.getElementById('logoZone').classList.remove('has');
+}
+
+// ── Paso 3: Formato ──────────────────────────────────────────────
+function selTpl(t) {
+  state.template = t;
+  document.getElementById('tplTigo').classList.toggle('sel', t==='tigo');
+  document.getElementById('tplWom').classList.toggle('sel', t==='wom');
+  // Sync color default
+  if (!document.getElementById('pColorText').value || document.getElementById('pColor').value === (t==='tigo'?'#6161FF':'#0073EA')) {
+    const c = t==='tigo'?'#0073EA':'#6161FF';
+    document.getElementById('pColor').value = c;
+    document.getElementById('pColorText').value = c;
+    state.color = c;
+  }
+}
+
+// ── Paso 4: Sitios ───────────────────────────────────────────────
+function addSitioRow(nombre='', dir='') {
+  const row = document.createElement('div');
+  row.className = 'sitio-row';
+  row.innerHTML = `<input type="text" placeholder="Nombre sitio" value="${nombre}" oninput="contarSitios()">
+    <input type="text" placeholder="Dirección" value="${dir}" oninput="contarSitios()">
+    <button class="btn-rm-row" onclick="this.parentElement.remove();contarSitios()">✕</button>`;
+  document.getElementById('sitiosRows').appendChild(row);
+  contarSitios();
+}
+
+function contarSitios() {
+  const manual = [...document.querySelectorAll('#sitiosRows .sitio-row')]
+    .filter(r => r.querySelector('input').value.trim()).length;
+  const total = sitiosCSV.length + manual;
+  document.getElementById('sitiosCount').textContent = total;
+}
+
+function parseSitiosFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const text = ev.target.result;
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    sitiosCSV = lines.map(l => {
+      const sep = l.includes(';') ? ';' : ',';
+      const parts = l.split(sep).map(s => s.trim().replace(/^"|"$/g,''));
+      return [parts[0]||'', parts[1]||''];
+    }).filter(([n]) => n);
+
+    renderSitiosPreview();
+    contarSitios();
+    toast(`${sitiosCSV.length} sitios importados`, 'ok');
+  };
+  reader.readAsText(file, 'utf-8');
+  e.target.value = '';
+}
+
+function renderSitiosPreview() {
+  const wrap = document.getElementById('sitiosPreviewWrap');
+  if (!sitiosCSV.length) { wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+  document.getElementById('sitiosPreviewTbl').innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>Nombre del sitio</th><th>Dirección</th></tr></thead>
+      <tbody>${sitiosCSV.slice(0,8).map(([n,d],i) => `<tr><td style="color:#9ba1b0">${i+1}</td><td>${n}</td><td>${d}</td></tr>`).join('')}
+      ${sitiosCSV.length>8?`<tr><td colspan="3" style="text-align:center;color:#9ba1b0;padding:8px">… y ${sitiosCSV.length-8} más</td></tr>`:''}</tbody>
+    </table>`;
+}
+
+// ── Paso 5: Equipo ───────────────────────────────────────────────
+function addPersona(tipo, val='') {
+  const listId = tipo==='sup' ? 'supList' : 'tecList';
+  const row = document.createElement('div');
+  row.className = 'persona-row';
+  row.innerHTML = `<input type="text" placeholder="${tipo==='sup'?'Nombre del supervisor':'Nombre del técnico'}" value="${val}">
+    <button class="btn-rm-row" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById(listId).appendChild(row);
+  row.querySelector('input').focus();
+}
+
+// ── Paso 6: Review ───────────────────────────────────────────────
+function buildReview() {
+  state.nombre = document.getElementById('pNombre').value.trim();
+  state.slug   = document.getElementById('pSlug').value.trim();
+  state.color  = document.getElementById('pColor').value;
+
+  document.getElementById('rv-nombre').textContent = state.nombre;
+  document.getElementById('rv-slug').textContent   = state.slug;
+
+  const colorEl = document.getElementById('rv-color');
+  colorEl.innerHTML = `<span class="color-dot" style="background:${state.color}"></span>${state.color}`;
+
+  document.getElementById('rv-tpl').textContent = state.template === 'tigo' ? '📋 Formato Tigo' : '📋 Formato WOM';
+
+  const logoEl = document.getElementById('rv-logo');
+  if (state.logo) {
+    logoEl.innerHTML = `<img src="${state.logo}" class="logo-review" alt="Logo">`;
+  } else {
+    logoEl.innerHTML = '<span style="color:#9ba1b0;font-size:13px">Sin logo</span>';
+  }
+
+  // Sitios
+  const manualSitios = [...document.querySelectorAll('#sitiosRows .sitio-row')]
+    .map(r => [r.querySelectorAll('input')[0].value.trim(), r.querySelectorAll('input')[1].value.trim()])
+    .filter(([n]) => n);
+  state.sitios = [...sitiosCSV, ...manualSitios];
+  document.getElementById('rv-sitios').textContent = state.sitios.length + ' sitios';
+
+  // Supervisores
+  const sups = [...document.querySelectorAll('#supList .persona-row input')].map(i=>i.value.trim()).filter(Boolean);
+  state.supervisores = sups;
+  document.getElementById('rv-sups').textContent = sups.length;
+  document.getElementById('rv-sups-names').textContent = sups.join(', ') || 'Ninguno';
+
+  // Técnicos
+  const tecs = [...document.querySelectorAll('#tecList .persona-row input')].map(i=>i.value.trim()).filter(Boolean);
+  state.tecnicos = tecs;
+  document.getElementById('rv-tecs').textContent = tecs.length;
+  document.getElementById('rv-tecs-names').textContent = tecs.join(', ') || 'Ninguno';
+}
+
+// ── Crear ────────────────────────────────────────────────────────
+async function crearProyecto() {
+  const btn = document.getElementById('btnCrear');
+  btn.disabled = true; btn.textContent = '⏳ Creando...';
+  try {
+    const payload = {
+      nombre: state.nombre, slug: state.slug, template: state.template,
+      color: state.color, logo: state.logo,
+      sitios: state.sitios, supervisores: state.supervisores, tecnicos: state.tecnicos
+    };
+    const r = await fetch('/api/proyectos', {
+      method:'POST',
+      headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error al crear');
+    toast('✓ Proyecto creado correctamente', 'ok');
+    setTimeout(() => window.location.replace('/dashboard'), 1500);
+  } catch(e) {
+    showErr(e.message);
+    btn.disabled = false; btn.textContent = '✓ Crear proyecto';
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show ' + type;
+  clearTimeout(el._t); el._t = setTimeout(() => el.className='', 2500);
+}
+
+// ── Init: primer sitio vacío y primer persona vacía ──────────────
+addSitioRow();
+addPersona('sup');
+addPersona('tec');
+</script>
+</body>
+</html>

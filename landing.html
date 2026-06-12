@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GestiónTécnica – Plataforma de Mantenimiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
+body{font-family:'Figtree',system-ui,sans-serif;color:#323338;background:#fff;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+
+/* ══════════════════════════════════
+   NAVBAR — Monday.com style
+══════════════════════════════════ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:60px;
+  display:flex;align-items:center;
+  padding:0 32px;
+  background:#fff;
+  border-bottom:1px solid #E6E9EF;
+  gap:0;
+}
+.nav-brand{
+  display:flex;align-items:center;gap:8px;
+  text-decoration:none;margin-right:40px;flex-shrink:0;
+}
+.nav-logo-box{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,#6161FF,#0073EA);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:900;color:#fff;letter-spacing:-1px;
+  line-height:1;
+}
+.nav-brand-name{font-size:15px;font-weight:800;color:#323338;letter-spacing:-.3px;}
+.nav-links{display:flex;align-items:center;gap:4px;flex:1;}
+.nav-link{
+  padding:6px 12px;border-radius:6px;
+  font-size:13.5px;font-weight:500;color:#676879;
+  text-decoration:none;white-space:nowrap;
+  transition:background .15s,color .15s;
+}
+.nav-link:hover{background:#F6F7FB;color:#323338;}
+.nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
+.nav-login{
+  padding:7px 16px;border-radius:6px;
+  font-size:13.5px;font-weight:600;color:#676879;
+  text-decoration:none;transition:background .15s,color .15s;
+}
+.nav-login:hover{background:#F6F7FB;color:#323338;}
+.nav-cta{
+  padding:8px 18px;border-radius:6px;
+  background:linear-gradient(135deg,#6161FF 0%,#0073EA 100%);
+  font-size:13.5px;font-weight:700;color:#fff;
+  text-decoration:none;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(97,97,255,.3);
+  transition:opacity .15s,transform .1s;
+}
+.nav-cta:hover{opacity:.88;transform:translateY(-1px);}
+@media(max-width:640px){
+  nav{padding:0 16px;}
+  .nav-links{display:none;}
+  .nav-brand{margin-right:0;}
+}
+
+/* ══════════════════════════════════
+   HERO
+══════════════════════════════════ */
+.hero{
+  margin-top:60px;
+  background:linear-gradient(160deg,#0F1035 0%,#1C1F4A 45%,#2D1B5A 100%);
+  padding:90px 32px 0;
+  overflow:hidden;
+  position:relative;
+}
+.hero-noise{
+  position:absolute;inset:0;opacity:.03;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:200px;
+}
+.hero-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;z-index:1;}
+
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:20px;padding:5px 14px 5px 8px;
+  font-size:12px;font-weight:600;color:rgba(255,255,255,.75);
+  margin-bottom:28px;
+}
+.badge-pip{
+  width:20px;height:20px;border-radius:50%;
+  background:linear-gradient(135deg,#6161FF,#0073EA);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;
+}
+
+.hero h1{
+  font-size:clamp(38px,5.5vw,66px);
+  font-weight:900;line-height:1.06;letter-spacing:-2px;
+  color:#fff;margin-bottom:22px;
+}
+.hero h1 .hl{
+  background:linear-gradient(90deg,#7B7FFF,#579BFC);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{
+  font-size:clamp(15px,1.8vw,18px);font-weight:400;
+  color:rgba(255,255,255,.55);line-height:1.7;
+  max-width:560px;margin-bottom:40px;
+}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:64px;}
+.hbtn-main{
+  padding:13px 28px;border-radius:8px;
+  background:linear-gradient(135deg,#6161FF,#0073EA);
+  font-size:15px;font-weight:700;color:#fff;text-decoration:none;
+  box-shadow:0 6px 24px rgba(97,97,255,.4);
+  transition:transform .15s,box-shadow .15s;
+}
+.hbtn-main:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(97,97,255,.5);}
+.hbtn-ghost{
+  padding:13px 28px;border-radius:8px;
+  border:1.5px solid rgba(255,255,255,.2);
+  font-size:15px;font-weight:600;color:rgba(255,255,255,.85);text-decoration:none;
+  transition:background .15s,border-color .15s;
+}
+.hbtn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.35);}
+
+/* ── APP MOCKUP ── */
+.hero-mockup{
+  width:100%;max-width:900px;
+  background:#1A1D40;
+  border-radius:14px 14px 0 0;
+  border:1.5px solid rgba(255,255,255,.1);
+  border-bottom:none;
+  box-shadow:0 -8px 60px rgba(0,0,0,.5);
+  overflow:hidden;
+}
+.mockup-bar{
+  height:36px;background:#131629;
+  display:flex;align-items:center;padding:0 14px;gap:8px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.mock-dot{width:10px;height:10px;border-radius:50%;}
+.mock-dot.r{background:#FF5F57;}
+.mock-dot.y{background:#FEBC2E;}
+.mock-dot.g{background:#28C840;}
+.mockup-url{
+  flex:1;margin:0 12px;height:20px;border-radius:4px;
+  background:rgba(255,255,255,.06);display:flex;align-items:center;
+  justify-content:center;font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.2px;
+}
+.mockup-body{display:flex;height:340px;}
+.mock-sidebar{
+  width:200px;min-width:200px;
+  background:#1C1F3B;
+  border-right:1px solid rgba(255,255,255,.06);
+  padding:16px 0;display:flex;flex-direction:column;gap:2px;
+}
+.mock-sb-logo{
+  padding:0 14px 14px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  margin-bottom:10px;
+}
+.mock-sb-logo-box{
+  background:#fff;border-radius:6px;
+  padding:3px 8px;display:inline-flex;align-items:center;
+  font-size:10px;font-weight:800;color:#1C1F3B;letter-spacing:-.3px;
+}
+.mock-item{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 14px;font-size:11px;color:rgba(255,255,255,.45);
+  transition:background .1s;border-radius:0;
+}
+.mock-item.active{background:rgba(0,115,234,.2);color:#fff;font-weight:600;}
+.mock-item .mi-dot{
+  width:16px;height:16px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;
+}
+.mock-item.active .mi-dot{background:#0073EA;}
+.mi-dot.gr{background:rgba(0,200,117,.3);}
+.mi-dot.or{background:rgba(255,123,28,.3);}
+.mi-dot.pr{background:rgba(120,75,209,.3);}
+.mock-main{flex:1;background:#F6F7FB;padding:18px;display:flex;flex-direction:column;gap:12px;overflow:hidden;}
+.mock-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:4px;
+}
+.mock-title{font-size:13px;font-weight:700;color:#323338;}
+.mock-actions{display:flex;gap:6px;}
+.mock-btn{
+  padding:4px 10px;border-radius:5px;font-size:9px;font-weight:600;
+  background:#0073EA;color:#fff;border:none;
+}
+.mock-search{
+  height:28px;border-radius:6px;background:#fff;
+  border:1px solid #E6E9EF;padding:0 10px;
+  display:flex;align-items:center;gap:6px;flex:1;max-width:200px;
+  font-size:10px;color:#aaa;
+}
+.mock-table{background:#fff;border-radius:8px;border:1px solid #E6E9EF;overflow:hidden;}
+.mock-thead{
+  background:#F6F7FB;border-bottom:1px solid #E6E9EF;
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
+  padding:6px 12px;gap:8px;
+}
+.mock-th{font-size:9px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.5px;}
+.mock-row{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
+  padding:7px 12px;gap:8px;align-items:center;
+  border-bottom:1px solid #F0F1F5;
+}
+.mock-row:last-child{border-bottom:none;}
+.mock-cell{font-size:10px;color:#323338;}
+.mock-cell.muted{color:#aaa;}
+.mock-pill{
+  display:inline-block;padding:2px 8px;border-radius:10px;
+  font-size:9px;font-weight:600;
+}
+.pill-g{background:#DCFCE7;color:#16A34A;}
+.pill-b{background:#DBEAFE;color:#1D4ED8;}
+.pill-o{background:#FEF3C7;color:#D97706;}
+.mock-stats{display:flex;gap:10px;}
+.mock-stat{
+  flex:1;background:#fff;border-radius:8px;border:1px solid #E6E9EF;
+  padding:12px;
+}
+.mock-stat-n{font-size:18px;font-weight:800;color:#323338;letter-spacing:-.5px;}
+.mock-stat-l{font-size:9px;color:#676879;margin-top:2px;}
+.mock-stat-bar{height:3px;border-radius:2px;margin-top:8px;background:#E6E9EF;overflow:hidden;}
+.mock-stat-fill{height:100%;border-radius:2px;}
+
+/* ══════════════════════════════════
+   LOGOS / TRUST
+══════════════════════════════════ */
+.trust{
+  background:#F6F7FB;
+  padding:32px;
+  border-bottom:1px solid #E6E9EF;
+  display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+}
+.trust-label{font-size:12px;font-weight:600;color:#aaa;letter-spacing:.5px;text-transform:uppercase;margin-right:16px;}
+.trust-chip{
+  padding:6px 16px;border-radius:20px;
+  background:#fff;border:1px solid #E6E9EF;
+  font-size:12px;font-weight:700;color:#323338;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+
+/* ══════════════════════════════════
+   FEATURES
+══════════════════════════════════ */
+.section{padding:96px 32px;max-width:1100px;margin:0 auto;}
+.sec-eyebrow{font-size:11px;font-weight:700;color:#0073EA;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;}
+.sec-title{font-size:clamp(28px,3.5vw,40px);font-weight:900;letter-spacing:-1.5px;color:#323338;margin-bottom:14px;line-height:1.1;}
+.sec-sub{font-size:15px;color:#676879;line-height:1.7;max-width:520px;margin-bottom:56px;}
+
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
+.feat-card{
+  background:#fff;border-radius:12px;padding:28px 24px;
+  border:1px solid #E6E9EF;
+  transition:box-shadow .2s,transform .2s,border-color .2s;
+}
+.feat-card:hover{
+  box-shadow:0 8px 32px rgba(0,0,0,.08);
+  transform:translateY(-3px);
+  border-color:#d0d4e4;
+}
+.feat-icon{
+  width:44px;height:44px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:18px;
+}
+.fi-blue{background:#EEF5FF;}
+.fi-purple{background:#F0EEFF;}
+.fi-green{background:#EDFFF6;}
+.fi-orange{background:#FFF5EB;}
+.feat-card h3{font-size:16px;font-weight:800;color:#323338;margin-bottom:8px;letter-spacing:-.3px;}
+.feat-card p{font-size:13.5px;color:#676879;line-height:1.7;}
+
+/* ══════════════════════════════════
+   STATS
+══════════════════════════════════ */
+.stats-band{
+  background:#1C1F3B;
+  padding:64px 32px;
+}
+.stats-inner{
+  max-width:900px;margin:0 auto;
+  display:flex;justify-content:space-around;flex-wrap:wrap;gap:40px;
+  text-align:center;
+}
+.stat-item{}
+.stat-n{font-size:44px;font-weight:900;letter-spacing:-2px;color:#fff;line-height:1;}
+.stat-n span{
+  background:linear-gradient(90deg,#7B7FFF,#579BFC);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.stat-l{font-size:13px;color:rgba(255,255,255,.45);margin-top:8px;font-weight:500;}
+
+/* ══════════════════════════════════
+   PASOS
+══════════════════════════════════ */
+.steps-wrap{background:#F6F7FB;padding:96px 32px;border-top:1px solid #E6E9EF;border-bottom:1px solid #E6E9EF;}
+.steps-inner{max-width:1100px;margin:0 auto;}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:56px;}
+.step-card{display:flex;flex-direction:column;gap:14px;}
+.step-num{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#6161FF,#0073EA);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;color:#fff;
+  box-shadow:0 4px 12px rgba(97,97,255,.3);flex-shrink:0;
+}
+.step-card h4{font-size:17px;font-weight:800;color:#323338;letter-spacing:-.3px;}
+.step-card p{font-size:13.5px;color:#676879;line-height:1.75;}
+
+/* ══════════════════════════════════
+   CTA FINAL
+══════════════════════════════════ */
+.cta-final{
+  padding:96px 32px;
+  background:#fff;
+  text-align:center;
+}
+.cta-final h2{font-size:clamp(28px,4vw,44px);font-weight:900;letter-spacing:-1.5px;color:#323338;margin-bottom:14px;}
+.cta-final p{font-size:16px;color:#676879;margin-bottom:36px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.65;}
+.cta-final a{
+  display:inline-block;padding:15px 40px;border-radius:9px;
+  background:linear-gradient(135deg,#6161FF,#0073EA);
+  font-size:15px;font-weight:700;color:#fff;text-decoration:none;
+  box-shadow:0 8px 28px rgba(97,97,255,.35);
+  transition:transform .15s,box-shadow .15s;
+}
+.cta-final a:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(97,97,255,.45);}
+
+/* ══════════════════════════════════
+   FOOTER
+══════════════════════════════════ */
+footer{
+  background:#F6F7FB;
+  border-top:1px solid #E6E9EF;
+  padding:28px 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.footer-brand{display:flex;align-items:center;gap:8px;}
+.footer-logo{
+  width:26px;height:26px;border-radius:6px;
+  background:linear-gradient(135deg,#6161FF,#0073EA);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:900;color:#fff;
+}
+.footer-name{font-size:13px;font-weight:700;color:#323338;}
+.footer-copy{font-size:12px;color:#aaa;}
+
+@media(max-width:700px){
+  .hero{padding:72px 20px 0;}
+  .section{padding:72px 20px;}
+  .steps-grid{grid-template-columns:1fr;}
+  .stats-band{padding:56px 20px;}
+  .steps-wrap,.cta-final{padding:72px 20px;}
+  footer{padding:24px 20px;}
+  .mockup-body{height:240px;}
+  .mock-sidebar{width:140px;min-width:140px;}
+}
+
+/* ══════════════════════════════════
+   MODAL COMENZAR (planes + contacto)
+══════════════════════════════════ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(28,31,59,.6);backdrop-filter:blur(5px);
+  display:flex;align-items:flex-start;justify-content:center;z-index:9999;
+  opacity:0;pointer-events:none;transition:opacity .22s;overflow-y:auto;padding:24px 16px;
+}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal-box{
+  background:#fff;border-radius:22px;width:100%;max-width:820px;
+  box-shadow:0 32px 100px rgba(28,31,59,.28);
+  transform:translateY(20px) scale(.97);transition:transform .24s,opacity .24s;
+  position:relative;overflow:hidden;margin:auto;
+}
+.modal-overlay.open .modal-box{transform:none;}
+.modal-close{
+  position:absolute;top:16px;right:20px;background:rgba(0,0,0,.06);border:none;
+  font-size:18px;color:#676879;cursor:pointer;line-height:1;padding:6px 10px;border-radius:8px;z-index:10;
+  transition:.15s;
+}
+.modal-close:hover{background:rgba(0,0,0,.12);color:#323338;}
+
+/* Header del modal */
+.modal-head{
+  background:linear-gradient(135deg,#1C1F3B,#2d3268);
+  padding:32px 36px 28px;color:#fff;
+}
+.modal-head-logo{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.mh-box{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#6161FF,#0073EA);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;}
+.mh-name{font-size:14px;font-weight:700;color:rgba(255,255,255,.8);}
+.modal-head h2{font-size:24px;font-weight:800;margin-bottom:6px;}
+.modal-head p{font-size:14px;color:rgba(255,255,255,.55);line-height:1.55;}
+
+/* Planes */
+.modal-plans{padding:32px 36px 0;}
+.plans-eyebrow{font-size:11px;font-weight:700;color:#9ba1b0;text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px;}
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px;}
+.plan-card{
+  border:1.5px solid #E6E9EF;border-radius:14px;padding:20px 18px;
+  position:relative;overflow:hidden;
+  cursor:pointer;
+  transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+  user-select:none;
+}
+.plan-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 8px 22px rgba(0,0,0,0.09);
+}
+.plan-card.featured{border-color:#6161FF;background:linear-gradient(160deg,#F5F4FF,#fff);}
+.plan-card.selected{
+  border-color:#6161FF;
+  box-shadow:0 10px 32px rgba(97,97,255,0.22);
+  transform:translateY(-4px);
+}
+.plan-card.selected .plan-name{color:#6161FF;}
+.plan-check{
+  display:none;position:absolute;bottom:14px;right:14px;
+  width:20px;height:20px;border-radius:50%;
+  background:#6161FF;color:#fff;font-size:12px;
+  align-items:center;justify-content:center;
+}
+.plan-card.selected .plan-check{display:flex;}
+.plan-badge{
+  position:absolute;top:14px;right:14px;
+  background:#6161FF;color:#fff;font-size:10px;font-weight:700;
+  padding:3px 10px;border-radius:20px;letter-spacing:.3px;
+}
+.plan-name{font-size:13px;font-weight:800;color:#323338;margin-bottom:4px;}
+.plan-desc{font-size:12px;color:#9ba1b0;line-height:1.5;margin-bottom:14px;}
+.plan-price{font-size:18px;font-weight:900;color:#1C1F3B;line-height:1.2;}
+.plan-price span{font-size:11px;font-weight:500;color:#9ba1b0;display:block;margin-top:2px;}
+.plan-feats{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:6px;}
+.plan-feats li{font-size:12px;color:#676879;display:flex;align-items:center;gap:6px;}
+.plan-feats li::before{content:'✓';color:#00C875;font-weight:800;font-size:11px;}
+
+/* Divisor */
+.modal-divider{height:1px;background:#F0F1F5;margin:0 36px;}
+
+/* Formulario */
+.modal-form-wrap{padding:28px 36px 36px;}
+.form-eyebrow{font-size:11px;font-weight:700;color:#9ba1b0;text-transform:uppercase;letter-spacing:.8px;margin-bottom:18px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.form-group label{font-size:12px;font-weight:600;color:#676879;}
+.form-group input,.form-group textarea,.form-group select{
+  padding:11px 14px;border:1.5px solid #E6E9EF;border-radius:10px;font-size:14px;font-family:inherit;color:#323338;
+  outline:none;transition:border-color .15s;background:#fff;
+}
+.form-group input:focus,.form-group textarea:focus{border-color:#6161FF;}
+.form-group textarea{resize:vertical;min-height:90px;}
+.contact-direct{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.cd-chip{
+  display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:30px;
+  background:#F8F9FC;border:1.5px solid #E6E9EF;text-decoration:none;color:#323338;font-size:13px;font-weight:600;
+  transition:.15s;
+}
+.cd-chip:hover{background:#EEF0F8;border-color:#c8cbda;}
+.btn-enviar{
+  width:100%;padding:14px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#6161FF,#0073EA);
+  color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;
+  box-shadow:0 6px 20px rgba(97,97,255,.3);transition:.15s;
+}
+.btn-enviar:hover{opacity:.9;transform:translateY(-1px);}
+.btn-enviar:active{transform:none;}
+.form-success{
+  text-align:center;padding:32px 20px;display:none;
+}
+.form-success .success-icon{font-size:48px;margin-bottom:14px;}
+.form-success h3{font-size:18px;font-weight:800;color:#1C1F3B;margin-bottom:8px;}
+.form-success p{font-size:14px;color:#676879;}
+
+@media(max-width:640px){
+  .modal-head,.modal-plans,.modal-form-wrap{padding-left:20px;padding-right:20px;}
+  .plans-grid{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+  .modal-divider{margin:0 20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav>
+  <a href="/" class="nav-brand">
+    <div class="nav-logo-box">GT</div>
+    <span class="nav-brand-name">GestiónTécnica</span>
+  </a>
+  <div class="nav-links">
+    <a href="#funciones" class="nav-link">Funciones</a>
+    <a href="#proceso" class="nav-link">Cómo funciona</a>
+  </div>
+  <div class="nav-right">
+    <a href="/login" class="nav-login">Iniciar sesión</a>
+    <a href="#" class="nav-cta" onclick="abrirContacto();return false;">Comenzar →</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-noise"></div>
+  <div class="hero-inner">
+
+    <div class="hero-badge">
+      <div class="badge-pip">✦</div>
+      Plataforma de mantenimiento técnico
+    </div>
+
+    <h1>
+      Gestión de informes<br>
+      y tareas <span class="hl">sin caos</span>
+    </h1>
+
+    <p class="hero-sub">
+      Genera informes técnicos, asigna órdenes de trabajo y lleva el control de mantenimientos preventivos y correctivos — todo desde un solo panel.
+    </p>
+
+    <div class="hero-btns">
+      <a href="/login" class="hbtn-main">Iniciar sesión →</a>
+      <a href="#funciones" class="hbtn-ghost">Ver funciones</a>
+    </div>
+
+    <!-- APP MOCKUP -->
+    <div class="hero-mockup">
+      <div class="mockup-bar">
+        <div class="mock-dot r"></div>
+        <div class="mock-dot y"></div>
+        <div class="mock-dot g"></div>
+        <div class="mockup-url">app.gestiontecnica.com/selector</div>
+      </div>
+      <div class="mockup-body">
+        <!-- Sidebar -->
+        <div class="mock-sidebar">
+          <div class="mock-sb-logo"><div class="mock-sb-logo-box">GT</div></div>
+          <div class="mock-item active">
+            <div class="mi-dot" style="background:#0073EA;">📄</div>
+            Informes
+          </div>
+          <div class="mock-item">
+            <div class="mi-dot gr">✅</div>
+            Tareas
+          </div>
+          <div class="mock-item">
+            <div class="mi-dot or">🔧</div>
+            Preventivo
+          </div>
+          <div class="mock-item">
+            <div class="mi-dot pr">⚡</div>
+            Correctivo
+          </div>
+        </div>
+        <!-- Contenido -->
+        <div class="mock-main">
+          <div class="mock-stats">
+            <div class="mock-stat">
+              <div class="mock-stat-n">48</div>
+              <div class="mock-stat-l">Informes este mes</div>
+              <div class="mock-stat-bar"><div class="mock-stat-fill" style="width:72%;background:#0073EA;"></div></div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-n">12</div>
+              <div class="mock-stat-l">Tareas pendientes</div>
+              <div class="mock-stat-bar"><div class="mock-stat-fill" style="width:45%;background:#FDAB3D;"></div></div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-n">5</div>
+              <div class="mock-stat-l">Técnicos activos</div>
+              <div class="mock-stat-bar"><div class="mock-stat-fill" style="width:100%;background:#00C875;"></div></div>
+            </div>
+          </div>
+          <div class="mock-topbar">
+            <div class="mock-title">Registro de Informes</div>
+            <div class="mock-actions">
+              <div class="mock-search">🔍 Buscar...</div>
+              <button class="mock-btn">+ Nuevo</button>
+            </div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-thead">
+              <div class="mock-th">Sitio</div>
+              <div class="mock-th">Técnico</div>
+              <div class="mock-th">Fecha</div>
+              <div class="mock-th">Estado</div>
+            </div>
+            <div class="mock-row">
+              <div class="mock-cell">Torre Norte A-12</div>
+              <div class="mock-cell">J. Rodríguez</div>
+              <div class="mock-cell muted">11/06/2026</div>
+              <div class="mock-cell"><span class="mock-pill pill-g">Completado</span></div>
+            </div>
+            <div class="mock-row">
+              <div class="mock-cell">Estación Sur B-07</div>
+              <div class="mock-cell">M. García</div>
+              <div class="mock-cell muted">10/06/2026</div>
+              <div class="mock-cell"><span class="mock-pill pill-b">En revisión</span></div>
+            </div>
+            <div class="mock-row">
+              <div class="mock-cell">Centro C-03</div>
+              <div class="mock-cell">L. Martínez</div>
+              <div class="mock-cell muted">09/06/2026</div>
+              <div class="mock-cell"><span class="mock-pill pill-o">Pendiente</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ TRUST ═══ -->
+<div class="trust">
+  <span class="trust-label">Módulos incluidos</span>
+  <span class="trust-chip">📄 Informes .docx</span>
+  <span class="trust-chip">✅ Asignación de tareas</span>
+  <span class="trust-chip">🔧 Mantenimiento preventivo</span>
+  <span class="trust-chip">⚡ Mantenimiento correctivo</span>
+  <span class="trust-chip">👥 Multi-usuario</span>
+</div>
+
+<!-- ═══ FEATURES ═══ -->
+<section class="section" id="funciones">
+  <div class="sec-eyebrow">Funciones</div>
+  <div class="sec-title">Todo lo que tu equipo<br>técnico necesita</div>
+  <p class="sec-sub">Diseñado para equipos de mantenimiento que necesitan orden, trazabilidad y rapidez en campo.</p>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon fi-blue">📄</div>
+      <h3>Gestión de Informes</h3>
+      <p>Genera y descarga informes técnicos en Word con un clic. Historial completo con búsqueda por sitio, técnico o número de OT.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon fi-purple">✅</div>
+      <h3>Asignación de Tareas</h3>
+      <p>Distribuye órdenes de trabajo, define responsables y lleva el seguimiento del estado de cada actividad en tiempo real.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon fi-green">🔧</div>
+      <h3>Mantenimiento Preventivo</h3>
+      <p>Registra y planifica actividades programadas. Control de frecuencias, cronogramas y cumplimiento por equipo.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon fi-orange">⚡</div>
+      <h3>Mantenimiento Correctivo</h3>
+      <p>Documenta fallas e intervenciones con técnico, fecha y evidencia fotográfica. Cada incidente queda trazado.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STATS ═══ -->
+<div class="stats-band">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <div class="stat-n"><span>100%</span></div>
+      <div class="stat-l">Informes digitales · sin papel</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n"><span>∞</span></div>
+      <div class="stat-l">Registros trazables por equipo</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n"><span>4</span></div>
+      <div class="stat-l">Roles de acceso diferenciados</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n"><span>Multi</span></div>
+      <div class="stat-l">Proyectos y clientes aislados</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PASOS ═══ -->
+<div class="steps-wrap" id="proceso">
+  <div class="steps-inner">
+    <div class="sec-eyebrow">Cómo funciona</div>
+    <div class="sec-title">En tres pasos</div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h4>Ingresa al sistema</h4>
+        <p>Accede con tus credenciales. Cada usuario tiene un rol (técnico, supervisor, administrador) que define lo que puede ver y hacer.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h4>Elige tu proyecto</h4>
+        <p>Selecciona el cliente o proyecto. La plataforma aísla completamente los datos de cada proyecto, sin cruces.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h4>Gestiona y genera</h4>
+        <p>Completa formularios, adjunta fotos y descarga el informe en Word. Asigna tareas y lleva el seguimiento desde el mismo panel.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CTA ═══ -->
+<div class="cta-final">
+  <h2>¿Listo para empezar?</h2>
+  <p>Ingresa al sistema y comienza a gestionar informes y tareas con tu equipo hoy mismo.</p>
+  <a href="/login">Iniciar sesión →</a>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-brand">
+    <div class="footer-logo">GT</div>
+    <span class="footer-name">GestiónTécnica</span>
+  </div>
+  <span class="footer-copy">Plataforma de Gestión de Mantenimiento · v3.0 · 2026</span>
+</footer>
+
+<!-- ═══ MODAL COMENZAR ═══ -->
+<div class="modal-overlay" id="contactModal" onclick="cerrarContacto(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="cerrarContacto()" title="Cerrar">✕</button>
+
+    <!-- Header -->
+    <div class="modal-head">
+      <div class="modal-head-logo">
+        <div class="mh-box">GT</div>
+        <span class="mh-name">GestiónTécnica</span>
+      </div>
+      <h2>Empieza con tu equipo hoy</h2>
+      <p>Elige el plan que se adapta a tu empresa y contáctanos. Te configuramos todo.</p>
+    </div>
+
+    <!-- Planes -->
+    <div class="modal-plans">
+      <div class="plans-eyebrow">Planes disponibles</div>
+      <div class="plans-grid">
+
+        <div class="plan-card" data-plan="Básico" onclick="seleccionarPlan(this)">
+          <div class="plan-name">Básico</div>
+          <div class="plan-desc">Ideal para equipos pequeños que recién comienzan</div>
+          <div class="plan-price">$100.000 <span>+ IVA / mes</span></div>
+          <ul class="plan-feats">
+            <li>Hasta 5 usuarios</li>
+            <li>1 proyecto</li>
+            <li>Generación de informes personalizados</li>
+            <li>Soporte por correo</li>
+          </ul>
+          <div class="plan-check">✓</div>
+        </div>
+
+        <div class="plan-card featured" data-plan="Profesional" onclick="seleccionarPlan(this)">
+          <span class="plan-badge">⭐ Más popular</span>
+          <div class="plan-name">Profesional</div>
+          <div class="plan-desc">Excelente para empresas con múltiples proyectos</div>
+          <div class="plan-price">$300.000 <span>+ IVA / mes</span></div>
+          <ul class="plan-feats">
+            <li>Usuarios ilimitados</li>
+            <li>Proyectos ilimitados</li>
+            <li>Dashboard y estadísticas</li>
+            <li>Soporte prioritario</li>
+          </ul>
+          <div class="plan-check">✓</div>
+        </div>
+
+        <div class="plan-card" data-plan="Enterprise" onclick="seleccionarPlan(this)">
+          <div class="plan-name">Enterprise</div>
+          <div class="plan-desc">Todo incluido para operaciones de gran escala</div>
+          <div class="plan-price">$500.000 <span>+ IVA / mes</span></div>
+          <ul class="plan-feats">
+            <li>Todo lo del plan Profesional</li>
+            <li>Módulo de mantenimiento preventivo</li>
+            <li>Módulo de mantenimiento correctivo</li>
+            <li>Módulo de acreditaciones</li>
+          </ul>
+          <div class="plan-check">✓</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-divider"></div>
+
+    <!-- Formulario de contacto -->
+    <div class="modal-form-wrap">
+      <div class="form-eyebrow">Contáctanos</div>
+
+      <div id="formArea">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" id="cf-nombre" placeholder="Tu nombre completo">
+          </div>
+          <div class="form-group">
+            <label>Empresa</label>
+            <input type="text" id="cf-empresa" placeholder="Nombre de tu empresa">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Correo electrónico *</label>
+            <input type="email" id="cf-email" placeholder="correo@empresa.com">
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="cf-tel" placeholder="+56 9 9999 9999">
+          </div>
+        </div>
+        <input type="hidden" id="cf-plan">
+        <div class="form-group">
+          <label>¿En qué podemos ayudarte?</label>
+          <textarea id="cf-msg" placeholder="Cuéntanos sobre tu equipo, cuántos técnicos tienen, qué tipo de mantenimiento realizan..."></textarea>
+        </div>
+
+        <div class="contact-direct">
+          <a href="tel:+56949575323" class="cd-chip">📞 +56 949 575 323</a>
+          <a href="mailto:martinezagueropedro@gmail.com" class="cd-chip">✉️ martinezagueropedro@gmail.com</a>
+        </div>
+
+        <button class="btn-enviar" onclick="enviarContacto()">Enviar mensaje →</button>
+      </div>
+
+      <div class="form-success" id="formSuccess">
+        <div class="success-icon">✅</div>
+        <h3>¡Mensaje enviado!</h3>
+        <p>Gracias por contactarnos. Te responderemos a la brevedad en el correo o teléfono que indicaste.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function seleccionarPlan(card) {
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  document.getElementById('cf-plan').value = card.dataset.plan;
+}
+function abrirContacto() {
+  document.getElementById('contactModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('formArea').style.display = 'block';
+  document.getElementById('formSuccess').style.display = 'none';
+}
+function cerrarContacto(e) {
+  if (e && e.target !== document.getElementById('contactModal')) return;
+  document.getElementById('contactModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') cerrarContacto();
+});
+function enviarContacto() {
+  const nombre = document.getElementById('cf-nombre').value.trim();
+  const email  = document.getElementById('cf-email').value.trim();
+  if (!nombre || !email) {
+    alert('Por favor completa al menos tu nombre y correo electrónico.');
+    return;
+  }
+  // Guardar localmente y mostrar éxito (integración de correo se puede agregar luego)
+  const data = {
+    nombre, empresa: document.getElementById('cf-empresa').value.trim(),
+    email, tel: document.getElementById('cf-tel').value.trim(),
+    plan: document.getElementById('cf-plan').value,
+    mensaje: document.getElementById('cf-msg').value.trim(),
+    fecha: new Date().toISOString()
+  };
+  fetch('/api/contacto', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).catch(() => {});
+  document.getElementById('formArea').style.display = 'none';
+  document.getElementById('formSuccess').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
