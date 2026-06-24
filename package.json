@@ -15,7 +15,8 @@
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^6.9.7"
+    "nodemailer": "^6.9.7",
+    "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
     "xlsx": "^0.18.5"

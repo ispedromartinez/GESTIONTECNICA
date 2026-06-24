@@ -10,6 +10,7 @@ papelera.json
 informes_wom/
 registro_wom.json
 papelera_wom.json
+tareas_preventivo.json
 server.log
 server_err.log
 .claude/

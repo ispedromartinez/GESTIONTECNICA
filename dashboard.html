@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:'Poppins',system-ui,sans-serif;background:#F0F2F8;color:#323338;min-height:100vh;display:flex;}
@@ -45,6 +46,8 @@ body{font-family:'Poppins',system-ui,sans-serif;background:#F0F2F8;color:#323338
 .sb-item.active{background:rgba(0,115,234,.22);color:#fff;font-weight:600;}
 .sb-item.active .sb-icon{opacity:1;}
 .sb-icon{opacity:.55;width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+/* Tamaño uniforme de TODOS los íconos del sidebar (robusto para futuros íconos) */
+.sb-icon svg{width:16px;height:16px;display:block;}
 .sb-item.active .sb-icon{opacity:1;}
 .sb-badge{margin-left:auto;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);
   font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:22px;text-align:center;}
@@ -187,6 +190,8 @@ tbody tr:hover{background:#F8FAFF;}
 
 .empty-tbl{text-align:center;padding:52px 20px;color:#676879;}
 .empty-tbl .ei{font-size:38px;margin-bottom:8px;}
+.empty-tbl .ei svg{width:38px;height:38px;opacity:.6;}
+.search-icon svg{width:15px;height:15px;display:block;}
 
 .pag{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #F0F1F5;font-size:12px;color:#676879;flex-wrap:wrap;gap:8px;}
 .pag-btns{display:flex;gap:3px;}
@@ -261,10 +266,6 @@ tbody tr:hover{background:#F8FAFF;}
   <nav class="sb-nav">
     <div class="sb-section">Menú</div>
 
-    <a class="sb-item" href="/selector">
-      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></span> Inicio
-    </a>
-
     <button class="sb-item active" id="nav-proyectos" onclick="showView('proyectos')">
       <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span> Proyectos
     </button>
@@ -283,11 +284,18 @@ tbody tr:hover{background:#F8FAFF;}
     <a class="sb-item" href="/wom">
       <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg></span> Nuevo – WOM
     </a>
+    <a class="sb-item" href="/preventivo">
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Mantenimiento Preventivo
+    </a>
 
     <div class="sb-divider"></div>
 
     <button class="sb-item" id="nav-personal" onclick="window.location.href='/admin'" style="display:none">
       <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Personal
+    </button>
+
+    <button class="sb-item" id="nav-perfil" onclick="window.location.href='/perfil'" style="display:none">
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Mi Perfil
     </button>
   </nav>
 
@@ -320,7 +328,7 @@ tbody tr:hover{background:#F8FAFF;}
         </button>
       </div>
       <div class="search-wrap" id="searchWrap" style="display:none">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         <input type="text" id="searchInput" placeholder="Buscar informe..." oninput="onSearch()">
       </div>
     </div>
@@ -340,7 +348,7 @@ tbody tr:hover{background:#F8FAFF;}
           <div class="proj-top"></div>
           <div class="proj-inner">
             <div class="proj-icon">
-              <img src="tigo-logo.png" alt="Tigo" onerror="this.outerHTML='<span style=\'font-size:48px\'>📡</span>'">
+              <img src="tigo-logo.png" alt="Tigo" onerror="this.outerHTML='<svg width=\'46\' height=\'46\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#0073EA\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M5 12.55a11 11 0 0 1 14.08 0\'/><path d=\'M1.42 9a16 16 0 0 1 21.16 0\'/><path d=\'M8.53 16.11a6 6 0 0 1 6.95 0\'/><line x1=\'12\' y1=\'20\' x2=\'12.01\' y2=\'20\'/></svg>'">
             </div>
             <span class="proj-name">Proyecto Tigo</span>
             <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
@@ -358,6 +366,18 @@ tbody tr:hover{background:#F8FAFF;}
             <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
           </div>
           <button class="proj-btn">Ingresar →</button>
+        </a>
+
+        <a href="/preventivo" class="proj-card proj-preventivo">
+          <div class="proj-top" style="background:#00C875;"></div>
+          <div class="proj-inner">
+            <div class="proj-icon">
+              <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#00C875" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+            </div>
+            <span class="proj-name">Mantenimiento Preventivo</span>
+            <span class="proj-desc">Planificación y carga<br>masiva de tareas</span>
+          </div>
+          <button class="proj-btn" style="background:#00C875;">Ingresar →</button>
         </a>
 
       </div>
@@ -471,7 +491,7 @@ tbody tr:hover{background:#F8FAFF;}
               </tr>
             </thead>
             <tbody id="tbodyInformes">
-              <tr><td colspan="5" class="empty-tbl"><div class="ei">⏳</div><p>Cargando...</p></td></tr>
+              <tr><td colspan="5" class="empty-tbl"><div class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><p>Cargando...</p></td></tr>
             </tbody>
           </table>
         </div>
@@ -526,6 +546,10 @@ async function init() {
 
     if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
       document.getElementById('nav-personal').style.display = 'flex';
+    }
+    // Mi Perfil: solo supervisor y admin_empresa (no superadmin, no técnico)
+    if (['admin_empresa','supervisor'].includes(miRol)) {
+      document.getElementById('nav-perfil').style.display = 'flex';
     }
     if (miRol === 'tecnico') {
       document.getElementById('cardTecnicos').style.display = 'none';
@@ -778,7 +802,7 @@ function renderTabla() {
 
   const tbody = document.getElementById('tbodyInformes');
   if (!slice.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-tbl"><div class="ei">🗂️</div><p>No hay informes para mostrar.</p></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-tbl"><div class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div><p>No hay informes para mostrar.</p></td></tr>`;
   } else {
     tbody.innerHTML = slice.map(r => `
       <tr>

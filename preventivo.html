@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICETEL – Mantenimiento Preventivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',system-ui,sans-serif;}
+body{background:#F6F7FB;min-height:100vh;}
+header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
+header h1{color:#fff;font-size:16px;font-weight:700;}
+header a{color:rgba(255,255,255,.7);font-size:12px;text-decoration:none;}
+main{padding:24px;max-width:1200px;margin:0 auto;}
+
+.filtros{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.filtros button{background:#fff;border:1px solid #D0D4E0;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px;}
+.filtros button:hover{background:#EEF1FA;}
+#semanaLabel{font-size:13px;font-weight:600;color:#323338;min-width:170px;text-align:center;}
+.filtros select{padding:6px 10px;border:1px solid #D0D4E0;border-radius:6px;font-size:13px;}
+
+.toolbar{display:flex;gap:8px;margin-bottom:12px;}
+.toolbar button{background:#0073EA;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+.toolbar button:hover{opacity:.88;}
+.toolbar button.danger{background:#D83A52;}
+.toolbar button:disabled{background:#C5C7D0;cursor:not-allowed;}
+
+.dropdown{position:relative;display:inline-block;}
+.dropdown-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #D0D4E0;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:280px;z-index:40;padding:6px 0;}
+.dropdown-menu.open{display:block;}
+.dropdown-menu hr{border:none;border-top:1px solid #EEF0F4;margin:6px 0;}
+#herramientasMenu .dd-item{display:block;width:100%;text-align:left;background:none;border:none;padding:9px 16px;font-size:13px;font-weight:400;color:#323338;cursor:pointer;}
+#herramientasMenu .dd-item:hover:not(:disabled){background:#F0F2F8;}
+#herramientasMenu .dd-item:disabled{background:none;color:#C5C7D0;cursor:not-allowed;}
+
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+th,td{padding:10px 12px;text-align:left;font-size:13px;border-bottom:1px solid #EEF0F4;}
+th{background:#F0F2F8;color:#676879;font-weight:600;font-size:11px;text-transform:uppercase;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:#F6F8FC;}
+tbody tr.selected{background:#E6F0FF;}
+tbody tr.destacada{background:#FFF7E0;}
+tbody tr.destacada:hover{background:#FFF1C8;}
+.bell{cursor:pointer;font-size:16px;user-select:none;}
+.estado-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;}
+.estado-Nuevo{background:#E1ECFF;color:#0073EA;}
+.estado-En-Progreso{background:#FFF1C8;color:#9A6B00;}
+.estado-Cerrado{background:#D4F4E2;color:#1E9E5A;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:50;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:10px;padding:0;width:560px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;}
+.modal h2{display:none;}
+.modal label{display:block;font-size:12px;font-weight:600;color:#676879;margin:10px 0 4px;}
+.modal input,.modal select,.modal textarea{width:100%;padding:8px 10px;border:1px solid #D0D4E0;border-radius:6px;font-size:13px;font-family:inherit;}
+.modal textarea{resize:vertical;}
+.modal input[readonly]{background:#F6F7FB;color:#676879;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:14px 24px;border-top:1px solid #EEF0F4;}
+.modal-actions button{padding:8px 16px;border-radius:6px;font-size:13px;border:none;cursor:pointer;}
+.modal-actions .cancelar{background:#EEF0F4;color:#323338;}
+.modal-actions .guardar{background:#0073EA;color:#fff;font-weight:600;}
+
+.modal-topbar{padding:12px 24px;border-bottom:1px solid #EEF0F4;}
+.modal-topbar .guardar-salir{background:#0073EA;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+.modal-tabs{display:flex;gap:2px;padding:0 16px;border-bottom:1px solid #EEF0F4;overflow-x:auto;}
+.tab-btn{background:none;border:none;padding:10px 14px;font-size:12px;font-weight:600;color:#676879;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-btn:hover{color:#0073EA;}
+.tab-btn.active{color:#0073EA;border-bottom-color:#0073EA;}
+.tab-panel{padding:16px 24px;overflow-y:auto;flex:1;}
+.tab-panel[hidden]{display:none;}
+.tab-placeholder{font-size:13px;color:#9699A6;padding:20px 0;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Mantenimiento Preventivo</h1>
+  <a href="/dashboard">← Volver al panel</a>
+</header>
+
+<main>
+  <div class="filtros">
+    <select id="filtroTecnico"></select>
+    <span style="color:#D0D4E0;">|</span>
+    <label style="font-size:12px;color:#676879;">Semana</label>
+    <select id="filtroSemanaSel" style="padding:6px 8px;border:1px solid #D0D4E0;border-radius:6px;font-size:13px;">
+      <option value="">Elegir semana...</option>
+    </select>
+    <span style="color:#D0D4E0;">|</span>
+    <label style="font-size:12px;color:#676879;">Desde</label>
+    <input type="date" id="filtroDesde" style="padding:6px 8px;border:1px solid #D0D4E0;border-radius:6px;font-size:13px;">
+    <label style="font-size:12px;color:#676879;">Hasta</label>
+    <input type="date" id="filtroHasta" style="padding:6px 8px;border:1px solid #D0D4E0;border-radius:6px;font-size:13px;">
+    <button id="btnBuscarRango">Buscar rango</button>
+    <button id="btnLimpiarFiltro" style="display:none;">Mostrar todas</button>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnAgregar">+ Agregar tarea</button>
+    <button id="btnEditar" disabled>Editar</button>
+    <button id="btnGenerarInformeLista" disabled>📄 Generar informe</button>
+    <button id="btnBorrarSeleccion" class="danger" disabled>Borrar</button>
+    <div class="dropdown">
+      <button id="btnHerramientas">🛠 Herramientas ▾</button>
+      <div class="dropdown-menu" id="herramientasMenu">
+        <button class="dd-item" disabled>Imprimir etiquetas</button>
+        <hr>
+        <button class="dd-item" id="ddImportarTareas">Importar tareas</button>
+        <button class="dd-item" id="ddExportarTareasJson">Exportar tareas</button>
+        <button class="dd-item" id="ddVistaExcel">Vista de lista de tareas a Excel</button>
+        <button class="dd-item" disabled>Exportar la vista actual a Word</button>
+        <hr>
+        <button class="dd-item" disabled>Importar ítems de tarea</button>
+        <button class="dd-item" disabled>Genere un informe detallado de entradas</button>
+        <button class="dd-item" disabled>Lista de importación de datos</button>
+      </div>
+    </div>
+    <input type="file" id="fileImportar" accept=".xlsx,.xls,.csv,.ods" hidden>
+  </div>
+
+  <div class="modal-overlay" id="importarOverlay">
+    <div class="modal" style="width:420px;">
+      <div class="tab-panel">
+        <label>Archivo:</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="importarFileLabel" readonly placeholder="Ningún archivo seleccionado" style="flex:1;">
+          <button type="button" id="btnSeleccionarArchivo" style="background:#EEF0F4;border:none;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap;">Seleccionar</button>
+        </div>
+        <a href="#" onclick="descargarAuth('/tareas/plantilla','plantilla-tareas-preventivo.xlsx');return false;" style="display:inline-block;margin-top:6px;font-size:12px;color:#0073EA;">Muestra</a>
+
+        <label style="margin-top:14px;">Tipo de archivo</label>
+        <select id="importarTipoArchivo">
+          <option>Xls,Xlsx,Ods</option>
+        </select>
+
+        <label style="display:flex;align-items:center;gap:6px;margin-top:14px;font-weight:400;">
+          <input type="checkbox" id="importarEncabezados" checked style="width:auto;">
+          Primera fila contiene encabezados de columnas
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="cancelar" id="btnCancelarImportar">Cancelar</button>
+        <button class="guardar" id="btnConfirmarImportar">Importar</button>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="checkTodos"></th>
+        <th>Técnico</th><th>Sitio</th><th>Sala</th><th>Descripción</th>
+        <th>Fecha inicio</th><th>Fecha venc.</th><th>Estado</th><th>🔔</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#676879;">
+      <span>Por página:</span>
+      <select id="filtroPorPagina">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="btnPaginaPrev">← Anterior</button>
+      <span id="paginaLabel" style="font-size:13px;color:#676879;"></span>
+      <button id="btnPaginaNext">Siguiente →</button>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-topbar">
+      <button class="guardar-salir" id="btnGuardarSalir">💾 Guardar y salir</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="tab-btn active" data-tab="detalles">Detalles</button>
+      <button class="tab-btn" data-tab="personalizados">Datos personalizados</button>
+      <button class="tab-btn" data-tab="planificacion">Planificación</button>
+      <button class="tab-btn" data-tab="infoadicional">Info adicional</button>
+      <button class="tab-btn" data-tab="items">Ítems de tarea</button>
+      <button class="tab-btn" data-tab="archivos">Archivos</button>
+    </div>
+
+    <div class="tab-panel" data-panel="detalles">
+      <input type="hidden" id="fId">
+      <label>Tarea Número</label>
+      <input type="text" id="fTareaNumero">
+      <label>Categoría de tarea</label>
+      <select id="fCategoria">
+        <option>CLMAPREV</option>
+      </select>
+      <label>Descripción</label>
+      <input type="text" id="fDescripcion">
+      <label>Técnico</label>
+      <select id="fTecnico"></select>
+      <label>Fecha de inicio</label>
+      <input type="date" id="fFechaInicio">
+      <label>Fecha de término</label>
+      <input type="date" id="fFechaVencimiento">
+      <label>Estado</label>
+      <select id="fEstado">
+        <option>Nuevo</option>
+        <option>En Progreso</option>
+        <option>Cerrado</option>
+      </select>
+      <label>Sitio</label>
+      <input type="text" id="fSitio">
+    </div>
+
+    <div class="tab-panel" data-panel="personalizados" hidden>
+      <label>Nombre del cliente</label>
+      <div style="position:relative;">
+        <input type="text" id="fNombreClienteInput" placeholder="Buscar sitio..." autocomplete="off">
+        <input type="hidden" id="fNombreCliente">
+        <div id="sitioDD" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #D0D4E0;border-radius:6px;max-height:220px;overflow-y:auto;z-index:30;box-shadow:0 4px 12px rgba(0,0,0,.1);"></div>
+      </div>
+      <label>Dirección</label>
+      <input type="text" id="fDireccion">
+      <label>Ciudad</label>
+      <input type="text" id="fCiudad">
+      <label>Criticidad</label>
+      <input type="text" id="fCriticidad">
+      <label>Categoría del sitio</label>
+      <input type="text" id="fCategoriaSitio">
+      <label>ID de acceso</label>
+      <input type="text" id="fIdAcceso">
+      <label>SALA</label>
+      <input type="text" id="fSala">
+      <label>Nombre del empleado</label>
+      <input type="text" id="fNombreEmpleado">
+      <label>N°CRQ/INC</label>
+      <input type="text" id="fCrqInc">
+      <label>Número del empleado</label>
+      <input type="text" id="fNumeroEmpleado">
+      <label>Número del cliente</label>
+      <input type="text" id="fNumeroCliente">
+      <label>N° Workflow</label>
+      <input type="text" id="fNWorkflow">
+      <label>N°LPU</label>
+      <input type="text" id="fNLpu">
+      <label>Comuna</label>
+      <input type="text" id="fComuna">
+    </div>
+
+    <div class="tab-panel" data-panel="planificacion" hidden>
+      <label>Semana (ISO 8601)</label>
+      <input type="text" id="fSemanaIso" readonly>
+      <label>Recurrencia</label>
+      <select id="fRecurrencia">
+        <option>Única vez</option>
+        <option>Semanal</option>
+        <option>Mensual</option>
+      </select>
+    </div>
+
+    <div class="tab-panel" data-panel="infoadicional" hidden>
+      <label>Notas / Observaciones</label>
+      <textarea id="fNotas" rows="6"></textarea>
+    </div>
+
+    <div class="tab-panel" data-panel="items" hidden>
+      <p class="tab-placeholder">Próximamente.</p>
+    </div>
+
+    <div class="tab-panel" data-panel="archivos" hidden>
+      <p class="tab-placeholder" id="archivosInfo">Guarda la tarea primero para poder generar el informe.</p>
+      <button type="button" id="btnGenerarInforme" style="display:none;background:#0073EA;color:#fff;border:none;border-radius:6px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;">📄 Generar informe</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="cancelar" id="btnCancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Auth (sesión JWT del sistema) ───────────────────────────────
+const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+if (!TOKEN()) location.replace('/login');
+// Adjunta el Bearer token automáticamente a todas las llamadas internas.
+const _origFetch = window.fetch.bind(window);
+window.fetch = (url, opts = {}) => {
+  const headers = new Headers(opts.headers || {});
+  if (!headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + TOKEN());
+  return _origFetch(url, { ...opts, headers });
+};
+// Descarga autenticada (reemplaza la navegación directa, que no puede mandar el token).
+async function descargarAuth(url, fallbackName) {
+  const r = await fetch(url);
+  if (!r.ok) { alert('No se pudo descargar (¿sesión expirada?).'); return; }
+  const blob = await r.blob();
+  const cd = r.headers.get('Content-Disposition') || '';
+  const m = cd.match(/filename="?([^"]+)"?/);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (m && m[1]) || fallbackName;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+const TECHNICIANS=[
+  'Yoscar Garcia','Elias Alburto','Diego Riquelme','Rodrigo Guerrero',
+  'Armin Alejandro Yaitul Soto','Jairo Alarcon','Jean Pierre Marasi Maldonado'
+];
+const SITIOS_PREVENTIVO=[{"nombre":"DATACENTER NEXTREAM SAN MARTIN","ciudad":"Santiago","calle":"SAN MARTIN 48","criticidad":"DATACENTER","categoria":"CENTRAL","codigoPOI":"RMC160"},{"nombre":"DATACENTER NEXSTREAM APOQUINDO","ciudad":"Las Condes","calle":"AV. APOQUINDO 7071","criticidad":"DATACENTER","categoria":"CENTRAL","codigoPOI":"RMC161"},{"nombre":"RM","ciudad":"","calle":"","criticidad":"","categoria":"","codigoPOI":"RM"},{"nombre":"ABRAZO DE MAIPU","ciudad":"Maipu","calle":"4 PONIENTE 145","criticidad":"N3","categoria":"Central","codigoPOI":"RMC001"},{"nombre":"AGUSTINAS","ciudad":"Santiago","calle":"ESPERANZA 56-58-60 ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC002"},{"nombre":"ANTONIO VARAS","ciudad":"Providencia","calle":"MANUEL BARROS BORGOÑO 316 ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC003"},{"nombre":"ARAUCARIA DE BUIN","ciudad":"Buin","calle":"CAMINO CAMPO DE GOLF","criticidad":"N3","categoria":"Central","codigoPOI":"RMC004"},{"nombre":"ARCAYA DE COLINA","ciudad":"Colina","calle":"CARRETERA G. SAN MARTIN, LOTE NN, LT 2","criticidad":"N3","categoria":"Central","codigoPOI":"RMC005"},{"nombre":"BATUCO","ciudad":"Lampa","calle":"ERRAZURIZ MZ 29 SITIO 46","criticidad":"N3","categoria":"Central","codigoPOI":"RMC006"},{"nombre":"BLINDADOS","ciudad":"Santiago","calle":"COQUIMBO 650  BD.1 ","criticidad":"N4","categoria":"Central","codigoPOI":"RMC007"},{"nombre":"BUENAVENTURA","ciudad":"Quilicura","calle":"CAUPOLICAN 9940 - LT 119","criticidad":"N3","categoria":"Central","codigoPOI":"RMC008"},{"nombre":"BUIN","ciudad":"Buin","calle":"BERNARDINO BRAVO 375","criticidad":"N1","categoria":"Central","codigoPOI":"RMC009"},{"nombre":"LAS NACIONES","ciudad":"Maipu","calle":"VILLA EL INCA CAMINO VIEJO RUTA 68","criticidad":"N2","categoria":"Central","codigoPOI":"RMC010"},{"nombre":"CAL Y CANTO","ciudad":"Santiago","calle":"TEATINOS 950, BODEGA 1","criticidad":"N4","categoria":"Central","codigoPOI":"RMC011"},{"nombre":"CALERA DE TANGO","ciudad":"Calera de Tango","calle":"CAMINO DEL CARMEN 167 (PARAD. 7  LOTE C ) ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC012"},{"nombre":"CAMILO HENRIQUEZ","ciudad":"La Florida","calle":"AV. SAN JOSE DE LA ESTRELLA 2201","criticidad":"N3","categoria":"Central","codigoPOI":"RMC013"},{"nombre":"CASAS VIEJAS","ciudad":"Puente Alto","calle":"27 DE SEPTIEMBRE 4299","criticidad":"N3","categoria":"Central","codigoPOI":"RMC014"},{"nombre":"CERRO COLORADO","ciudad":"Renca","calle":"ARTURO PRAT 5601","criticidad":"N2","categoria":"Central","codigoPOI":"RMC015"},{"nombre":"CHICUREO","ciudad":"Colina","calle":"FUNDO ALGARROBAL S/N","criticidad":"N3","categoria":"Central","codigoPOI":"RMC016"},{"nombre":"CHILOE","ciudad":"Santiago","calle":"CHILOE 1930","criticidad":"MEGACENTRALES","categoria":"Central","codigoPOI":"RMC017"},{"nombre":"COLINA","ciudad":"Colina","calle":"RUIZ TAGLE 065 / ESQ CONCEPCION 215-237","criticidad":"N1","categoria":"Central","codigoPOI":"RMC018"},{"nombre":"CIUDAD DE LOS VALLES","ciudad":"Pudahuel","calle":"CIUDAD DE LOS VALLES - PUDAHUEL ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC019"},{"nombre":"CIUDAD DEL ESTE","ciudad":"Peñalolen","calle":"EL ATAJO 4424","criticidad":"N3","categoria":"Central","codigoPOI":"RMC020"},{"nombre":"CLUB HIPICO","ciudad":"Santiago","calle":"SAN ALFONSO 1307","criticidad":"N2","categoria":"Central","codigoPOI":"RMC021"},{"nombre":"DEPARTAMENTAL","ciudad":"San Miguel","calle":"QUINTA TRANSVERSAL 5620","criticidad":"N1","categoria":"Central","codigoPOI":"RMC022"},{"nombre":"CONCHALI","ciudad":"Conchali","calle":"TENIENTE PONCE 1757","criticidad":"N2","categoria":"Central","codigoPOI":"RMC023"},{"nombre":"COPIHUE","ciudad":"Calera de Tango","calle":"CAMINO LONQUEN NORTE SITIO 17 PAR. 7","criticidad":"N3","categoria":"Central","codigoPOI":"RMC024"},{"nombre":"CURACAVI","ciudad":"Curacavi","calle":"O´HIGGINS 2009 (O\"HIGGINS 1718  LT 1 A) ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC025"},{"nombre":"EL CORTIJO","ciudad":"Conchali","calle":"TRES CRUCES 5493","criticidad":"N1","categoria":"Central","codigoPOI":"RMC026"},{"nombre":"EL ARRAYAN","ciudad":"Lo Barnechea","calle":"PASTOR FERNANDEZ 16416 (CAMINO DEL CAJON 16416 ST 2 A )","criticidad":"N2","categoria":"Central","codigoPOI":"RMC027"},{"nombre":"EL CARMEN","ciudad":"Maipu","calle":"NVA. SAN MARTIN 2083  ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC028"},{"nombre":"EL SALTO","ciudad":"Recoleta","calle":"AV. EINSTEIN 626","criticidad":"N1","categoria":"Central","codigoPOI":"RMC029"},{"nombre":"EL MONTE","ciudad":"El Monte","calle":"ANIBAL PINTO 25 - 29 ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC030"},{"nombre":"EL PEÑON","ciudad":"Puente Alto","calle":"AV. GABRIELA ORIENTE 2551","criticidad":"N2","categoria":"Central","codigoPOI":"RMC031"},{"nombre":"ESTADIO NACIONAL","ciudad":"Ñuñoa","calle":"AV. GUILLERMO MANN 1815","criticidad":"N1","categoria":"Central","codigoPOI":"RMC032"},{"nombre":"ESTACION COLINA","ciudad":"Lampa","calle":"CACIQUE COLIN 24","criticidad":"N3","categoria":"Central","codigoPOI":"RMC033"},{"nombre":"FLORIDA MUNDO","ciudad":"Macul","calle":"EXEQUIEL FERNANDEZ 5660  ","criticidad":"MEGACENTRALES","categoria":"Central","codigoPOI":"RMC034"},{"nombre":"FERROCARRIL","ciudad":"Maipu","calle":"PSJE. SAGRADO CORAZON 1470  ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC035"},{"nombre":"INDEPENDENCIA","ciudad":"Recoleta","calle":"SANTOS DUMONT 984","criticidad":"MEGACENTRALES","categoria":"Central","codigoPOI":"RMC036"},{"nombre":"GABRIELA MISTRAL","ciudad":"La Florida","calle":"AV. CENTRAL 53","criticidad":"N2","categoria":"Central","codigoPOI":"RMC037"},{"nombre":"HEROES DE MAIPU","ciudad":"Maipu","calle":"G. GONZALEZ VIDELA S/ N ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC038"},{"nombre":"HOSPITAL","ciudad":"La Florida","calle":"DIEGO PORTALES 118 (CAMINO PUBLICO HOSPITAL 118) ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC039"},{"nombre":"HUECHURABA","ciudad":"Huechuraba","calle":"AV. LAS TORRES 1423 (AV LAS TORRES 1417)","criticidad":"N3","categoria":"Central","codigoPOI":"RMC040"},{"nombre":"HUERTOS FAMILIARES","ciudad":"Tiltil","calle":"2 SUR CON 3 ORIENTE - CAM. POLPAICO","criticidad":"N3","categoria":"Central","codigoPOI":"RMC041"},{"nombre":"J. J. PEREZ","ciudad":"Cerro Navia","calle":"TENIENTE CRUZ 1194  (PRESIDENTE TRUMAM 8336) ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC042"},{"nombre":"ISLA DE MAIPO","ciudad":"Isla del Maipo","calle":"SANTELICES 651 ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC043"},{"nombre":"LA CISTERNA","ciudad":"La Cisterna","calle":"GOYCOLEA 086","criticidad":"N1","categoria":"Central","codigoPOI":"RMC044"},{"nombre":"LA FLORIDA","ciudad":"Macul","calle":"FROILAN ROA 5661","criticidad":"MEGACENTRALES","categoria":"Central","codigoPOI":"RMC045"},{"nombre":"LA DEHESA","ciudad":"Lo Barnechea","calle":"SHOPPING LOCAL 53. EL RODEO 12850 ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC046"},{"nombre":"LA GRANJA","ciudad":"El Bosque","calle":"AV. CENTRAL 241","criticidad":"N2","categoria":"Central","codigoPOI":"RMC047"},{"nombre":"LA PARVA","ciudad":"Lo Barnechea","calle":"EMILLE ALLAIS S/N","criticidad":"N3","categoria":"Central","codigoPOI":"RMC048"},{"nombre":"LA PINCOYA","ciudad":"Recoleta","calle":"SALZBURGO 4116","criticidad":"N2","categoria":"Central","codigoPOI":"RMC049"},{"nombre":"LA PINTANA","ciudad":"La Pintana","calle":"BALDOMERO LILLO 1873","criticidad":"N2","categoria":"Central","codigoPOI":"RMC050"},{"nombre":"LA REINA","ciudad":"La Reina","calle":"SIMON BOLIVAR 8445  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC051"},{"nombre":"LAGUNA ORIENTE","ciudad":"Huechuraba","calle":"AV. DEL PARQUE 0261  ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC052"},{"nombre":"LAGUNA SUR","ciudad":"Pudahuel","calle":"LAGUNA SUR 7299 ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC053"},{"nombre":"LAMPA","ciudad":"Lampa","calle":"BAQUEDANO 6","criticidad":"N2","categoria":"Central","codigoPOI":"RMC054"},{"nombre":"LAS CANTERAS","ciudad":"Colina","calle":"FERMIN VERGARA, SITIO 17","criticidad":"N2","categoria":"Central","codigoPOI":"RMC055"},{"nombre":"LAS CONDES","ciudad":"Las Condes","calle":"MÁLAGA 74  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC056"},{"nombre":"LAS PALMAS","ciudad":"Talagante","calle":"CAM. LONQUEN CON CAM. LOS PERROS, PDERO 37 ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC057"},{"nombre":"LAS PIRCAS","ciudad":"Peñalolen","calle":"AV. QUILIN (FRENTE AL N°10360)","criticidad":"N2","categoria":"Central","codigoPOI":"RMC058"},{"nombre":"LAS REJAS","ciudad":"Estacion Central","calle":"AV. BDO. O'HIGGINS 4532","criticidad":"N1","categoria":"Central","codigoPOI":"RMC059"},{"nombre":"LAS VERTIENTES","ciudad":"San Jose de Maipo","calle":"LOS ACACIOS 2900","criticidad":"N3","categoria":"Central","codigoPOI":"RMC060"},{"nombre":"LIRAY","ciudad":"Colina","calle":"CAMINO LIRAY, PARCELA 11 (LA COPA PC 11 LT C)","criticidad":"N2","categoria":"Central","codigoPOI":"RMC061"},{"nombre":"LO ARCAYA DE COLINA","ciudad":"Colina","calle":"CARRETERA G. SAN MARTIN, LOTE NN, LT 2","criticidad":"N3","categoria":"Central","codigoPOI":"RMC062"},{"nombre":"LO ARCAYA DE PIRQUE","ciudad":"Pirque","calle":"SITIO 12, PARCELACION LAS CASAS DE LO ARCAYA ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC063"},{"nombre":"LO BLANCO","ciudad":"San Bernardo","calle":"SAN JUAN DE DIOS 13747  ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC064"},{"nombre":"LO CAÑAS","ciudad":"La Florida","calle":"WALKER MARTINEZ 1696 (WALKER MARTINEZ 1696) ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC065"},{"nombre":"LO ERRAZURIZ","ciudad":"Maipu","calle":"PSJE. REQUINOA 502  ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC066"},{"nombre":"LO ESPEJO","ciudad":"San Bernardo","calle":"AV. FERROCARRIL 7327","criticidad":"N2","categoria":"Central","codigoPOI":"RMC067"},{"nombre":"LO HERMIDA","ciudad":"Peñalolen","calle":"QUEBRADA DE SUCA 1220  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC068"},{"nombre":"LO PINTO","ciudad":"Lampa","calle":"CACIQUE COLIN 409","criticidad":"N1","categoria":"Central","codigoPOI":"RMC069"},{"nombre":"LO PLAZA","ciudad":"Macul","calle":"RODRIGO DE ARAYA 4471  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC070"},{"nombre":"LONQUEN","ciudad":"Maipu","calle":"CAMINO LONQUEN NORTE PARCELA 14","criticidad":"N3","categoria":"Central","codigoPOI":"RMC071"},{"nombre":"LORETO","ciudad":"Maipu","calle":"CAMINO LONQUEN PARADERO 22","criticidad":"N3","categoria":"Central","codigoPOI":"RMC072"},{"nombre":"LOS AROMOS","ciudad":"Puente Alto","calle":"PJE. RÍO GRANDE ESQ. CABO LEONES ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC073"},{"nombre":"LOS BENEDICTINOS","ciudad":"Las Condes","calle":"REPÚBLICA DE HONDURAS 12298  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC074"},{"nombre":"LOS HEROES DE MAIPU","ciudad":"Maipu","calle":"G. GONZALEZ VIDELA S/ N ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC075"},{"nombre":"LOS PARQUES DE MAIPU","ciudad":"Maipu","calle":"LAGO BOLSENA 18600 - CIUDAD SATÉLITE ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC076"},{"nombre":"LOS SILOS","ciudad":"Puente Alto","calle":"LUIS MATTE 750","criticidad":"N2","categoria":"Central","codigoPOI":"RMC077"},{"nombre":"MACUL","ciudad":"Peñalolen","calle":"AV. SAN LUIS DE MACUL 6260 - 6264 ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC078"},{"nombre":"MAESTRANZA","ciudad":"San Bernardo","calle":"ISLA DE PASCUA 129","criticidad":"N2","categoria":"Central","codigoPOI":"RMC079"},{"nombre":"MAGISTER","ciudad":"Maipu","calle":"J. JOSE RIVERA 416 - 422  ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC080"},{"nombre":"MAIPO","ciudad":"Buin","calle":"LOS NOGALES 026","criticidad":"N3","categoria":"Central","codigoPOI":"RMC081"},{"nombre":"MALLOCO","ciudad":"Peñaflor","calle":"BALMACEDA 689  ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC082"},{"nombre":"MANUEL MONTT","ciudad":"Providencia","calle":"AV. MANUEL MONTT 1404 ","criticidad":"MEGACENTRALES","categoria":"Central","codigoPOI":"RMC083"},{"nombre":"MELIPILLA","ciudad":"Melipilla","calle":"MERCED 606  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC084"},{"nombre":"NUEVA PUDAHUEL","ciudad":"Pudahuel","calle":"AEROPUERTO","criticidad":"N1","categoria":"Central","codigoPOI":"RMC085"},{"nombre":"PADRE HURTADO","ciudad":"Padre Hurtado","calle":"CAMINO A MELIPILLA 2138  ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC086"},{"nombre":"PAINE","ciudad":"Paine","calle":"BAQUEDANO 740 (BAQUEDANO 740) ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC087"},{"nombre":"PAJARITOS","ciudad":"Maipu","calle":"AV. PAJARITOS 4422","criticidad":"N2","categoria":"Central","codigoPOI":"RMC088"},{"nombre":"PANAMERICANA SUR","ciudad":"San Bernardo","calle":"CENTENARIO 03096","criticidad":"N2","categoria":"Central","codigoPOI":"RMC089"},{"nombre":"PARQUE ALMAGRO","ciudad":"Santiago","calle":"EYZAGUIRRE 1140  ","criticidad":"N4","categoria":"Central","codigoPOI":"RMC090"},{"nombre":"ÑUÑOA","ciudad":"Ñuñoa","calle":"CLORINDA WILLSHAW 563","criticidad":"N1","categoria":"Central","codigoPOI":"RMC091"},{"nombre":"PEDRO FONTOVA","ciudad":"Huechuraba","calle":"AV. PEDRO FONTOVA 7381","criticidad":"N3","categoria":"Central","codigoPOI":"RMC092"},{"nombre":"PEDRO DE VALDIVIA","ciudad":"Providencia","calle":"NORMANDIA 1945 ","criticidad":"MEGACENTRALES","categoria":"Central","codigoPOI":"RMC093"},{"nombre":"POLPAICO","ciudad":"","calle":"CAMINO ESTACION POLPAICO","criticidad":"N4","categoria":"Central","codigoPOI":"RMC094"},{"nombre":"PORTEZUELO NORTE","ciudad":"Lampa","calle":"PANAMERICANA NORTE 18900","criticidad":"N2","categoria":"Central","codigoPOI":"RMC095"},{"nombre":"PORTEZUELO SUR","ciudad":"Lampa","calle":"PAN. NORTE ALT. 15550 (AV. J. DE LA FUENTE S/N)","criticidad":"N3","categoria":"Central","codigoPOI":"RMC096"},{"nombre":"PEÑAFLOR","ciudad":"Peñaflor","calle":"21 DE MAYO 3662 - 3682  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC097"},{"nombre":"PROVIDENCIA","ciudad":"Providencia","calle":"AV. HOLANDA 326 ","criticidad":"MEGACENTRALES","categoria":"Central","codigoPOI":"RMC098"},{"nombre":"PUENTE ALTO","ciudad":"Puente Alto","calle":"ERNESTO ALVEAR 26  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC099"},{"nombre":"QUILICURA VESPUCIO","ciudad":"Quilicura","calle":"AV. AMERICO VESPUCIO 0800/ 0830","criticidad":"N3","categoria":"Central","codigoPOI":"RMC100"},{"nombre":"RENCA","ciudad":"Renca","calle":"BALMACEDA 3960","criticidad":"N2","categoria":"Central","codigoPOI":"RMC101"},{"nombre":"RINCONADA DEL SALTO","ciudad":"Huechuraba","calle":"AV. DEL VALLE 944 ( L 323)(AV. N°2 LOTE 24)","criticidad":"N2","categoria":"Central","codigoPOI":"RMC102"},{"nombre":"RIO MAIPO","ciudad":"Puente Alto","calle":"EYZAGUIRRE 3790","criticidad":"N2","categoria":"Central","codigoPOI":"RMC103"},{"nombre":"QUILICURA","ciudad":"Quilicura","calle":"RAMON ROSALES 980","criticidad":"N1","categoria":"Central","codigoPOI":"RMC104"},{"nombre":"SALESIANOS","ciudad":"San joaquin","calle":"RIVADENEIRA 4149","criticidad":"N1","categoria":"Central","codigoPOI":"RMC105"},{"nombre":"SAN CARLOS","ciudad":"Puente Alto","calle":"LA BALANZA 890 - 1019  ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC106"},{"nombre":"SAN BERNARDO","ciudad":"San Bernardo","calle":"URMENETA 417  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC107"},{"nombre":"SAN JOSE DE MAIPO","ciudad":"San Jose de Maipo","calle":"UNO SUR 198 (1 SUR 080) ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC108"},{"nombre":"SAN RAMON","ciudad":"San Ramon","calle":"SANTA ROSA 10125 (STA ROSA ESQ ESPERANZA) ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC109"},{"nombre":"SANTA ANA","ciudad":"","calle":"CAMINO EL OLIVETO S/N  ","criticidad":"N3","categoria":"Central","codigoPOI":"RMC110"},{"nombre":"SANTA INES","ciudad":"La Florida","calle":"NUESTRA SEÑORA DEL PERDÓN 1870","criticidad":"N3","categoria":"Central","codigoPOI":"RMC111"},{"nombre":"SAN FRANCISCO DE LAS CONDES","ciudad":"Las Condes","calle":"AV. CAMINO DE ASIS 111  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC112"},{"nombre":"SANTA ISABEL","ciudad":"Santiago","calle":"MAIMONIDES 551","criticidad":"MEGACENTRALES","categoria":"Central","codigoPOI":"RMC113"},{"nombre":"SANTA MARIA DE PIRQUE","ciudad":"Pirque","calle":"AV. ALCALDE HERNAN PRIETO S/N","criticidad":"N3","categoria":"Central","codigoPOI":"RMC114"},{"nombre":"SANTA RITA DE PIRQUE","ciudad":"Pirque","calle":"LAGO PANGUIPILLI 3641 ","criticidad":"N4","categoria":"Central","codigoPOI":"RMC115"},{"nombre":"SANTA LUCIA","ciudad":"Santiago","calle":"MAC-IVER 254","criticidad":"N1","categoria":"Central","codigoPOI":"RMC116"},{"nombre":"SANTA ROSA DE LAMPA","ciudad":"Lampa","calle":"CAMINO SANTA ROSA S/N (STA SARA PC 4 A Z)","criticidad":"N2","categoria":"Central","codigoPOI":"RMC117"},{"nombre":"TALAGANTE","ciudad":"Talagante","calle":"ESMERALDA 940 ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC118"},{"nombre":"SANTA ROSA","ciudad":"San Miguel","calle":"TENIENTE BERMAN 544 (SEBASTOPOL 553) ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC119"},{"nombre":"TIL TIL","ciudad":"Tiltil","calle":"LABARCA S/N","criticidad":"N2","categoria":"Central","codigoPOI":"RMC120"},{"nombre":"TEMPLO VOTIVO","ciudad":"Maipu","calle":"SAN MARTIN 2276  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC121"},{"nombre":"TRINIDAD","ciudad":"La Florida","calle":"SANTA RAQUEL 9990","criticidad":"N1","categoria":"Central","codigoPOI":"RMC122"},{"nombre":"YUNGAY","ciudad":"Quinta Normal","calle":"MAPOCHO 5051 - 5067  ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC123"},{"nombre":"LA FERIA","ciudad":"Pedro Aguirre Cerda","calle":"CLOTARIO BLEST 2640  ","criticidad":"N2","categoria":"Central","codigoPOI":"RMC124"},{"nombre":"UNION AMERICANA","ciudad":"Santiago","calle":"UNION LATINO AMERICANA 102","criticidad":"N3","categoria":"Central","codigoPOI":"RMC125"},{"nombre":"MAIPÚ","ciudad":"Cerrillos","calle":"PEDRO AGUIRRE CERDA 8159  ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC126"},{"nombre":"VITACURA","ciudad":"Vitacura","calle":"WALTER SCOTT 1577 ","criticidad":"N1","categoria":"Central","codigoPOI":"RMC127"},{"nombre":"ANDRES BELLO I","ciudad":"Las Condes","calle":"ANDRES BELLO 2687  ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC128"},{"nombre":"ANDRES BELLO II","ciudad":"Las Condes","calle":"ANDRES BELLO 2777 EDIFICIO DE LA INDUSTRIA  ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC129"},{"nombre":"ARMARIO","ciudad":"Macul","calle":"EL ESTERO AV. HACIENDA MACUL","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC130"},{"nombre":"CAMINO DEL SOLAR FTE 13647 (VALLE NORTE-CHICUREO)","ciudad":"Colina","calle":"CAMINO DEL SOLAR FTE 13647 (VALLE NORTE-CHICUREO)","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC131"},{"nombre":"CARMEN BAJO ","ciudad":"","calle":"CARMEN BAJO CAMINO LA VILUMA KM 6","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC132"},{"nombre":"CERRILLOS DE CURACAVI","ciudad":"Curacavi","calle":"CAMINO INTERIOR S/N ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC133"},{"nombre":"CERRO EL PLOMO ","ciudad":"Las Condes","calle":"AV. PRESIDENTE RIESCO 5333","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC134"},{"nombre":"CHACRAS DE MARIN","ciudad":"Melipilla","calle":"LAS VELGAS 12 - MELIPILLA","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC135"},{"nombre":"DOÑA ISABEL ","ciudad":"Pudahuel","calle":"RUTA 68 - LOMAS DE LO AGUIRRE","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC136"},{"nombre":"EDIFICIO BANMEDICA ","ciudad":"Las Condes","calle":"APOQUINDO 3600 SUBTERRÁNEO ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC137"},{"nombre":"EDIFICIO CONSORCIO","ciudad":"Las Condes","calle":"EL BOSQUE 130","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC138"},{"nombre":"EDIFICIO EUROPA","ciudad":"Providencia","calle":"GUARDIA VIEJA 241","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC139"},{"nombre":"EL BOSQUE II ","ciudad":"Las Condes","calle":"EL BOSQUE NORTE 0177 ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC140"},{"nombre":"EL TROVADOR","ciudad":"Las Condes","calle":"EL TROVADOR 4280","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC141"},{"nombre":"HENDAYA","ciudad":"Las Condes","calle":"NAPOLEÓN 3565 ESQ HENDAYA SUBTERRÁNEO -2","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC142"},{"nombre":"KENNEDY ","ciudad":"Vitacura","calle":"AV. KENNEDY 5454 ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC143"},{"nombre":"LARAPINTA ORIENTE","ciudad":"","calle":"AV. LOS HALCONES 2010 SITIO 3-B2","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC144"},{"nombre":"LAS BRISAS DE CHICUREO","ciudad":"Chicureo","calle":"LOTEO AGRICOLA LAS BRISAS DE CHICUREO","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC145"},{"nombre":"LAS CONDES (HELVECIA) - EDIFICIO ATLANTIS ","ciudad":"Las Condes","calle":"EL BOSQUE NORTE 0440 - HELVECIA 223 ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC146"},{"nombre":"ALTO DE MACUL","ciudad":"Macul","calle":"AV. STA. SOFIA ESQ. CAMINO DE LA VOCACION","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC147"},{"nombre":"BLINDADOS ","ciudad":"Santiago","calle":"COQUIMBO 650  BD.1 ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC148"},{"nombre":"EL CRUCERAL","ciudad":"","calle":"AV. SUBERCASEAUX 4000","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC149"},{"nombre":"JARDIN DE LA VIÑA","ciudad":"","calle":"AV. ROJAS MAGALLANES S/N","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC150"},{"nombre":"LA HACIENDA EL PEÑON","ciudad":"","calle":"AV. LA HACIENDA 2382 LOTE 3","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC151"},{"nombre":"LAS ARAUCARIAS","ciudad":"","calle":"CAMINO CAMPO DE GOLF","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC152"},{"nombre":"LOMAS DE EYZAGUIRRE","ciudad":"","calle":"PASAJE TORQUEMADA PARQUE CENTRAL BRISAS","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC153"},{"nombre":"PARQUE ALMAGRO ","ciudad":"Santiago","calle":"EYZAGUIRRE 1140  ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC154"},{"nombre":"PIRQUE","ciudad":"Pirque","calle":"MUNICIPALIDAD DE PIRQUE","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC155"},{"nombre":"VALDIVIA DE PAINE ","ciudad":"","calle":"AV. CHILE 1078","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC156"},{"nombre":"SAN LUIS DE QUILICURA","ciudad":"Quilicura","calle":"VOLCAN LLAIMA 451 - 461 L.B","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC157"},{"nombre":"TAJAMAR","ciudad":"","calle":"AV. TAJAMAR 481","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC158"},{"nombre":"ZURICH ","ciudad":"Las Condes","calle":"VITACURA 2771, 1° SUBTERRANEO ","criticidad":"N4","categoria":"CNE / ARMARIO","codigoPOI":"RMC159"},{"nombre":"REGTEST","ciudad":"","calle":"","criticidad":"","categoria":"","codigoPOI":"09_REG"},{"nombre":"TEST","ciudad":"Temuco","calle":"","criticidad":"N4","categoria":"CENTRAL","codigoPOI":"TEST"},{"nombre":"CIRION","ciudad":"","calle":"Av. Sta. Marta de Huechuraba 6951, Santiago, Huechuraba, Región Metropolitana","criticidad":"DATACENTER","categoria":"CENTRAL","codigoPOI":"RMC162"},{"nombre":"LO SOLAR","ciudad":"Lampa","calle":"Estacion de colina parcela 34","criticidad":"N3","categoria":"CENTRAL","codigoPOI":"RMC163"}];
+
+let semanaActual = lunesDeEstaSemana(new Date());
+let seleccionId = null;
+let tareas = [];
+let modoRango = false;
+let seleccionMultiple = new Set();
+let paginaActual = 1;
+let tareasPorPagina = 20;
+
+function lunesDeEstaSemana(d){
+  const dia = d.getDay();
+  const offset = dia === 0 ? -6 : 1 - dia;
+  const lunes = new Date(d);
+  lunes.setDate(d.getDate() + offset);
+  lunes.setHours(0,0,0,0);
+  return lunes;
+}
+function isoFecha(d){ return d.toISOString().slice(0,10); }
+
+// Sistema 1 (estandar Excel/America): semana 1 = la que contiene el 1 de enero,
+// semanas empiezan domingo. Distinto del ISO 8601 que usa fSemanaIso.
+function numeroSemanaExcel(date){
+  const jan1 = new Date(date.getFullYear(), 0, 1);
+  const dayOfYear = Math.floor((date - jan1) / 86400000) + 1;
+  const jan1Dow = jan1.getDay();
+  return Math.ceil((dayOfYear + jan1Dow) / 7);
+}
+function inicioSemanaExcel(year, semana){
+  const jan1 = new Date(year, 0, 1);
+  const jan1Dow = jan1.getDay();
+  const inicioSemana1 = new Date(year, 0, 1 - jan1Dow);
+  const inicio = new Date(inicioSemana1);
+  inicio.setDate(inicioSemana1.getDate() + (semana - 1) * 7);
+  return inicio;
+}
+function poblarSelectorSemanas(){
+  const sel = document.getElementById('filtroSemanaSel');
+  const hoy = new Date();
+  const year = hoy.getFullYear();
+  const semanaActualNum = numeroSemanaExcel(hoy);
+  let html = '<option value="">Elegir semana...</option>';
+  for (let w = 1; w <= semanaActualNum; w++){
+    const inicio = inicioSemanaExcel(year, w);
+    const fin = new Date(inicio); fin.setDate(fin.getDate() + 6);
+    const fmt = x => x.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
+    html += `<option value="${year}-${w}">Semana ${w} (${fmt(inicio)} – ${fmt(fin)})</option>`;
+  }
+  sel.innerHTML = html;
+}
+
+function semanaIsoDeFecha(fechaStr){
+  if (!fechaStr) return '';
+  const d = new Date(fechaStr + 'T00:00:00');
+  const diaIso = (d.getDay() + 6) % 7; // lunes=0 ... domingo=6
+  const jueves = new Date(d);
+  jueves.setDate(d.getDate() - diaIso + 3); // jueves de esa semana
+  const primerJueves = new Date(jueves.getFullYear(), 0, 4);
+  const diaIsoPrimerJueves = (primerJueves.getDay() + 6) % 7;
+  primerJueves.setDate(primerJueves.getDate() - diaIsoPrimerJueves + 3);
+  const semana = 1 + Math.round((jueves - primerJueves) / (7 * 24 * 60 * 60 * 1000));
+  return `${jueves.getFullYear()}-W${String(semana).padStart(2,'0')}`;
+}
+function actualizarSemanaIso(){
+  document.getElementById('fSemanaIso').value = semanaIsoDeFecha(document.getElementById('fFechaInicio').value);
+}
+function poblarTecnicos(){
+  const filtro = document.getElementById('filtroTecnico');
+  filtro.innerHTML = '<option>Todos</option>' + TECHNICIANS.map(t=>`<option>${t}</option>`).join('');
+  const fTecnico = document.getElementById('fTecnico');
+  fTecnico.innerHTML = TECHNICIANS.map(t=>`<option>${t}</option>`).join('');
+}
+function seleccionarSitioPreventivo(nombre){
+  const sitio = SITIOS_PREVENTIVO.find(s => s.nombre === nombre);
+  document.getElementById('fNombreCliente').value = nombre;
+  document.getElementById('fNombreClienteInput').value = nombre;
+  document.getElementById('fDireccion').value = sitio ? sitio.calle : '';
+  document.getElementById('fCiudad').value = sitio ? sitio.ciudad : '';
+  document.getElementById('fCriticidad').value = sitio ? sitio.criticidad : '';
+  document.getElementById('fCategoriaSitio').value = sitio ? sitio.categoria : '';
+  document.getElementById('sitioDD').style.display = 'none';
+}
+function filtrarSitios(q){
+  const dd = document.getElementById('sitioDD');
+  document.getElementById('fNombreCliente').value = q;
+  if (!q) { dd.style.display = 'none'; return; }
+  const nq = q.toLowerCase();
+  const matches = SITIOS_PREVENTIVO.filter(s => s.nombre.toLowerCase().includes(nq)).slice(0, 30);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map(s =>
+    `<div class="sitio-opt" data-nombre="${s.nombre.replace(/"/g,'&quot;')}" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #F0F2F8;">${s.nombre}</div>`
+  ).join('');
+  dd.querySelectorAll('.sitio-opt').forEach(el => {
+    el.addEventListener('mousedown', e => { e.preventDefault(); seleccionarSitioPreventivo(el.dataset.nombre); });
+  });
+  dd.style.display = 'block';
+}
+document.getElementById('fNombreClienteInput').addEventListener('input', e => filtrarSitios(e.target.value));
+document.getElementById('fNombreClienteInput').addEventListener('blur', () => {
+  setTimeout(() => { document.getElementById('sitioDD').style.display = 'none'; }, 150);
+});
+
+async function cargarTareas(){
+  const tecnico = document.getElementById('filtroTecnico').value;
+  const params = new URLSearchParams();
+  if (modoRango) {
+    const desde = document.getElementById('filtroDesde').value;
+    const hasta = document.getElementById('filtroHasta').value;
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+  }
+  if (tecnico && tecnico !== 'Todos') params.set('tecnico', tecnico);
+  const res = await fetch('/tareas?' + params.toString());
+  tareas = await res.json();
+  paginaActual = 1;
+  seleccionMultiple.clear();
+  renderTabla();
+}
+
+function renderTabla(){
+  const totalPaginas = Math.max(1, Math.ceil(tareas.length / tareasPorPagina));
+  if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+  const inicio = (paginaActual - 1) * tareasPorPagina;
+  const pagina = tareas.slice(inicio, inicio + tareasPorPagina);
+
+  document.getElementById('paginaLabel').textContent = `Página ${paginaActual} de ${totalPaginas} (${tareas.length} tarea${tareas.length===1?'':'s'})`;
+  document.getElementById('btnPaginaPrev').disabled = paginaActual <= 1;
+  document.getElementById('btnPaginaNext').disabled = paginaActual >= totalPaginas;
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = pagina.map(t => `
+    <tr data-id="${t.id}" class="${t.id===seleccionId?'selected':''} ${t.destacada?'destacada':''}">
+      <td><input type="checkbox" class="rowCheck" data-check="${t.id}" ${seleccionMultiple.has(t.id)?'checked':''}></td>
+      <td>${t.tecnico||''}</td>
+      <td>${t.sitio||''}</td>
+      <td>${t.sala||''}</td>
+      <td>${t.descripcion||''}</td>
+      <td>${t.fechaInicio||''}</td>
+      <td>${t.fechaVencimiento||''}</td>
+      <td><span class="estado-badge estado-${(t.estado||'Nuevo').replace(' ','-')}">${t.estado||'Nuevo'}</span></td>
+      <td><span class="bell" data-bell="${t.id}">${t.destacada?'🔔':'🔕'}</span></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('checkTodos').checked = pagina.length>0 && pagina.every(t=>seleccionMultiple.has(t.id));
+
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('click', e => {
+      if (e.target.dataset.bell || e.target.classList.contains('rowCheck')) return;
+      seleccionId = tr.dataset.id;
+      renderTabla();
+      actualizarToolbar();
+    });
+  });
+  tbody.querySelectorAll('[data-check]').forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation());
+    el.addEventListener('change', e => {
+      const id = el.dataset.check;
+      if (el.checked) seleccionMultiple.add(id); else seleccionMultiple.delete(id);
+      document.getElementById('btnBorrarSeleccion').disabled = seleccionMultiple.size === 0;
+      document.getElementById('checkTodos').checked = pagina.length>0 && pagina.every(t=>seleccionMultiple.has(t.id));
+    });
+  });
+  tbody.querySelectorAll('[data-bell]').forEach(el => {
+    el.addEventListener('click', async e => {
+      e.stopPropagation();
+      await fetch(`/tareas/${el.dataset.bell}/destacar`, { method: 'POST' });
+      cargarTareas();
+    });
+  });
+}
+
+function actualizarToolbar(){
+  document.getElementById('btnEditar').disabled = !seleccionId;
+  document.getElementById('btnGenerarInformeLista').disabled = !seleccionId;
+}
+
+function cambiarTab(nombre){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === nombre));
+  document.querySelectorAll('.tab-panel').forEach(p => p.hidden = p.dataset.panel !== nombre);
+}
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => cambiarTab(b.dataset.tab)));
+document.getElementById('fFechaInicio').addEventListener('change', actualizarSemanaIso);
+document.getElementById('btnGenerarInforme').addEventListener('click', () => {
+  const id = document.getElementById('fId').value;
+  if (!id) return;
+  window.open('/tigo?tareaId=' + id, '_blank');
+});
+
+function abrirModal(tarea){
+  document.getElementById('fId').value = tarea ? tarea.id : '';
+  document.getElementById('fTareaNumero').value = tarea ? (tarea.tareaNumero || '') : '';
+  document.getElementById('fCategoria').value = tarea ? (tarea.categoria || 'CLMAPREV') : 'CLMAPREV';
+  document.getElementById('fDescripcion').value = tarea ? tarea.descripcion : '';
+  document.getElementById('fTecnico').value = tarea ? tarea.tecnico : TECHNICIANS[0];
+  document.getElementById('fFechaInicio').value = tarea ? tarea.fechaInicio : isoFecha(semanaActual);
+  document.getElementById('fFechaVencimiento').value = tarea ? tarea.fechaVencimiento : '';
+  document.getElementById('fEstado').value = tarea ? tarea.estado : 'Nuevo';
+  document.getElementById('fSitio').value = tarea ? tarea.sitio : '';
+  document.getElementById('fNombreCliente').value = tarea ? (tarea.nombreCliente || '') : '';
+  document.getElementById('fNombreClienteInput').value = tarea ? (tarea.nombreCliente || '') : '';
+  document.getElementById('fDireccion').value = tarea ? (tarea.direccion || '') : '';
+  document.getElementById('fCiudad').value = tarea ? (tarea.ciudad || '') : '';
+  document.getElementById('fCriticidad').value = tarea ? (tarea.criticidad || '') : '';
+  document.getElementById('fCategoriaSitio').value = tarea ? (tarea.categoriaSitio || '') : '';
+  document.getElementById('fIdAcceso').value = tarea ? (tarea.idAcceso || '') : '';
+  document.getElementById('fSala').value = tarea ? (tarea.sala || '') : '';
+  document.getElementById('fNombreEmpleado').value = tarea ? (tarea.nombreEmpleado || '') : '';
+  document.getElementById('fCrqInc').value = tarea ? (tarea.crqInc || '') : '';
+  document.getElementById('fNumeroEmpleado').value = tarea ? (tarea.numeroEmpleado || '') : '';
+  document.getElementById('fNumeroCliente').value = tarea ? (tarea.numeroCliente || '') : '';
+  document.getElementById('fNWorkflow').value = tarea ? (tarea.nWorkflow || '') : '';
+  document.getElementById('fNLpu').value = tarea ? (tarea.nLpu || '') : '';
+  document.getElementById('fComuna').value = tarea ? (tarea.comuna || '') : '';
+  document.getElementById('fRecurrencia').value = tarea ? (tarea.recurrencia || 'Única vez') : 'Única vez';
+  document.getElementById('fNotas').value = tarea ? (tarea.notas || '') : '';
+  actualizarSemanaIso();
+  document.getElementById('archivosInfo').style.display = tarea ? 'none' : 'block';
+  document.getElementById('btnGenerarInforme').style.display = tarea ? 'block' : 'none';
+  cambiarTab('detalles');
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function cerrarModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+async function guardarTarea(){
+  const id = document.getElementById('fId').value;
+  const payload = {
+    tareaNumero: document.getElementById('fTareaNumero').value,
+    categoria: document.getElementById('fCategoria').value,
+    descripcion: document.getElementById('fDescripcion').value,
+    tecnico: document.getElementById('fTecnico').value,
+    fechaInicio: document.getElementById('fFechaInicio').value,
+    fechaVencimiento: document.getElementById('fFechaVencimiento').value,
+    estado: document.getElementById('fEstado').value,
+    sitio: document.getElementById('fSitio').value,
+    nombreCliente: document.getElementById('fNombreCliente').value,
+    direccion: document.getElementById('fDireccion').value,
+    ciudad: document.getElementById('fCiudad').value,
+    criticidad: document.getElementById('fCriticidad').value,
+    categoriaSitio: document.getElementById('fCategoriaSitio').value,
+    idAcceso: document.getElementById('fIdAcceso').value,
+    sala: document.getElementById('fSala').value,
+    nombreEmpleado: document.getElementById('fNombreEmpleado').value,
+    crqInc: document.getElementById('fCrqInc').value,
+    numeroEmpleado: document.getElementById('fNumeroEmpleado').value,
+    numeroCliente: document.getElementById('fNumeroCliente').value,
+    nWorkflow: document.getElementById('fNWorkflow').value,
+    nLpu: document.getElementById('fNLpu').value,
+    comuna: document.getElementById('fComuna').value,
+    recurrencia: document.getElementById('fRecurrencia').value,
+    semanaIso: document.getElementById('fSemanaIso').value,
+    notas: document.getElementById('fNotas').value
+  };
+  if (id) {
+    await fetch(`/tareas/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  } else {
+    await fetch('/tareas', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  }
+  cerrarModal();
+  cargarTareas();
+}
+
+document.getElementById('filtroTecnico').addEventListener('change', cargarTareas);
+
+document.getElementById('filtroSemanaSel').addEventListener('change', e => {
+  const val = e.target.value;
+  if (!val) return;
+  const [year, w] = val.split('-');
+  const inicio = inicioSemanaExcel(Number(year), Number(w));
+  const fin = new Date(inicio); fin.setDate(fin.getDate() + 6);
+  document.getElementById('filtroDesde').value = isoFecha(inicio);
+  document.getElementById('filtroHasta').value = isoFecha(fin);
+  modoRango = true;
+  document.getElementById('btnLimpiarFiltro').style.display = 'inline-block';
+  cargarTareas();
+});
+
+document.getElementById('btnBuscarRango').addEventListener('click', () => {
+  const desde = document.getElementById('filtroDesde').value;
+  const hasta = document.getElementById('filtroHasta').value;
+  if (!desde && !hasta) { alert('Completa al menos una fecha (Desde u Hasta).'); return; }
+  modoRango = true;
+  document.getElementById('btnLimpiarFiltro').style.display = 'inline-block';
+  cargarTareas();
+});
+document.getElementById('btnLimpiarFiltro').addEventListener('click', () => {
+  modoRango = false;
+  document.getElementById('btnLimpiarFiltro').style.display = 'none';
+  document.getElementById('filtroDesde').value = '';
+  document.getElementById('filtroHasta').value = '';
+  cargarTareas();
+});
+
+document.getElementById('checkTodos').addEventListener('change', e => {
+  document.querySelectorAll('[data-check]').forEach(el => {
+    el.checked = e.target.checked;
+    if (e.target.checked) seleccionMultiple.add(el.dataset.check); else seleccionMultiple.delete(el.dataset.check);
+  });
+  document.getElementById('btnBorrarSeleccion').disabled = seleccionMultiple.size === 0;
+});
+document.getElementById('btnBorrarSeleccion').addEventListener('click', async () => {
+  if (seleccionMultiple.size === 0) return;
+  if (!confirm(`¿Borrar ${seleccionMultiple.size} tarea(s) seleccionada(s)?`)) return;
+  for (const id of seleccionMultiple) {
+    await fetch(`/tareas/${id}`, { method: 'DELETE' });
+  }
+  seleccionMultiple.clear();
+  document.getElementById('btnBorrarSeleccion').disabled = true;
+  cargarTareas();
+});
+
+document.getElementById('filtroPorPagina').addEventListener('change', e => {
+  tareasPorPagina = Number(e.target.value);
+  paginaActual = 1;
+  renderTabla();
+});
+document.getElementById('btnPaginaPrev').addEventListener('click', () => { paginaActual--; renderTabla(); });
+document.getElementById('btnPaginaNext').addEventListener('click', () => { paginaActual++; renderTabla(); });
+document.getElementById('btnAgregar').addEventListener('click', () => abrirModal(null));
+document.getElementById('btnEditar').addEventListener('click', () => {
+  const t = tareas.find(x => x.id === seleccionId);
+  if (t) abrirModal(t);
+});
+document.getElementById('btnGenerarInformeLista').addEventListener('click', () => {
+  if (!seleccionId) return;
+  window.open('/tigo?tareaId=' + seleccionId, '_blank');
+});
+document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
+document.getElementById('btnGuardarSalir').addEventListener('click', guardarTarea);
+
+const btnHerramientas = document.getElementById('btnHerramientas');
+const herramientasMenu = document.getElementById('herramientasMenu');
+btnHerramientas.addEventListener('click', e => {
+  e.stopPropagation();
+  herramientasMenu.classList.toggle('open');
+});
+document.addEventListener('click', () => herramientasMenu.classList.remove('open'));
+
+document.getElementById('ddVistaExcel').addEventListener('click', () => {
+  const tecnico = document.getElementById('filtroTecnico').value;
+  const params = new URLSearchParams();
+  if (modoRango) {
+    const desde = document.getElementById('filtroDesde').value;
+    const hasta = document.getElementById('filtroHasta').value;
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+  }
+  if (tecnico && tecnico !== 'Todos') params.set('tecnico', tecnico);
+  descargarAuth('/tareas/exportar?' + params.toString(), 'tareas-preventivo.xlsx');
+  herramientasMenu.classList.remove('open');
+});
+
+document.getElementById('ddExportarTareasJson').addEventListener('click', () => {
+  descargarAuth('/tareas/backup', 'tareas-backup.json');
+  herramientasMenu.classList.remove('open');
+});
+
+const fileImportar = document.getElementById('fileImportar');
+const importarOverlay = document.getElementById('importarOverlay');
+const importarFileLabel = document.getElementById('importarFileLabel');
+
+document.getElementById('ddImportarTareas').addEventListener('click', () => {
+  herramientasMenu.classList.remove('open');
+  fileImportar.value = '';
+  importarFileLabel.value = '';
+  document.getElementById('importarEncabezados').checked = true;
+  importarOverlay.classList.add('open');
+});
+document.getElementById('btnCancelarImportar').addEventListener('click', () => {
+  importarOverlay.classList.remove('open');
+});
+document.getElementById('btnSeleccionarArchivo').addEventListener('click', () => fileImportar.click());
+fileImportar.addEventListener('change', () => {
+  const file = fileImportar.files[0];
+  importarFileLabel.value = file ? file.name : '';
+});
+
+document.getElementById('btnConfirmarImportar').addEventListener('click', async () => {
+  const file = fileImportar.files[0];
+  if (!file) { alert('Selecciona un archivo primero.'); return; }
+  const primeraFilaEncabezados = document.getElementById('importarEncabezados').checked;
+  const buffer = await file.arrayBuffer();
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const dataBase64 = btoa(binary);
+  const res = await fetch('/tareas/importar', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dataBase64, primeraFilaEncabezados })
+  });
+  const data = await res.json();
+  importarOverlay.classList.remove('open');
+  if (data.error) { alert('Error al importar: ' + data.error); return; }
+  alert(`Se importaron ${data.importadas} tarea(s).`);
+  if (data.primeraFechaInicio) {
+    const inicio = new Date(data.primeraFechaInicio + 'T00:00:00');
+    const lunes = lunesDeEstaSemana(inicio);
+    const domingo = new Date(lunes); domingo.setDate(domingo.getDate() + 6);
+    document.getElementById('filtroDesde').value = isoFecha(lunes);
+    document.getElementById('filtroHasta').value = isoFecha(domingo);
+    modoRango = true;
+    document.getElementById('btnLimpiarFiltro').style.display = 'inline-block';
+  }
+  cargarTareas();
+});
+
+poblarTecnicos();
+poblarSelectorSemanas();
+cargarTareas();
+</script>
+</body>
+</html>

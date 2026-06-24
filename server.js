@@ -9,6 +9,10 @@ const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
         ImageRun, AlignmentType, WidthType, BorderStyle, ShadingType,
         VerticalAlign, Header } = require('docx');
 const authRoutes = require('./routes/auth');
+const gestionRoutes = require('./routes/gestion');
+const empresasRoutes = require('./routes/empresas');
+const preventivoRoutes = require('./routes/preventivo');
+const gestionDb = require('./db/gestion');
 const { authMiddleware } = require('./middleware/auth');
 const { requireRol, requireNivel } = require('./middleware/roles');
 
@@ -35,13 +39,26 @@ app.use(express.static(__dirname));
 // ── Auth routes (públicas: /auth/login, /auth/register-superadmin)
 app.use('/auth', authRoutes);
 
+// ── Gestión: perfiles, proyectos, asignaciones, informes (modelo relacional)
+// Todas las rutas exigen sesión y aplican las reglas de negocio por empresa.
+app.use('/api/gestion', gestionRoutes);
+
+// ── Gestión de clientes (empresas) y usuarios — superadmin
+app.use('/api', empresasRoutes);
+
+// ── Mantenimiento Preventivo: tareas (API protegida con login)
+app.use('/tareas', preventivoRoutes);
+
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'landing.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
-app.get('/selector', (req, res) => res.sendFile(path.join(__dirname, 'selector.html')));
+app.get('/selector', (req, res) => res.redirect(301, '/dashboard')); // unificado: el nodo central es /dashboard
 app.get('/tigo', (req, res) => res.sendFile(path.join(__dirname, 'informe_clima_app.html')));
 app.get('/wom', (req, res) => res.sendFile(path.join(__dirname, 'informe_wom_app.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+app.get('/panel', (req, res) => res.sendFile(path.join(__dirname, 'panel_tecnico.html'))); // panel del técnico
+app.get('/preventivo', (req, res) => res.sendFile(path.join(__dirname, 'preventivo.html'))); // mantenimiento preventivo
+app.get('/perfil', (req, res) => res.sendFile(path.join(__dirname, 'perfil.html'))); // perfil del usuario
 app.get('/nuevo-proyecto', (req, res) => res.sendFile(path.join(__dirname, 'nuevo_proyecto.html')));
 app.get('/proyecto/:slug', (req, res) => res.sendFile(path.join(__dirname, 'proyecto.html')));
 
@@ -69,8 +86,14 @@ app.post('/api/contacto', express.json(), (req, res) => {
 });
 
 app.get('/api/proyectos', authMiddleware, (req, res) => {
-  res.json(loadProyectos().map(p => ({
+  let proyectos = loadProyectos();
+  // Aislamiento por empresa: solo superadmin ve todas las empresas
+  if (req.user.rol !== 'superadmin') {
+    proyectos = proyectos.filter(p => p.empresa_id === req.user.empresa_id);
+  }
+  res.json(proyectos.map(p => ({
     id:p.id, slug:p.slug, nombre:p.nombre, logo:p.logo, template:p.template,
+    empresa_id:p.empresa_id||null, empresa_nombre:p.empresa_nombre||null,
     color:p.color, totalSitios:p.sitios?.length||0,
     totalTecnicos:p.tecnicos?.length||0, totalSupervisores:p.supervisores?.length||0,
     creado_en:p.creado_en
@@ -83,10 +106,14 @@ app.get('/api/proyectos/:slug', authMiddleware, (req, res) => {
   res.json(p);
 });
 
-app.post('/api/proyectos', authMiddleware, requireRol('superadmin'), (req, res) => {
+app.post('/api/proyectos', authMiddleware, requireRol('superadmin'), async (req, res) => {
   try {
-    const { nombre, slug, template, color, sitios, tecnicos, supervisores, logo } = req.body;
+    const { nombre, slug, template, color, sitios, tecnicos, supervisores, logo, empresa_id } = req.body;
     if (!nombre || !slug || !template) return res.status(400).json({ error: 'nombre, slug y template requeridos' });
+    if (!empresa_id) return res.status(400).json({ error: 'Debes seleccionar la empresa del proyecto' });
+    // Valida la empresa contra la BD (no se confía en el nombre que envía el cliente)
+    const empresa = (await gestionDb.empresasList()).find(e => e.id === empresa_id);
+    if (!empresa) return res.status(400).json({ error: 'Empresa no válida' });
     const proyectos = loadProyectos();
     if (proyectos.find(p => p.slug === slug)) return res.status(409).json({ error: 'Ya existe un proyecto con ese identificador' });
     let logoPath = null;
@@ -99,6 +126,7 @@ app.post('/api/proyectos', authMiddleware, requireRol('superadmin'), (req, res) 
     const proyecto = {
       id: uuidSimple(), slug: slug.toLowerCase().replace(/\s+/g,'-'),
       nombre, logo: logoPath, template,
+      empresa_id, empresa_nombre: empresa.nombre,
       color: color || (template==='tigo'?'#0073EA':'#6161FF'),
       sitios: sitios||[], tecnicos: tecnicos||[], supervisores: supervisores||[],
       creado_en: new Date().toISOString()

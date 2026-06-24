@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
 <style>
 :root {
   --blue:#0073EA; --bl:#E6F2FF; --bm:#1976D2; --bd:#0D47A1; --b2:#D9E2F3;
@@ -303,9 +304,20 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (!token) { window.location.replace('/login'); throw ''; }
   fetch('/auth/me', { headers: { Authorization: 'Bearer ' + token } })
-    .then(r => { if (!r.ok) { localStorage.removeItem('token'); sessionStorage.removeItem('token'); window.location.replace('/login'); } })
+    .then(r => { if (!r.ok) { localStorage.removeItem('token'); sessionStorage.removeItem('token'); window.location.replace('/login'); return; } return r.json(); })
+    .then(d => {
+      if (!d || !d.usuario) return;
+      // Casa → área de gestión según rol: técnico → /panel, resto → /dashboard
+      const home = document.getElementById('btnHome');
+      if (home) home.href = d.usuario.rol === 'tecnico' ? '/panel' : '/dashboard';
+    })
     .catch(() => window.location.replace('/login'));
 })();
+function cerrarSesion(){
+  localStorage.removeItem('token');
+  sessionStorage.removeItem('token');
+  window.location.replace('/login');
+}
 </script>
 
 <header>
@@ -320,7 +332,8 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     </div>
     <div class="hdr-badges">
       <span class="srv-dot" id="srvBadge" title="Servidor inactivo"></span>
-      <a href="/" class="back-btn" title="Inicio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></a>
+      <a href="/dashboard" id="btnHome" class="back-btn" title="Área de gestión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></a>
+      <button class="back-btn" onclick="cerrarSesion()" title="Cerrar sesión" style="cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     </div>
   </div>
 </header>
@@ -1420,7 +1433,8 @@ async function generateDocx(){
     m_condv:document.getElementById('m_condv').value,m_conda:document.getElementById('m_conda').value,
     m_tinj:document.getElementById('m_tinj').value,m_tret:document.getElementById('m_tret').value,
     photos:photoDataUrls,
-    photoDescs:photoDescs
+    photoDescs:photoDescs,
+    tareaId:TAREA_ID
   };
   try{
     const resp=await fetch(SERVER+'/generar',{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(payload)});
@@ -1432,6 +1446,13 @@ async function generateDocx(){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download=fname;a.click();URL.revokeObjectURL(url);
     status.className='status ok';status.textContent=`✅ "${fname}" generado y guardado en el historial`;
+    // Cierra el ciclo: si el informe vino de una tarea preventiva, la marca como Cerrada.
+    if(TAREA_ID){
+      try{
+        const rc=await fetch(SERVER+'/tareas/'+TAREA_ID,{method:'PUT',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify({estado:'Cerrado'})});
+        if(rc.ok)status.textContent=`✅ "${fname}" generado. Tarea preventiva marcada como Cerrada.`;
+      }catch(e){console.error('No se pudo cerrar la tarea preventiva:',e);}
+    }
     setTimeout(()=>loadHist(true),800);
   }catch(err){
     status.className='status err';status.textContent='❌ '+err.message;
@@ -1649,6 +1670,27 @@ updateTabStates();
 buildPhotoSlots();
 document.getElementById('fechaEjecucion').valueAsDate=new Date();
 previewCod();checkServer();setInterval(checkServer,15000);
+
+// ══ PRECARGA DESDE TAREA PREVENTIVA (?tareaId=) ══
+let TAREA_ID=null;
+async function precargarDesdeTarea(){
+  const params=new URLSearchParams(location.search);
+  const id=params.get('tareaId');
+  if(!id)return;
+  try{
+    const resp=await fetch(SERVER+'/tareas/'+id,{headers:authH()});
+    if(!resp.ok)return;
+    const t=await resp.json();
+    TAREA_ID=id;
+    selectSite(t.nombreCliente||'', t.direccion||'');
+    if(t.fechaInicio)document.getElementById('fechaEjecucion').value=t.fechaInicio;
+    if(t.sala)document.getElementById('sala').value=t.sala;
+    if(t.tecnico)selectTec(t.tecnico);
+    document.getElementById('ticketInc').value=t.crqInc||'';
+    previewCod();
+  }catch(e){console.error('No se pudo precargar la tarea:',e);}
+}
+precargarDesdeTarea();
 
 // Auto nueva línea al escribir punto en resumen
 document.getElementById('resumen').addEventListener('input', function(){

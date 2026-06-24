@@ -1,0 +1,361 @@
+// ════════════════════════════════════════════════════════════════
+// Módulo: Mantenimiento Preventivo (gestión de tareas)
+// Portado desde el proyecto "programa preventivo".
+// Almacenamiento: Supabase (tabla 'tareas_preventivo') con fallback
+// a archivo local 'tareas_preventivo.json'. Protegido con authMiddleware.
+// ════════════════════════════════════════════════════════════════
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const XLSXStyle = require('xlsx-js-style');
+const { createClient } = require('@supabase/supabase-js');
+const { authMiddleware } = require('../middleware/auth');
+
+// Mismo criterio que db/gestion.js: Supabase solo si hay credenciales
+// y USE_LOCAL_DB no está en 'true'. Si no, almacenamiento en archivo local.
+const supabase = (
+    process.env.SUPABASE_URL &&
+    process.env.SUPABASE_KEY &&
+    process.env.USE_LOCAL_DB !== 'true'
+  )
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+  : null;
+
+const TABLE = 'tareas_preventivo';
+const TAREAS_FILE = path.join(__dirname, '..', 'tareas_preventivo.json');
+if (!fs.existsSync(TAREAS_FILE)) fs.writeFileSync(TAREAS_FILE, '[]');
+
+// ── Mapeo camelCase (app) ↔ snake_case (Supabase) ───────────────
+const fromTarea = r => ({
+  id: r.id, descripcion: r.descripcion, tecnico: r.tecnico,
+  fechaInicio: r.fecha_inicio, fechaVencimiento: r.fecha_vencimiento,
+  estado: r.estado, sitio: r.sitio, destacada: r.destacada,
+  tareaNumero: r.tarea_numero, categoria: r.categoria,
+  nombreCliente: r.nombre_cliente, sala: r.sala, nombreEmpleado: r.nombre_empleado,
+  crqInc: r.crq_inc, numeroEmpleado: r.numero_empleado, numeroCliente: r.numero_cliente,
+  nWorkflow: r.n_workflow, nLpu: r.n_lpu,
+  comuna: r.comuna, recurrencia: r.recurrencia, notas: r.notas,
+  semanaIso: r.semana_iso, fechaCreacion: r.fecha_creacion,
+  criticidad: r.criticidad, categoriaSitio: r.categoria_sitio,
+  direccion: r.direccion, ciudad: r.ciudad, idAcceso: r.id_acceso,
+  empresaId: r.empresa_id || null,
+  equipos: r.equipos || []
+});
+const toTarea = e => ({
+  id: e.id, descripcion: e.descripcion, tecnico: e.tecnico,
+  fecha_inicio: e.fechaInicio, fecha_vencimiento: e.fechaVencimiento,
+  estado: e.estado, sitio: e.sitio, destacada: e.destacada,
+  tarea_numero: e.tareaNumero, categoria: e.categoria,
+  nombre_cliente: e.nombreCliente, sala: e.sala, nombre_empleado: e.nombreEmpleado,
+  crq_inc: e.crqInc, numero_empleado: e.numeroEmpleado, numero_cliente: e.numeroCliente,
+  n_workflow: e.nWorkflow, n_lpu: e.nLpu,
+  comuna: e.comuna, recurrencia: e.recurrencia, notas: e.notas,
+  semana_iso: e.semanaIso, fecha_creacion: e.fechaCreacion,
+  criticidad: e.criticidad, categoria_sitio: e.categoriaSitio,
+  direccion: e.direccion, ciudad: e.ciudad, id_acceso: e.idAcceso,
+  empresa_id: e.empresaId || null,
+  equipos: e.equipos || []
+});
+
+// ── Repositorio (Supabase + fallback local) ─────────────────────
+const loadDB = () => { try { return JSON.parse(fs.readFileSync(TAREAS_FILE, 'utf8')); } catch { return []; } };
+const saveDB = d  => fs.writeFileSync(TAREAS_FILE, JSON.stringify(d, null, 2));
+
+async function dbTareasList() {
+  if (supabase) {
+    const { data, error } = await supabase.from(TABLE).select('*').order('fecha_creacion', { ascending: false });
+    if (!error) return (data || []).map(fromTarea);
+    console.error('tareas list:', error.message);
+  }
+  return loadDB();
+}
+async function dbTareasInsert(entry) {
+  if (supabase) {
+    const { error } = await supabase.from(TABLE).insert(toTarea(entry));
+    if (error) console.error('tareas insert:', error.message);
+  } else { const db = loadDB(); db.unshift(entry); saveDB(db); }
+}
+async function dbTareasInsertMany(entries) {
+  if (!entries || !entries.length) return;
+  if (supabase) {
+    const { error } = await supabase.from(TABLE).insert(entries.map(toTarea));
+    if (error) console.error('tareas insertMany:', error.message);
+  } else { const db = loadDB(); for (const e of entries) db.unshift(e); saveDB(db); }
+}
+async function dbTareasFind(id) {
+  if (supabase) {
+    const { data, error } = await supabase.from(TABLE).select('*').eq('id', id).single();
+    if (!error && data) return fromTarea(data);
+  }
+  return loadDB().find(r => r.id === id) || null;
+}
+async function dbTareasUpdate(id, patch) {
+  if (supabase) {
+    const { error } = await supabase.from(TABLE).update(toTarea(patch)).eq('id', id);
+    if (error) { console.error('tareas update:', error.message); return { error: error.message }; }
+  } else {
+    const db = loadDB();
+    const idx = db.findIndex(r => r.id === id);
+    if (idx === -1) return { error: 'id no encontrado' };
+    db[idx] = { ...db[idx], ...patch };
+    saveDB(db);
+  }
+  return { ok: true };
+}
+async function dbTareasDelete(id) {
+  if (supabase) {
+    const { error } = await supabase.from(TABLE).delete().eq('id', id);
+    if (error) { console.error('tareas delete:', error.message); return { error: error.message }; }
+  } else { saveDB(loadDB().filter(r => r.id !== id)); }
+  return { ok: true };
+}
+
+// ── Helpers de semana ───────────────────────────────────────────
+function enRangoSemana(fechaInicioISO, semanaISO) {
+  if (!semanaISO) return true;
+  const lunes = new Date(semanaISO + 'T00:00:00');
+  const domingo = new Date(lunes); domingo.setDate(domingo.getDate() + 6);
+  const f = new Date(fechaInicioISO + 'T00:00:00');
+  return f >= lunes && f <= domingo;
+}
+// Semana ISO 8601 (lunes-domingo, semana que contiene el primer jueves del año)
+function semanaIsoDeFecha(fechaStr) {
+  if (!fechaStr) return '';
+  const d = new Date(fechaStr + 'T00:00:00');
+  const diaIso = (d.getDay() + 6) % 7;
+  const jueves = new Date(d);
+  jueves.setDate(d.getDate() - diaIso + 3);
+  const primerJueves = new Date(jueves.getFullYear(), 0, 4);
+  const diaIsoPrimerJueves = (primerJueves.getDay() + 6) % 7;
+  primerJueves.setDate(primerJueves.getDate() - diaIsoPrimerJueves + 3);
+  const semana = 1 + Math.round((jueves - primerJueves) / (7 * 24 * 60 * 60 * 1000));
+  return `${jueves.getFullYear()}-W${String(semana).padStart(2, '0')}`;
+}
+
+// ── Export a Excel con estilo ───────────────────────────────────
+const XL_AZUL  = 'FF0073EA';   // cabecera
+const XL_ZEBRA = 'FFEAF3FF';   // filas pares
+const XL_BORDE = 'FFB9C4DE';   // líneas de la tabla
+function buildReporteExcel(colMap, validColumns, rows, sheetName = 'Tareas') {
+  const headerRow = validColumns.map(c => colMap[c]);
+  const dataRows = rows.map(r => validColumns.map(c => String(r[c] ?? '')));
+  const ws = XLSXStyle.utils.aoa_to_sheet([headerRow, ...dataRows]);
+  const thin = { style: 'thin', color: { rgb: XL_BORDE } };
+  const border = { top: thin, bottom: thin, left: thin, right: thin };
+  const ncols = validColumns.length;
+  for (let R = 0; R <= dataRows.length; R++) {
+    for (let C = 0; C < ncols; C++) {
+      const ref = XLSXStyle.utils.encode_cell({ r: R, c: C });
+      if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+      if (R === 0) {
+        ws[ref].s = {
+          font: { bold: true, sz: 11, color: { rgb: 'FFFFFFFF' }, name: 'Calibri' },
+          fill: { patternType: 'solid', fgColor: { rgb: XL_AZUL } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          border
+        };
+      } else {
+        ws[ref].s = {
+          font: { sz: 10, color: { rgb: 'FF323338' }, name: 'Calibri' },
+          fill: { patternType: 'solid', fgColor: { rgb: R % 2 === 0 ? XL_ZEBRA : 'FFFFFFFF' } },
+          alignment: { horizontal: 'left', vertical: 'center', wrapText: false },
+          border
+        };
+      }
+    }
+  }
+  ws['!cols'] = validColumns.map((c, i) => {
+    const lens = [colMap[c].length, ...dataRows.map(row => (row[i] || '').length)];
+    return { wch: Math.min(Math.max(Math.max(...lens) + 2, 12), 45) };
+  });
+  ws['!rows'] = [{ hpt: 22 }];
+  const lastCol = XLSXStyle.utils.encode_col(ncols - 1);
+  ws['!autofilter'] = { ref: `A1:${lastCol}${dataRows.length + 1}` };
+  const wb = XLSXStyle.utils.book_new();
+  XLSXStyle.utils.book_append_sheet(wb, ws, sheetName);
+  return XLSXStyle.write(wb, { type: 'buffer', bookType: 'xlsx' });
+}
+
+// Etiquetas idénticas a la planilla real de carga masiva (Officetrack)
+const TAREAS_COLUMNAS = {
+  nombreCliente: 'Nombre del Cliente', sala: 'SALA',
+  nombreEmpleado: 'Nombre del empleado', crqInc: 'N°CRQ/INC',
+  descripcion: 'Descripción', numeroEmpleado: 'Número del empleado',
+  fechaInicio: 'Fecha de inicio', fechaVencimiento: 'Fecha de vencimiento',
+  categoria: 'Categoría de tarea', numeroCliente: 'Número del cliente',
+  nWorkflow: 'N° Workflow', nLpu: 'N°LPU', comuna: 'Comuna',
+  tareaNumero: 'Tarea Número', tecnico: 'Técnico', sitio: 'Sitio',
+  estado: 'Estado', semanaIso: 'Semana ISO', recurrencia: 'Recurrencia', notas: 'Notas'
+};
+const TAREAS_COLUMNAS_INV = Object.fromEntries(Object.entries(TAREAS_COLUMNAS).map(([k, v]) => [v, k]));
+
+// ════════════════════════════════════════════════════════════════
+// RUTAS — todas protegidas con login (JWT)
+// ════════════════════════════════════════════════════════════════
+const router = express.Router();
+router.use(authMiddleware);
+
+// ── Scope por empresa ───────────────────────────────────────────
+// superadmin ve todo; el resto solo las tareas de su propia empresa.
+// Las tareas sin empresa (legado) solo las ve superadmin.
+function filtraEmpresa(rows, user) {
+  if (user.rol === 'superadmin') return rows;
+  return rows.filter(r => r.empresaId && r.empresaId === user.empresa_id);
+}
+function puedeTocar(tarea, user) {
+  if (user.rol === 'superadmin') return true;
+  return !!tarea.empresaId && tarea.empresaId === user.empresa_id;
+}
+
+router.get('/', async (req, res) => {
+  try {
+    const { semana, tecnico, desde, hasta } = req.query;
+    let rows = filtraEmpresa(await dbTareasList(), req.user);
+    if (semana) rows = rows.filter(r => enRangoSemana(r.fechaInicio, semana));
+    if (desde) rows = rows.filter(r => r.fechaInicio && r.fechaInicio >= desde);
+    if (hasta) rows = rows.filter(r => r.fechaInicio && r.fechaInicio <= hasta);
+    if (tecnico && tecnico !== 'Todos') rows = rows.filter(r => r.tecnico === tecnico);
+    res.json(rows);
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const d = req.body;
+    const entry = {
+      id: Date.now().toString(),
+      descripcion: d.descripcion || '', tecnico: d.tecnico || '',
+      fechaInicio: d.fechaInicio || '', fechaVencimiento: d.fechaVencimiento || '',
+      estado: d.estado || 'Nuevo', sitio: d.sitio || '',
+      tareaNumero: d.tareaNumero || '', categoria: d.categoria || 'CLMAPREV',
+      nombreCliente: d.nombreCliente || '', sala: d.sala || '', nombreEmpleado: d.nombreEmpleado || '',
+      crqInc: d.crqInc || '', numeroEmpleado: d.numeroEmpleado || '', numeroCliente: d.numeroCliente || '',
+      nWorkflow: d.nWorkflow || '', nLpu: d.nLpu || '',
+      comuna: d.comuna || '', recurrencia: d.recurrencia || 'Única vez', notas: d.notas || '',
+      semanaIso: d.semanaIso || '',
+      criticidad: d.criticidad || '', categoriaSitio: d.categoriaSitio || '',
+      direccion: d.direccion || '', ciudad: d.ciudad || '', idAcceso: d.idAcceso || '',
+      equipos: Array.isArray(d.equipos) ? d.equipos : [],
+      empresaId: req.user.empresa_id || null,
+      destacada: false, fechaCreacion: new Date().toISOString()
+    };
+    await dbTareasInsert(entry);
+    res.json(entry);
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const tarea = await dbTareasFind(req.params.id);
+    if (!tarea) return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (!puedeTocar(tarea, req.user)) return res.status(403).json({ error: 'Sin acceso a esta tarea' });
+    const patch = { ...req.body };
+    delete patch.empresaId; // la empresa no se reasigna vía edición
+    const result = await dbTareasUpdate(req.params.id, patch);
+    if (result && result.error) return res.status(500).json({ error: result.error });
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const tarea = await dbTareasFind(req.params.id);
+    if (!tarea) return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (!puedeTocar(tarea, req.user)) return res.status(403).json({ error: 'Sin acceso a esta tarea' });
+    const result = await dbTareasDelete(req.params.id);
+    if (result && result.error) return res.status(500).json({ error: result.error });
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.post('/:id/destacar', async (req, res) => {
+  try {
+    const tarea = await dbTareasFind(req.params.id);
+    if (!tarea) return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (!puedeTocar(tarea, req.user)) return res.status(403).json({ error: 'Sin acceso a esta tarea' });
+    const result = await dbTareasUpdate(req.params.id, { destacada: !tarea.destacada });
+    if (result && result.error) return res.status(500).json({ error: result.error });
+    res.json({ ok: true, destacada: !tarea.destacada });
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.get('/backup', async (req, res) => {
+  try {
+    const rows = filtraEmpresa(await dbTareasList(), req.user);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="tareas-backup.json"');
+    res.send(JSON.stringify(rows, null, 2));
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.get('/exportar', async (req, res) => {
+  try {
+    const { semana, tecnico, desde, hasta } = req.query;
+    let rows = filtraEmpresa(await dbTareasList(), req.user);
+    if (semana) rows = rows.filter(r => enRangoSemana(r.fechaInicio, semana));
+    if (desde) rows = rows.filter(r => r.fechaInicio && r.fechaInicio >= desde);
+    if (hasta) rows = rows.filter(r => r.fechaInicio && r.fechaInicio <= hasta);
+    if (tecnico && tecnico !== 'Todos') rows = rows.filter(r => r.tecnico === tecnico);
+    const buffer = buildReporteExcel(TAREAS_COLUMNAS, Object.keys(TAREAS_COLUMNAS), rows, 'Tareas');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="tareas-preventivo.xlsx"');
+    res.send(buffer);
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.get('/plantilla', (req, res) => {
+  try {
+    const buffer = buildReporteExcel(TAREAS_COLUMNAS, Object.keys(TAREAS_COLUMNAS), [], 'Tareas');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="plantilla-tareas-preventivo.xlsx"');
+    res.send(buffer);
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+// Va después de las rutas literales /backup, /exportar, /plantilla
+// para que ":id" no las intercepte.
+router.get('/:id', async (req, res) => {
+  try {
+    const tarea = await dbTareasFind(req.params.id);
+    if (!tarea) return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (!puedeTocar(tarea, req.user)) return res.status(403).json({ error: 'Sin acceso a esta tarea' });
+    res.json(tarea);
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+router.post('/importar', async (req, res) => {
+  try {
+    const { dataBase64, primeraFilaEncabezados } = req.body;
+    if (!dataBase64) return res.status(400).json({ error: 'Falta el archivo' });
+    const buf = Buffer.from(dataBase64, 'base64');
+    const wb = XLSXStyle.read(buf, { type: 'buffer', cellDates: true });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const opts = { defval: '', cellDates: true };
+    if (primeraFilaEncabezados === false) opts.header = Object.values(TAREAS_COLUMNAS);
+    const filas = XLSXStyle.utils.sheet_to_json(sheet, opts);
+    let primeraFechaInicio = '';
+    const nuevas = [];
+    for (let i = 0; i < filas.length; i++) {
+      // Encabezados con espacios extra (ej. "SALA ") no deben romper el match
+      const fila = Object.fromEntries(Object.entries(filas[i]).map(([k, v]) => [k.trim(), v]));
+      const entry = { id: (Date.now() + i).toString(), destacada: false, fechaCreacion: new Date().toISOString() };
+      for (const [label, key] of Object.entries(TAREAS_COLUMNAS_INV)) {
+        const valor = fila[label];
+        entry[key] = valor instanceof Date ? valor.toISOString().slice(0, 10) : String(valor ?? '').trim();
+      }
+      entry.estado = entry.estado || 'Nuevo';
+      entry.categoria = entry.categoria || 'CLMAPREV';
+      entry.recurrencia = entry.recurrencia || 'Única vez';
+      entry.semanaIso = entry.semanaIso || semanaIsoDeFecha(entry.fechaInicio);
+      entry.tecnico = entry.tecnico || entry.nombreEmpleado;
+      entry.empresaId = req.user.empresa_id || null;
+      nuevas.push(entry);
+      if (!primeraFechaInicio && entry.fechaInicio) primeraFechaInicio = entry.fechaInicio;
+    }
+    // Inserción en una sola pasada (rápida; no bloquea el servidor)
+    await dbTareasInsertMany(nuevas);
+    res.json({ ok: true, importadas: nuevas.length, primeraFechaInicio });
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+module.exports = router;
