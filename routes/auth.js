@@ -108,12 +108,27 @@ const db = {
 
   async listUsuarios(empresa_id) {
     if (supabaseClient) {
-      let q = supabaseClient.from('usuarios').select('id,nombre,email,rol,activo,empresa_id');
+      let q = supabaseClient.from('usuarios')
+        .select('id,nombre,email,rol,activo,empresa_id,perfiles(rut),empresas(nombre)');
       if (empresa_id) q = q.eq('empresa_id', empresa_id);
       const { data } = await q;
-      return data || [];
+      return (data || []).map(u => ({
+        id:u.id, nombre:u.nombre, email:u.email, rol:u.rol, activo:u.activo, empresa_id:u.empresa_id,
+        rut: u.perfiles?.rut || null, empresa_nombre: u.empresas?.nombre || null
+      }));
     }
-    return localDB.usuarios.list(empresa_id);
+    return localDB.usuarios.listDetalle(empresa_id);
+  },
+
+  async updateUsuario(id, fields) {
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient
+        .from('usuarios').update(fields).eq('id', id)
+        .select('id,nombre,email,rol,empresa_id,activo').single();
+      if (error) throw new Error(error.message);
+      return data;
+    }
+    return localDB.usuarios.update(id, fields);
   },
 
   async listAreasByEmpresa(empresa_id) {
@@ -355,6 +370,46 @@ router.get('/personal', authMiddleware, async (req, res) => {
     res.json(personal.map(u => ({ id: u.id, nombre: u.nombre, rol: u.rol })));
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PATCH /auth/usuarios/:id ──────────────────────────────────
+// Solo superadmin: editar correo, contraseña, rol y empresa de cualquier usuario
+router.patch('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, email, password, rol, empresa_id } = req.body;
+    const fields = {};
+
+    if (nombre !== undefined) fields.nombre = nombre.trim();
+    if (email !== undefined) {
+      const e = email.toLowerCase().trim();
+      if (!e) return res.status(400).json({ error: 'Email no puede quedar vacío' });
+      fields.email = e;
+    }
+    if (rol !== undefined) {
+      if (!['superadmin','admin_empresa','supervisor','tecnico'].includes(rol))
+        return res.status(400).json({ error: 'Rol inválido' });
+      fields.rol = rol;
+    }
+    if (empresa_id !== undefined) fields.empresa_id = empresa_id || null;
+    // superadmin no pertenece a ninguna empresa
+    if ((fields.rol || '') === 'superadmin') fields.empresa_id = null;
+
+    if (password !== undefined && password !== '') {
+      if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener 6+ caracteres' });
+      fields.password_hash = await bcrypt.hash(password, 12);
+    }
+
+    if (!Object.keys(fields).length)
+      return res.status(400).json({ error: 'Nada para actualizar' });
+
+    const usuario = await db.updateUsuario(id, fields);
+    res.json({ ok: true, usuario });
+  } catch (err) {
+    // email duplicado u otros errores de BD
+    const msg = /unique|duplicate/i.test(err.message) ? 'Ese correo ya está en uso' : err.message;
+    res.status(400).json({ error: msg });
   }
 });
 

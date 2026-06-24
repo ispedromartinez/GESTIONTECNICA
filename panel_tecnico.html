@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview – Sidebar Monday.com</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --sb:#1C1F3B;
+  --sb-hover:rgba(255,255,255,.07);
+  --sb-active:#0073EA;
+  --sb-active-wom:#784BD1;
+  --blue:#0073EA;
+  --mag:#784BD1;
+  --green:#00C875;
+  --green-d:#00854D;
+  --red:#E2445C;
+  --orange:#FF7B1C;
+  --text:#323338;
+  --muted:#676879;
+  --border:#D0D4E4;
+  --bg:#F6F7FB;
+  --white:#fff;
+  --sh:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
+  --sh-lg:0 4px 12px rgba(0,0,0,.1),0 16px 40px rgba(0,0,0,.12);
+  --r:10px;
+}
+body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;font-size:14px;}
+
+/* ═══════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════ */
+.sidebar{
+  width:220px;min-width:220px;
+  background:var(--sb);
+  display:flex;flex-direction:column;
+  height:100vh;position:sticky;top:0;
+  overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:none;
+}
+.sidebar::-webkit-scrollbar{display:none;}
+
+.sb-logo{
+  padding:18px 16px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex;align-items:center;gap:10px;
+}
+.sb-logo-box{
+  background:#fff;border-radius:8px;
+  padding:4px 10px;display:flex;align-items:center;flex-shrink:0;
+}
+.sb-logo-box img{height:26px;object-fit:contain;display:block;}
+.sb-logo-name{
+  font-size:11px;font-weight:600;
+  color:rgba(255,255,255,.4);
+  letter-spacing:.8px;text-transform:uppercase;
+}
+
+.sb-section{padding:16px 8px 4px;}
+.sb-label{
+  font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1.4px;
+  color:rgba(255,255,255,.3);
+  padding:0 10px;margin-bottom:4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;border-radius:8px;
+  cursor:pointer;color:rgba(255,255,255,.6);
+  font-size:13px;font-weight:500;
+  transition:all .14s;text-decoration:none;
+  margin-bottom:1px;
+}
+.nav-item svg{flex-shrink:0;opacity:.8;}
+.nav-item:hover{background:var(--sb-hover);color:rgba(255,255,255,.9);}
+.nav-item:hover svg{opacity:1;}
+.nav-item.active{background:var(--sb-active);color:#fff;font-weight:600;}
+.nav-item.active svg{opacity:1;}
+.nav-item.active-wom{background:var(--sb-active-wom);color:#fff;font-weight:600;}
+.nav-badge{
+  margin-left:auto;background:rgba(255,255,255,.15);
+  border-radius:20px;font-size:10px;font-weight:700;
+  padding:2px 7px;color:rgba(255,255,255,.8);
+}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.25);}
+
+/* Grupo desplegable (Informes → proyectos) */
+.nav-group-head{justify-content:flex-start;}
+.nav-group-head .chevron{
+  margin-left:auto;opacity:.55;transition:transform .18s;flex-shrink:0;
+}
+.nav-group.open .nav-group-head .chevron{transform:rotate(90deg);}
+.nav-sub{
+  overflow:hidden;max-height:0;transition:max-height .22s ease;
+  margin:1px 0 2px 0;
+}
+.nav-group.open .nav-sub{max-height:600px;}
+.nav-sub-item{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 10px 7px 30px;border-radius:8px;
+  cursor:pointer;color:rgba(255,255,255,.55);
+  font-size:12.5px;font-weight:500;
+  transition:all .14s;text-decoration:none;
+  margin-bottom:1px;position:relative;
+}
+.nav-sub-item:hover{background:var(--sb-hover);color:rgba(255,255,255,.92);}
+.nav-sub-item.active{background:var(--sb-active);color:#fff;font-weight:600;}
+.nav-sub-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,.4);}
+.nav-sub-msg{
+  padding:8px 10px 8px 30px;font-size:11.5px;
+  color:rgba(255,255,255,.4);font-weight:500;line-height:1.5;
+}
+
+.sb-divider{height:1px;background:rgba(255,255,255,.07);margin:6px 10px;}
+
+.sb-project-tag{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:8px;
+  cursor:pointer;font-size:12.5px;font-weight:500;
+  color:rgba(255,255,255,.55);transition:.14s;
+  margin-bottom:1px;
+}
+.sb-project-tag:hover{background:var(--sb-hover);color:rgba(255,255,255,.85);}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+.sb-bottom{margin-top:auto;padding:8px 8px 16px;}
+
+/* ═══════════════════════════════════
+   MAIN
+═══════════════════════════════════ */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow-y:auto;}
+
+/* TOP BAR */
+.topbar{
+  background:var(--white);border-bottom:1px solid var(--border);
+  padding:13px 24px;display:flex;align-items:center;
+  justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-left h1{font-size:17px;font-weight:800;color:var(--text);}
+.topbar-left p{font-size:11px;color:var(--muted);margin-top:1px;font-weight:400;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.srv-pill{
+  display:flex;align-items:center;gap:6px;
+  background:#E6F9F0;color:var(--green-d);
+  border-radius:20px;padding:5px 13px;
+  font-size:11.5px;font-weight:600;
+}
+.srv-pulse{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.topbar-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;cursor:pointer;
+}
+
+/* TABS BAR */
+.tabs-bar{
+  background:var(--white);
+  border-bottom:2px solid var(--border);
+  padding:0 24px;
+  display:flex;align-items:flex-end;gap:2px;
+  overflow-x:auto;scrollbar-width:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.tabs-bar::-webkit-scrollbar{display:none;}
+.m-tab{
+  padding:13px 17px 12px;font-size:13px;font-weight:500;
+  color:var(--muted);cursor:pointer;
+  border-bottom:3px solid transparent;
+  white-space:nowrap;transition:.15s;
+  display:flex;align-items:center;gap:7px;
+  margin-bottom:-2px;
+}
+.m-tab:hover{color:var(--text);background:#F6F7FB;}
+.m-tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;}
+.m-tab .tc{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;border-radius:10px;
+  font-size:9px;font-weight:700;
+  background:#EBF4FE;color:var(--blue);padding:0 4px;
+}
+.m-tab.active .tc{background:var(--blue);color:#fff;}
+.m-tab.green.active{color:var(--green-d);border-bottom-color:var(--green);font-weight:700;}
+.m-tab.green.active .tc{background:var(--green);color:#fff;}
+.m-tab.green .tc{background:#D4F5E7;color:var(--green-d);}
+.m-tab.danger.active{color:var(--red);border-bottom-color:var(--red);}
+.m-tab.danger.active .tc{background:var(--red);color:#fff;}
+.m-tab.danger .tc{background:#FDEDF0;color:var(--red);}
+
+/* PAGES */
+.page{padding:22px 24px;display:none;flex:1;}
+.page.active{display:block;}
+
+/* CARDS */
+.card{
+  background:var(--white);border-radius:var(--r);
+  border:1px solid var(--border);box-shadow:var(--sh);
+  margin-bottom:14px;overflow:hidden;
+}
+.card-header{
+  padding:13px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;background:#FAFBFC;
+}
+.ch-bar{width:4px;height:18px;border-radius:3px;flex-shrink:0;}
+.ch-title{font-size:11px;font-weight:700;color:#323338;text-transform:uppercase;letter-spacing:.8px;}
+.ch-right{margin-left:auto;font-size:11px;color:var(--muted);}
+.card-body{padding:18px;}
+
+/* NUEVO BANNER */
+.nuevo-banner{
+  background:linear-gradient(135deg,#EBF4FE 0%,#F0F8FF 100%);
+  border:1.5px solid #bfdbfe;border-radius:var(--r);
+  padding:28px 24px;margin-bottom:14px;text-align:center;
+}
+.nuevo-banner h2{
+  font-size:18px;font-weight:800;color:var(--blue);margin-bottom:8px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.nuevo-banner p{font-size:13px;color:var(--muted);line-height:1.65;}
+.btn-nuevo{
+  width:100%;background:var(--blue);color:#fff;border:none;
+  border-radius:8px;padding:13px;font-size:14px;font-weight:700;
+  cursor:pointer;margin-top:16px;
+  box-shadow:0 4px 14px rgba(0,115,234,.25);
+  transition:.2s;font-family:'Poppins',sans-serif;
+}
+.btn-nuevo:hover{background:#005bb5;}
+
+/* FORM FIELDS */
+.frow{display:grid;gap:12px;margin-bottom:14px;}
+.frow.two{grid-template-columns:1fr 1fr;}
+.frow.four{grid-template-columns:repeat(4,1fr);}
+.flabel{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;display:block;}
+.finput{
+  width:100%;border:1.5px solid var(--border);border-radius:8px;
+  padding:9px 13px;font-size:13.5px;color:var(--text);
+  background:#fff;font-family:'Poppins',inherit;transition:.15s;-webkit-appearance:none;
+}
+.finput:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,115,234,.12);}
+.finput.filled{border-color:var(--green);background:#F0FDF8;}
+textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
+
+/* HISTORIAL TABLE */
+.h-table{width:100%;border-collapse:collapse;}
+.h-table thead th{
+  padding:10px 14px;font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
+  background:#FAFBFC;border-bottom:1px solid var(--border);text-align:left;
+}
+.h-table tbody tr{border-bottom:1px solid var(--border);transition:.12s;}
+.h-table tbody tr:last-child{border-bottom:none;}
+.h-table tbody tr:hover{background:#FAFBFC;}
+.h-table td{padding:11px 14px;font-size:13px;}
+.col-cod{font-weight:700;color:var(--blue);}
+.col-site{font-weight:600;}
+.col-date{color:var(--muted);font-size:12px;}
+.status-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.tag-ok{background:#D4F5E7;color:var(--green-d);}
+.act-cell{display:flex;gap:6px;}
+.icon-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.13s;background:transparent;border:none;color:var(--muted);}
+.icon-btn:hover{background:var(--border);}
+.icon-btn.del:hover{background:#FDEDF0;color:var(--red);}
+
+/* ACTION BAR */
+.action-bar{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--r);padding:13px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:var(--sh);margin-top:4px;
+}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Poppins',sans-serif;transition:.14s;}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(0,115,234,.25);}
+.btn-primary:hover{background:#005bb5;}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#00A65F;}
+
+/* SELECTOR CARDS */
+.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:20px;}
+.proj-card{
+  background:var(--white);border-radius:var(--r);border:1px solid var(--border);
+  padding:22px;box-shadow:var(--sh);cursor:pointer;
+  text-decoration:none;color:inherit;transition:all .18s;
+  display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden;
+}
+.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
+.proj-card.tigo::before{background:linear-gradient(90deg,#579BFC,#0073EA);}
+.proj-card.wom::before{background:linear-gradient(90deg,#A25DDC,#784BD1);}
+.proj-card:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);border-color:transparent;}
+.proj-logo{height:52px;display:flex;align-items:center;}
+.proj-logo img{max-height:50px;max-width:150px;object-fit:contain;}
+.wom-word{font-size:40px;font-weight:900;font-style:italic;color:#784BD1;letter-spacing:-2px;line-height:1;}
+.proj-chip{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.chip-tigo{background:#E0EDFF;color:#0073EA;}
+.chip-wom{background:#EDE7F6;color:#784BD1;}
+.proj-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.proj-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.proj-desc{font-size:12px;color:var(--muted);line-height:1.6;}
+.proj-footer{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);}
+.proj-stats{font-size:11px;color:var(--muted);}
+.proj-cta{font-size:12px;font-weight:700;color:var(--blue);display:flex;align-items:center;gap:4px;}
+.proj-cta.wom{color:#784BD1;}
+
+/* RESPONSIVE SIDEBAR */
+@media(max-width:720px){
+  .sidebar{position:fixed;z-index:999;transform:translateX(-100%);transition:transform .25s;}
+  .sidebar.open{transform:translateX(0);}
+  .topbar{padding:12px 16px;}
+  .page{padding:14px 16px;}
+  .tabs-bar{padding:0 12px;}
+  .frow.two,.frow.four{grid-template-columns:1fr;}
+  .projects-grid{grid-template-columns:1fr;}
+  .sb-toggle{display:flex!important;}
+}
+.sb-toggle{
+  display:none;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:8px;border:1.5px solid var(--border);
+  background:var(--white);cursor:pointer;color:var(--muted);
+}
+
+/* ── Dashboard de Informes (estadísticas) ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;margin-bottom:18px;}
+.stat-box{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
+.stat-n{font-size:28px;font-weight:800;color:var(--text);line-height:1;}
+.stat-l{font-size:12px;color:var(--muted);margin-top:6px;font-weight:500;}
+.stat-bar{height:6px;border-radius:4px;background:#EEF0F5;margin-top:12px;overflow:hidden;}
+.stat-fill{height:100%;border-radius:4px;}
+
+/* ── Tarjetas de Proyecto (misma estética que selector.html) ── */
+.pcards{display:flex;gap:20px;flex-wrap:wrap;}
+.pcard{
+  flex:1 1 260px;max-width:320px;background:#fff;border-radius:16px;
+  padding:0 0 28px;display:flex;flex-direction:column;align-items:center;
+  box-shadow:0 2px 12px rgba(0,0,0,.07),0 1px 4px rgba(0,0,0,.04);
+  cursor:pointer;text-decoration:none;position:relative;overflow:hidden;
+  border:1.5px solid #E8EAED;transition:transform .2s,box-shadow .2s,border-color .2s;
+}
+.pcard:hover{transform:translateY(-5px);box-shadow:0 14px 44px rgba(0,0,0,.14),0 4px 14px rgba(0,0,0,.07);border-color:transparent;}
+.pcard:active{transform:translateY(-1px);}
+.pcard-top{width:100%;height:6px;border-radius:14px 14px 0 0;flex-shrink:0;background:linear-gradient(90deg,#00C875,#00897B);}
+.pcard.tigo .pcard-top{background:linear-gradient(90deg,#0073EA,#1976D2);}
+.pcard.wom  .pcard-top{background:linear-gradient(90deg,#6161FF,#7B1FA2);}
+.pcard-inner{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 28px 0;width:100%;}
+.pcard-logo{height:80px;display:flex;align-items:center;justify-content:center;}
+.pcard-logo img{max-height:80px;max-width:200px;object-fit:contain;}
+.pcard-wom{font-size:56px;font-weight:900;color:#7B1FA2;letter-spacing:-3px;line-height:1;font-style:italic;}
+.pcard-label{font-size:13px;font-weight:700;color:#323338;letter-spacing:.2px;text-transform:uppercase;text-align:center;}
+.pcard-desc{font-size:12px;font-weight:400;color:#676879;text-align:center;line-height:1.65;}
+.pcard-btn{
+  width:calc(100% - 56px);margin:16px 28px 0;padding:11px 24px;border-radius:8px;
+  font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;border:none;cursor:pointer;
+  letter-spacing:.1px;color:#fff;background:#00C875;transition:opacity .15s;
+}
+.pcard:hover .pcard-btn{opacity:.9;}
+.pcard.tigo .pcard-btn{background:#0073EA;}
+.pcard.wom  .pcard-btn{background:#6161FF;}
+.pcards-empty{font-size:13px;color:var(--muted);padding:30px 4px;}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar" id="sidebar">
+
+  <!-- Logo -->
+  <div class="sb-logo">
+    <div class="sb-logo-box">
+      <img src="icetel-logo.png" alt="ICETEL">
+    </div>
+    <span class="sb-logo-name">ICETEL</span>
+  </div>
+
+  <!-- Nav principal: Tareas, Informes -->
+  <div class="sb-section">
+    <div class="sb-label">Técnico</div>
+
+    <!-- 1. TAREAS -->
+    <a class="nav-item" id="navTareas" onclick="showPage('tareas')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Tareas
+    </a>
+
+    <!-- 2. INFORMES (dashboard con estadísticas) -->
+    <a class="nav-item" id="navInformes" onclick="showPage('informes')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+      Informes
+    </a>
+  </div>
+
+  <div class="sb-divider"></div>
+
+  <!-- Proyectos: Preventivo / Correctivo -->
+  <div class="sb-section">
+    <div class="sb-label">Proyectos</div>
+
+    <!-- Preventivo -->
+    <div class="nav-group" id="grupoPrev">
+      <a class="nav-item nav-group-head" onclick="toggleGroup('grupoPrev', event)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Preventivo
+        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+      </a>
+      <div class="nav-sub" id="subPrev">
+        <div class="nav-sub-msg">Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Correctivo -->
+    <div class="nav-group open" id="grupoCorr">
+      <a class="nav-item nav-group-head" onclick="toggleGroup('grupoCorr', event)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Correctivo
+        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+      </a>
+      <div class="nav-sub" id="subCorr">
+        <div class="nav-sub-msg">Cargando…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sistema (bottom) -->
+  <div class="sb-bottom">
+    <div class="sb-divider" style="margin:0 0 8px;"></div>
+    <div class="sb-label" style="padding:0 10px;margin-bottom:4px;">Sistema</div>
+    <a class="nav-item" href="/perfil">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Mi Perfil
+    </a>
+    <a class="nav-item" onclick="cerrarSesion()" style="cursor:pointer;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Cerrar sesión
+    </a>
+  </div>
+
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="sb-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Menú">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="topbar-left">
+        <h1 id="topbar-title">Inicio</h1>
+        <p id="topbar-sub">ICETEL — Sistema de Gestión de Informes</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PÁGINA: INFORMES (dashboard con estadísticas) ═══ -->
+  <div class="page active" id="page-informes">
+    <div style="max-width:880px;margin:0 auto;">
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Resumen de Informes</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Tu actividad de informes y proyectos.</p>
+
+      <div class="stat-grid" id="statGrid">
+        <p class="pcards-empty">Cargando estadísticas…</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="ch-bar" style="background:var(--blue);"></span>
+          <span class="ch-title">Informes recientes</span>
+        </div>
+        <div class="card-body" id="recientesBody">
+          <p style="font-size:13px;color:var(--muted);">Cargando…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PÁGINA: TAREAS (placeholder) ═══ -->
+  <div class="page" id="page-tareas">
+    <div style="max-width:760px;margin:0 auto;">
+      <div style="text-align:center;padding:60px 20px;color:var(--muted);">
+        <div style="font-size:48px;margin-bottom:14px;opacity:.35;">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <p style="font-size:14px;font-weight:600;color:#94a3b8;">Tareas — próximamente</p>
+        <p style="font-size:13px;margin-top:6px;">Aquí verás las tareas asignadas por tu supervisor.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PÁGINA: PROYECTOS PREVENTIVO ═══ -->
+  <div class="page" id="page-preventivo">
+    <div style="max-width:760px;margin:0 auto;">
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Proyectos — Preventivo</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Mantenimiento preventivo programado.</p>
+      <div class="pcards" id="gridPrev">
+        <p class="pcards-empty">Cargando proyectos…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PÁGINA: PROYECTOS CORRECTIVO ═══ -->
+  <div class="page" id="page-correctivo">
+    <div style="max-width:760px;margin:0 auto;">
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Proyectos — Correctivo</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Selecciona el proyecto para registrar o ver informes correctivos.</p>
+      <div class="pcards" id="gridCorr">
+        <p class="pcards-empty">Cargando proyectos…</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+const TITLES = {
+  informes:   ['Resumen de Informes', 'Tu actividad y estadísticas'],
+  tareas:     ['Tareas', 'Asignadas por tu supervisor'],
+  preventivo: ['Proyectos — Preventivo', 'Mantenimiento programado'],
+  correctivo: ['Proyectos — Correctivo', 'Informes correctivos'],
+};
+
+// Token de sesión (igual que selector.html / proyecto.html)
+const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+if (!token) { window.location.replace('/login'); }
+const authH = token ? { Authorization: 'Bearer ' + token } : {};
+
+function cerrarSesion() {
+  localStorage.removeItem('token');
+  sessionStorage.removeItem('token');
+  window.location.replace('/login');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  const [t, s] = TITLES[id] || [id, ''];
+  document.getElementById('topbar-title').textContent = t;
+  document.getElementById('topbar-sub').textContent = s;
+  // marcar nav lateral
+  document.querySelectorAll('.nav-item, .nav-sub-item').forEach(n => n.classList.remove('active'));
+  const navMap = { tareas: 'navTareas', informes: 'navInformes' };
+  if (navMap[id]) document.getElementById(navMap[id]).classList.add('active');
+  if (id === 'preventivo') document.querySelector('#grupoPrev .nav-group-head').classList.add('active');
+  if (id === 'correctivo') document.querySelector('#grupoCorr .nav-group-head').classList.add('active');
+}
+
+// Despliega la categoría y muestra su página
+function toggleGroup(groupId, e) {
+  if (e) e.preventDefault();
+  document.getElementById(groupId).classList.add('open');
+  showPage(groupId === 'grupoPrev' ? 'preventivo' : 'correctivo');
+}
+
+// ── Dashboard de informes (datos reales: /api/gestion/resumen) ──
+async function loadResumen() {
+  const sg = document.getElementById('statGrid');
+  const rb = document.getElementById('recientesBody');
+  try {
+    const r = await fetch('/api/gestion/resumen', { headers: authH });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const stats = [
+      { n: d.informes_total ?? 0,    l: 'Informes realizados', c: '#0073EA' },
+      { n: d.proyectos_total ?? 0,   l: 'Proyectos asignados', c: '#784BD1' },
+      { n: d.proyectos_activos ?? 0, l: 'Proyectos activos',   c: '#00C875' },
+    ];
+    const max = Math.max(1, ...stats.map(s => s.n));
+    sg.innerHTML = stats.map(s =>
+      `<div class="stat-box">
+         <div class="stat-n">${s.n}</div>
+         <div class="stat-l">${s.l}</div>
+         <div class="stat-bar"><div class="stat-fill" style="width:${Math.round(s.n / max * 100)}%;background:${s.c}"></div></div>
+       </div>`).join('');
+    const rec = d.informes_recientes || [];
+    rb.innerHTML = rec.length
+      ? `<table class="h-table"><thead><tr><th>Título</th><th>Proyecto</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>${
+          rec.map(i => `<tr><td class="col-site">${i.titulo || '—'}</td><td>${i.proyecto_nombre || '—'}</td><td><span class="status-tag tag-ok">${i.estado || '—'}</span></td><td class="col-date">${(i.fecha_creacion || '').slice(0, 10)}</td></tr>`).join('')
+        }</tbody></table>`
+      : '<p style="font-size:13px;color:var(--muted)">Aún no has registrado informes.</p>';
+  } catch (err) {
+    sg.innerHTML = '<p class="pcards-empty" style="color:var(--red)">Error cargando estadísticas: ' + err.message + '</p>';
+    rb.innerHTML = '';
+  }
+}
+
+// ── Proyectos asignados → Preventivo / Correctivo ──
+async function loadProyectos() {
+  try {
+    const r = await fetch('/api/gestion/mis-proyectos', { headers: authH });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const list = await r.json();
+    renderProyectos(Array.isArray(list) ? list : []);
+  } catch (err) {
+    document.getElementById('subCorr').innerHTML = '<div class="nav-sub-msg">No se pudieron cargar.</div>';
+    document.getElementById('gridCorr').innerHTML = '<p class="pcards-empty" style="color:var(--red)">Error: ' + err.message + '</p>';
+  }
+}
+
+function renderProyectos(list) {
+  const datos = list.map(p => ({
+    nombre:   p.proyecto_nombre || p.nombre || 'Proyecto',
+    color:    p.color || '#0073EA',
+    slug:     p.slug || '',
+    estado:   p.estado || 'activo',
+    template: (p.template || '').toLowerCase(),
+  }));
+  // Sin un campo dedicado: 'preventivo' por template; el resto, correctivo (los ya creados).
+  fillCategoria('Prev', datos.filter(d => d.template === 'preventivo'));
+  fillCategoria('Corr', datos.filter(d => d.template !== 'preventivo'));
+}
+
+function fillCategoria(key, datos) {
+  const sub  = document.getElementById('sub'  + key);
+  const grid = document.getElementById('grid' + key);
+  if (!datos.length) {
+    sub.innerHTML  = '<div class="nav-sub-msg">Sin proyectos.</div>';
+    grid.innerHTML = '<p class="pcards-empty">No hay proyectos en esta categoría todavía.</p>';
+    return;
+  }
+  sub.innerHTML = datos.map(d =>
+    `<a class="nav-sub-item" ${d.slug ? `href="/${d.slug}"` : ''} title="${d.nombre}">
+       <span class="nav-sub-dot" style="background:${d.color}"></span>${d.nombre}
+     </a>`).join('');
+  grid.innerHTML = datos.map(cardHTML).join('');
+}
+
+// Tarjeta con la estética de selector.html
+function cardHTML(d) {
+  let cls = '', logo;
+  if (d.slug === 'tigo') {
+    cls = 'tigo';
+    logo = '<div class="pcard-logo"><img src="tigo-logo.png" alt="Tigo" onerror="this.style.display=\'none\'"></div>';
+  } else if (d.slug === 'wom') {
+    cls = 'wom';
+    logo = '<div class="pcard-logo"><span class="pcard-wom">wom</span></div>';
+  } else {
+    logo = `<div class="pcard-logo" style="font-size:32px;font-weight:900;color:${d.color}">${(d.nombre || 'P').slice(0, 4).toUpperCase()}</div>`;
+  }
+  const href = d.slug ? `/${d.slug}` : '#';
+  return `<a class="pcard ${cls}" href="${href}">
+    <div class="pcard-top"></div>
+    <div class="pcard-inner">
+      ${logo}
+      <span class="pcard-label">${d.nombre}</span>
+      <span class="pcard-desc">Informes de mantenimiento<br>de equipos de clima</span>
+    </div>
+    <button class="pcard-btn">Ingresar →</button>
+  </a>`;
+}
+
+showPage('informes');
+loadResumen();
+loadProyectos();
+</script>
+</body>
+</html>

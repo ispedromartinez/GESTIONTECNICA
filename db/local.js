@@ -45,7 +45,68 @@ db.exec(`
     asignado_en  TEXT DEFAULT (datetime('now')),
     PRIMARY KEY (usuario_id, area_id)
   );
+
+  -- Perfil 1:1 con usuario (usuario_id UNIQUE)
+  CREATE TABLE IF NOT EXISTS perfiles (
+    id          TEXT PRIMARY KEY,
+    usuario_id  TEXT NOT NULL UNIQUE REFERENCES usuarios(id) ON DELETE CASCADE,
+    rut         TEXT UNIQUE,
+    nombre      TEXT,
+    apellidos   TEXT,
+    telefono    TEXT,
+    cargo       TEXT,
+    creado_en   TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Proyectos (reemplaza proyectos.json)
+  CREATE TABLE IF NOT EXISTS proyectos (
+    id            TEXT PRIMARY KEY,
+    empresa_id    TEXT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    nombre        TEXT NOT NULL,
+    slug          TEXT,
+    estado        TEXT NOT NULL DEFAULT 'activo'
+                    CHECK(estado IN ('planificado','activo','pausado','finalizado','cancelado')),
+    fecha_inicio  TEXT,
+    logo          TEXT,
+    template      TEXT,
+    color         TEXT,
+    creado_en     TEXT DEFAULT (datetime('now')),
+    UNIQUE(empresa_id, slug)
+  );
+
+  -- Asignaciones usuario <-> proyecto (muchos a muchos)
+  CREATE TABLE IF NOT EXISTS asignaciones (
+    id               TEXT PRIMARY KEY,
+    usuario_id       TEXT NOT NULL REFERENCES usuarios(id)  ON DELETE CASCADE,
+    proyecto_id      TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+    rol_en_proyecto  TEXT NOT NULL DEFAULT 'tecnico'
+                       CHECK(rol_en_proyecto IN ('responsable','supervisor','tecnico')),
+    asignado_en      TEXT DEFAULT (datetime('now')),
+    UNIQUE(usuario_id, proyecto_id)
+  );
+
+  -- Informes (genérico): Empresa -> Proyecto -> Informe
+  CREATE TABLE IF NOT EXISTS informes (
+    id              TEXT PRIMARY KEY,
+    proyecto_id     TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+    tecnico_id      TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
+    supervisor_id   TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
+    titulo          TEXT NOT NULL,
+    contenido       TEXT,
+    estado          TEXT NOT NULL DEFAULT 'borrador'
+                      CHECK(estado IN ('borrador','enviado','aprobado','rechazado')),
+    fecha_creacion  TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_proyectos_empresa   ON proyectos(empresa_id);
+  CREATE INDEX IF NOT EXISTS idx_asign_usuario       ON asignaciones(usuario_id);
+  CREATE INDEX IF NOT EXISTS idx_asign_proyecto      ON asignaciones(proyecto_id);
+  CREATE INDEX IF NOT EXISTS idx_informes_proyecto   ON informes(proyecto_id);
+  CREATE INDEX IF NOT EXISTS idx_informes_tecnico    ON informes(tecnico_id);
 `);
+
+// ── Migraciones idempotentes (ADD COLUMN lanza error si ya existe) ──
+try { db.exec("ALTER TABLE empresas ADD COLUMN rut_empresa TEXT"); } catch {}
 
 function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -76,11 +137,29 @@ const local = {
     delete(id) {
       db.prepare('DELETE FROM usuarios WHERE id = ?').run(id);
     },
+    // Actualiza solo los campos provistos (nombre,email,rol,empresa_id,password_hash)
+    update(id, f) {
+      const cols = ['nombre','email','rol','empresa_id','password_hash'];
+      const sets = [], vals = [];
+      cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(f[k]); } });
+      if (sets.length) { vals.push(id); db.prepare('UPDATE usuarios SET '+sets.join(', ')+' WHERE id = ?').run(...vals); }
+      return db.prepare('SELECT id, nombre, email, rol, empresa_id, activo FROM usuarios WHERE id = ?').get(id);
+    },
     list(empresa_id) {
       if (empresa_id) {
-        return db.prepare('SELECT id, nombre, email, rol, activo FROM usuarios WHERE empresa_id = ?').all(empresa_id);
+        return db.prepare('SELECT id, nombre, email, rol, activo, empresa_id FROM usuarios WHERE empresa_id = ?').all(empresa_id);
       }
       return db.prepare('SELECT id, nombre, email, rol, activo, empresa_id FROM usuarios').all();
+    },
+    // Lista enriquecida con RUT (perfil) y nombre de empresa — para el panel admin
+    listDetalle(empresa_id) {
+      const base = `SELECT u.id, u.nombre, u.email, u.rol, u.activo, u.empresa_id,
+                           p.rut, e.nombre AS empresa_nombre
+                    FROM usuarios u
+                    LEFT JOIN perfiles p ON p.usuario_id = u.id
+                    LEFT JOIN empresas e ON e.id = u.empresa_id`;
+      if (empresa_id) return db.prepare(base + ' WHERE u.empresa_id = ?').all(empresa_id);
+      return db.prepare(base).all();
     }
   },
 
@@ -88,14 +167,30 @@ const local = {
   empresas: {
     insert(e) {
       const id = uuid();
-      db.prepare('INSERT INTO empresas (id, nombre, slug) VALUES (?, ?, ?)').run(id, e.nombre, e.slug);
+      db.prepare('INSERT INTO empresas (id, nombre, slug, rut_empresa) VALUES (?, ?, ?, ?)')
+        .run(id, e.nombre, e.slug, e.rut_empresa || null);
+      return db.prepare('SELECT * FROM empresas WHERE id = ?').get(id);
+    },
+    // Actualiza solo los campos provistos (nombre, slug, rut_empresa, activa)
+    update(id, f) {
+      const cols = ['nombre','slug','rut_empresa','activa'];
+      const sets = [], vals = [];
+      cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(f[k]); } });
+      if (sets.length) { vals.push(id); db.prepare('UPDATE empresas SET '+sets.join(', ')+' WHERE id = ?').run(...vals); }
       return db.prepare('SELECT * FROM empresas WHERE id = ?').get(id);
     },
     list() {
       return db.prepare('SELECT * FROM empresas WHERE activa = 1').all();
     },
+    // Todas (incluye inactivas) — para la gestión de clientes
+    listAll() {
+      return db.prepare('SELECT * FROM empresas ORDER BY creado_en DESC').all();
+    },
     findBySlug(slug) {
       return db.prepare('SELECT * FROM empresas WHERE slug = ?').get(slug);
+    },
+    findById(id) {
+      return db.prepare('SELECT * FROM empresas WHERE id = ?').get(id);
     }
   },
 
@@ -124,6 +219,190 @@ const local = {
         INSERT OR REPLACE INTO usuario_areas (usuario_id, area_id, asignado_por)
         VALUES (?, ?, ?)
       `).run(usuario_id, area_id, asignado_por || null);
+    }
+  },
+
+  // Perfiles (1:1 con usuario)
+  perfiles: {
+    findByUsuario(usuario_id) {
+      return db.prepare('SELECT * FROM perfiles WHERE usuario_id = ?').get(usuario_id);
+    },
+    // Regla 4: el RUT es único. Excluye al propio usuario al editar.
+    findByRut(rut, exclude_usuario_id) {
+      if (exclude_usuario_id) {
+        return db.prepare('SELECT * FROM perfiles WHERE rut = ? AND usuario_id != ?')
+          .get(rut, exclude_usuario_id);
+      }
+      return db.prepare('SELECT * FROM perfiles WHERE rut = ?').get(rut);
+    },
+    // Crea o actualiza el perfil del usuario (1:1)
+    upsert(p) {
+      const existing = db.prepare('SELECT id FROM perfiles WHERE usuario_id = ?').get(p.usuario_id);
+      if (existing) {
+        db.prepare(`
+          UPDATE perfiles SET rut = ?, nombre = ?, apellidos = ?, telefono = ?, cargo = ?
+          WHERE usuario_id = ?
+        `).run(p.rut || null, p.nombre || null, p.apellidos || null,
+               p.telefono || null, p.cargo || null, p.usuario_id);
+        return db.prepare('SELECT * FROM perfiles WHERE usuario_id = ?').get(p.usuario_id);
+      }
+      const id = uuid();
+      db.prepare(`
+        INSERT INTO perfiles (id, usuario_id, rut, nombre, apellidos, telefono, cargo)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(id, p.usuario_id, p.rut || null, p.nombre || null,
+             p.apellidos || null, p.telefono || null, p.cargo || null);
+      return db.prepare('SELECT * FROM perfiles WHERE id = ?').get(id);
+    }
+  },
+
+  // Proyectos
+  proyectos: {
+    insert(p) {
+      const id = uuid();
+      db.prepare(`
+        INSERT INTO proyectos (id, empresa_id, nombre, slug, estado, fecha_inicio, logo, template, color)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, p.empresa_id, p.nombre, p.slug || null, p.estado || 'activo',
+             p.fecha_inicio || null, p.logo || null, p.template || null, p.color || null);
+      return db.prepare('SELECT * FROM proyectos WHERE id = ?').get(id);
+    },
+    findById(id) {
+      return db.prepare('SELECT * FROM proyectos WHERE id = ?').get(id);
+    },
+    findBySlug(empresa_id, slug) {
+      return db.prepare('SELECT * FROM proyectos WHERE empresa_id = ? AND slug = ?').get(empresa_id, slug);
+    },
+    listByEmpresa(empresa_id) {
+      return db.prepare('SELECT * FROM proyectos WHERE empresa_id = ? ORDER BY creado_en DESC').all(empresa_id);
+    },
+    // Todos los proyectos (solo superadmin) con nombre de empresa
+    all() {
+      return db.prepare(`
+        SELECT p.*, e.nombre AS empresa_nombre
+        FROM proyectos p JOIN empresas e ON e.id = p.empresa_id
+        ORDER BY p.creado_en DESC
+      `).all();
+    },
+    updateEstado(id, estado) {
+      db.prepare('UPDATE proyectos SET estado = ? WHERE id = ?').run(estado, id);
+    },
+    // Actualiza solo los campos provistos
+    update(id, f) {
+      const cols = ['empresa_id','nombre','slug','estado','fecha_inicio','logo','template','color'];
+      const sets = [], vals = [];
+      cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(f[k]); } });
+      if (sets.length) { vals.push(id); db.prepare('UPDATE proyectos SET '+sets.join(', ')+' WHERE id = ?').run(...vals); }
+      return db.prepare('SELECT * FROM proyectos WHERE id = ?').get(id);
+    },
+    delete(id) {
+      db.prepare('DELETE FROM proyectos WHERE id = ?').run(id);
+    }
+  },
+
+  // Asignaciones (usuario <-> proyecto)
+  asignaciones: {
+    upsert(usuario_id, proyecto_id, rol_en_proyecto) {
+      const existing = db.prepare(
+        'SELECT id FROM asignaciones WHERE usuario_id = ? AND proyecto_id = ?'
+      ).get(usuario_id, proyecto_id);
+      if (existing) {
+        db.prepare('UPDATE asignaciones SET rol_en_proyecto = ? WHERE id = ?')
+          .run(rol_en_proyecto || 'tecnico', existing.id);
+        return db.prepare('SELECT * FROM asignaciones WHERE id = ?').get(existing.id);
+      }
+      const id = uuid();
+      db.prepare(`
+        INSERT INTO asignaciones (id, usuario_id, proyecto_id, rol_en_proyecto)
+        VALUES (?, ?, ?, ?)
+      `).run(id, usuario_id, proyecto_id, rol_en_proyecto || 'tecnico');
+      return db.prepare('SELECT * FROM asignaciones WHERE id = ?').get(id);
+    },
+    listByProyecto(proyecto_id) {
+      return db.prepare(`
+        SELECT a.*, u.nombre, u.email, u.rol, u.empresa_id
+        FROM asignaciones a JOIN usuarios u ON u.id = a.usuario_id
+        WHERE a.proyecto_id = ?
+      `).all(proyecto_id);
+    },
+    // ¿Existe ya esta asignación? (para validar antes de crear informe)
+    exists(usuario_id, proyecto_id) {
+      return !!db.prepare('SELECT 1 FROM asignaciones WHERE usuario_id = ? AND proyecto_id = ?')
+        .get(usuario_id, proyecto_id);
+    },
+    // Regla 2: técnicos/supervisores activos asignados al proyecto
+    // Y que pertenezcan a la empresa del proyecto.
+    personalDeProyecto(proyecto_id, empresa_id) {
+      return db.prepare(`
+        SELECT u.id, u.nombre, u.rol, a.rol_en_proyecto
+        FROM asignaciones a JOIN usuarios u ON u.id = a.usuario_id
+        WHERE a.proyecto_id = ? AND u.empresa_id = ? AND u.activo = 1
+          AND u.rol IN ('supervisor','tecnico')
+      `).all(proyecto_id, empresa_id);
+    },
+    listByUsuario(usuario_id) {
+      return db.prepare(`
+        SELECT a.*, p.nombre AS proyecto_nombre, p.slug, p.estado, p.color, p.logo, p.template
+        FROM asignaciones a JOIN proyectos p ON p.id = a.proyecto_id
+        WHERE a.usuario_id = ?
+      `).all(usuario_id);
+    },
+    remove(usuario_id, proyecto_id) {
+      db.prepare('DELETE FROM asignaciones WHERE usuario_id = ? AND proyecto_id = ?')
+        .run(usuario_id, proyecto_id);
+    }
+  },
+
+  // Informes (genérico)
+  informes: {
+    insert(i) {
+      const id = uuid();
+      db.prepare(`
+        INSERT INTO informes (id, proyecto_id, tecnico_id, supervisor_id, titulo, contenido, estado)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(id, i.proyecto_id, i.tecnico_id || null, i.supervisor_id || null,
+             i.titulo, i.contenido || null, i.estado || 'borrador');
+      return db.prepare('SELECT * FROM informes WHERE id = ?').get(id);
+    },
+    findById(id) {
+      return db.prepare('SELECT * FROM informes WHERE id = ?').get(id);
+    },
+    listByProyecto(proyecto_id) {
+      return db.prepare('SELECT * FROM informes WHERE proyecto_id = ? ORDER BY fecha_creacion DESC').all(proyecto_id);
+    },
+    listByTecnico(tecnico_id) {
+      return db.prepare('SELECT * FROM informes WHERE tecnico_id = ? ORDER BY fecha_creacion DESC').all(tecnico_id);
+    },
+    // Informes donde el usuario es técnico O supervisor (para "Mis informes")
+    listByUsuario(usuario_id) {
+      return db.prepare(`
+        SELECT i.*, p.nombre AS proyecto_nombre
+        FROM informes i JOIN proyectos p ON p.id = i.proyecto_id
+        WHERE i.tecnico_id = ? OR i.supervisor_id = ?
+        ORDER BY i.fecha_creacion DESC
+      `).all(usuario_id, usuario_id);
+    },
+    // Informes recientes; opcionalmente acotados a una empresa
+    recientes(limit = 5, empresa_id = null) {
+      if (empresa_id) {
+        return db.prepare(`
+          SELECT i.*, p.nombre AS proyecto_nombre
+          FROM informes i JOIN proyectos p ON p.id = i.proyecto_id
+          WHERE p.empresa_id = ?
+          ORDER BY i.fecha_creacion DESC LIMIT ?
+        `).all(empresa_id, limit);
+      }
+      return db.prepare(`
+        SELECT i.*, p.nombre AS proyecto_nombre
+        FROM informes i JOIN proyectos p ON p.id = i.proyecto_id
+        ORDER BY i.fecha_creacion DESC LIMIT ?
+      `).all(limit);
+    },
+    updateEstado(id, estado) {
+      db.prepare('UPDATE informes SET estado = ? WHERE id = ?').run(estado, id);
+    },
+    delete(id) {
+      db.prepare('DELETE FROM informes WHERE id = ?').run(id);
     }
   }
 };

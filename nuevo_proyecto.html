@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Nuevo Proyecto – GestiónTécnica</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Poppins',sans-serif;background:#F0F2F8;color:#323338;min-height:100vh;}
@@ -75,6 +76,37 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 .tpl-row.w80{width:80%;}
 .tpl-row.w60{width:60%;}
 .tpl-row.w40{width:40%;}
+.tpl-clic{margin-top:11px;font-size:11px;font-weight:600;color:#0073EA;display:flex;align-items:center;gap:5px;}
+.tpl-clic svg{width:13px;height:13px;}
+.logo-ic svg{width:36px;height:36px;}
+.upload-csv-ic svg{width:18px;height:18px;vertical-align:middle;}
+.tpl-card.tb-wom-sel .tpl-clic,#tplWom .tpl-clic{color:#6161FF;}
+
+/* ── Pestaña flotante de vista previa de formato ── */
+.fmt-modal-bg{display:none;position:fixed;inset:0;background:rgba(28,31,59,.55);z-index:300;align-items:center;justify-content:center;padding:20px;}
+.fmt-modal-bg.open{display:flex;}
+.fmt-modal{background:#fff;border-radius:16px;width:100%;max-width:470px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden;animation:fmtPop .18s ease;}
+@keyframes fmtPop{from{transform:translateY(12px) scale(.98);opacity:0;}to{transform:none;opacity:1;}}
+.fmt-modal-top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #E6E9EF;}
+.fmt-modal-top h3{font-size:14px;font-weight:800;color:#323338;}
+.fmt-x{background:none;border:none;font-size:18px;line-height:1;color:#9ba1b0;cursor:pointer;padding:3px 7px;border-radius:7px;}
+.fmt-x:hover{background:#F0F1F5;color:#323338;}
+.fmt-modal-body{padding:18px;overflow-y:auto;}
+.fmt-head{border:1px solid #E6E9EF;border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.fmt-bar{height:5px;}
+.fmt-bar.blue{background:linear-gradient(90deg,#0073EA,#1976D2);}
+.fmt-bar.purple{background:linear-gradient(90deg,#6161FF,#7B1FA2);}
+.fmt-head-in{padding:13px 16px;}
+.fmt-sec{margin-bottom:14px;}
+.fmt-sec:last-child{margin-bottom:0;}
+.fmt-sec-t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;color:#0073EA;}
+.fmt-sec-t.purple{color:#6161FF;}
+.fmt-fields{display:flex;flex-wrap:wrap;gap:6px;}
+.fmt-field{font-size:12px;font-weight:500;color:#41475a;background:#F4F6FB;border:1px solid #E6E9EF;border-radius:7px;padding:5px 10px;}
+.fmt-modal-foot{padding:14px 18px;border-top:1px solid #E6E9EF;display:flex;gap:10px;}
+.fmt-foot-cancel{flex:1;padding:11px;border-radius:9px;border:1.5px solid #E6E9EF;background:#fff;color:#676879;font-weight:600;font-family:inherit;font-size:13px;cursor:pointer;}
+.fmt-foot-use{flex:2;padding:11px;border-radius:9px;border:none;color:#fff;font-weight:700;font-family:inherit;font-size:13px;cursor:pointer;background:#0073EA;}
+.fmt-foot-use:hover{opacity:.9;}
 
 /* LOGO UPLOAD */
 .logo-zone{border:2px dashed #D0D4E4;border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:.15s;position:relative;background:#FAFBFC;}
@@ -170,11 +202,13 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 </script>
 
 <header>
-  <div class="h-brand">
-    <div class="h-gt">GT</div>
-    <span class="h-title">Nuevo Proyecto</span>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="/dashboard" class="h-back">← Inicio</a>
+    <div class="h-brand">
+      <div class="h-gt">GT</div>
+      <span class="h-title">Nuevo Proyecto</span>
+    </div>
   </div>
-  <a href="/dashboard" class="h-back">← Volver</a>
 </header>
 
 <div class="wizard-wrap">
@@ -194,7 +228,14 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
   <!-- ══ PASO 1: BÁSICO ══ -->
   <div class="card" id="paso1">
     <div class="card-title">Información básica</div>
-    <div class="card-sub">Nombre e identificador del nuevo proyecto</div>
+    <div class="card-sub">Empresa, nombre e identificador del nuevo proyecto</div>
+    <div class="field">
+      <label>Empresa *</label>
+      <select id="pEmpresa">
+        <option value="">Cargando empresas…</option>
+      </select>
+      <div class="field-hint">El proyecto quedará ligado a esta empresa.</div>
+    </div>
     <div class="field">
       <label>Nombre del proyecto *</label>
       <input type="text" id="pNombre" placeholder="Ej: Claro, Entel, Movistar..." oninput="autoSlug()">
@@ -224,7 +265,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
     <div class="card-sub">Sube una imagen PNG sin fondo (transparente)</div>
     <div class="logo-zone" id="logoZone">
       <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange="handleLogo(event)">
-      <div class="logo-ic">🖼️</div>
+      <div class="logo-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
       <div style="font-size:14px;font-weight:600;color:#676879;margin-bottom:4px;">Arrastra o haz clic para subir</div>
       <div class="logo-hint">PNG sin fondo recomendado · Máx. 2 MB</div>
       <img class="logo-preview" id="logoPreview" src="" alt="Logo">
@@ -239,11 +280,11 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 
   <!-- ══ PASO 3: FORMATO ══ -->
   <div class="card" id="paso3" style="display:none">
-    <div class="card-title">Formato del informe</div>
-    <div class="card-sub">Elige la estructura de los campos y del documento Word generado</div>
+    <div class="card-title">Elige tu formato</div>
+    <div class="card-sub">Estos son los formatos precargados. Haz clic en uno para ver su vista previa.</div>
     <div class="tpl-grid">
 
-      <label class="tpl-card" id="tplTigo" onclick="selTpl('tigo')">
+      <label class="tpl-card" id="tplTigo" onclick="abrirFormato('tigo')">
         <input type="radio" name="tpl" value="tigo">
         <div class="tpl-check">✓</div>
         <div class="tpl-name"><span class="tpl-badge tb-tigo">TIGO</span> Formato Tigo</div>
@@ -258,9 +299,10 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
             <div class="tpl-row w60"></div>
           </div>
         </div>
+        <div class="tpl-clic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Clic para ver vista previa</div>
       </label>
 
-      <label class="tpl-card" id="tplWom" onclick="selTpl('wom')">
+      <label class="tpl-card" id="tplWom" onclick="abrirFormato('wom')">
         <input type="radio" name="tpl" value="wom">
         <div class="tpl-check">✓</div>
         <div class="tpl-name"><span class="tpl-badge tb-wom">WOM</span> Formato WOM</div>
@@ -275,6 +317,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
             <div class="tpl-row w80"></div>
           </div>
         </div>
+        <div class="tpl-clic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Clic para ver vista previa</div>
       </label>
 
     </div>
@@ -292,7 +335,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
     <!-- Upload CSV -->
     <div class="upload-csv" style="margin-bottom:14px">
       <input type="file" accept=".csv,.xlsx,.xls,.txt" onchange="parseSitiosFile(event)">
-      <span class="upload-csv-ic">📄</span>
+      <span class="upload-csv-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
       <div>
         <div class="upload-csv-txt"><strong>Subir planilla</strong> – CSV o Excel</div>
         <div class="upload-csv-txt">Formato: columna A = nombre del sitio, columna B = dirección</div>
@@ -353,6 +396,10 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 
     <div class="review-grid">
       <div class="review-item">
+        <div class="review-label">Empresa</div>
+        <div class="review-val" id="rv-empresa">—</div>
+      </div>
+      <div class="review-item">
         <div class="review-label">Nombre</div>
         <div class="review-val" id="rv-nombre">—</div>
       </div>
@@ -397,12 +444,28 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 </div><!-- /wizard-wrap -->
 <div id="toast"></div>
 
+<!-- Pestaña flotante: vista previa del formato -->
+<div class="fmt-modal-bg" id="fmtModalBg" onclick="if(event.target===this)cerrarFormato()">
+  <div class="fmt-modal">
+    <div class="fmt-modal-top">
+      <h3 id="fmtModalTitle">Vista previa</h3>
+      <button class="fmt-x" onclick="cerrarFormato()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="fmt-modal-body" id="fmtModalBody"></div>
+    <div class="fmt-modal-foot">
+      <button class="fmt-foot-cancel" onclick="cerrarFormato()">Cerrar</button>
+      <button class="fmt-foot-use" id="fmtUseBtn" onclick="usarFormato()">Usar este formato →</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
 
 // ── Estado ──────────────────────────────────────────────────────
 let state = {
+  empresa_id:'', empresa_nombre:'',
   nombre:'', slug:'', color:'#0073EA', logo: null,
   template: null, sitios: [], supervisores: [], tecnicos: []
 };
@@ -432,11 +495,15 @@ function showErr(msg) {
 
 function validarPaso(n) {
   if (n===1) {
+    const emp = document.getElementById('pEmpresa');
     const nom = document.getElementById('pNombre').value.trim();
     const sl  = document.getElementById('pSlug').value.trim();
+    if (!emp.value) { showErr('Selecciona la empresa del proyecto.'); return false; }
     if (!nom) { showErr('El nombre del proyecto es requerido.'); return false; }
     if (!sl)  { showErr('El identificador es requerido.'); return false; }
     if (!/^[a-z0-9-]+$/.test(sl)) { showErr('El identificador solo puede contener letras minúsculas, números y guiones.'); return false; }
+    state.empresa_id = emp.value;
+    state.empresa_nombre = emp.options[emp.selectedIndex].text;
     state.nombre = nom; state.slug = sl;
     state.color  = document.getElementById('pColor').value;
   }
@@ -488,6 +555,56 @@ function clearLogo(e) {
 }
 
 // ── Paso 3: Formato ──────────────────────────────────────────────
+// Estructura real de cada formato (campos que genera el informe).
+const FORMATOS = {
+  tigo: {
+    nombre:'Formato Tigo', badge:'TIGO', clase:'tb-tigo', barra:'blue', color:'#0073EA',
+    desc:'Mantenimiento preventivo/correctivo de equipos de clima.',
+    secciones:[
+      {t:'Datos del sitio', f:['Nombre de Sitio *','Código de Sitio','Dirección','Fecha de Ejecución *','Sala *','Técnico Ejecutante *','Supervisor *','N° de OT','Código de Informe (automático)']},
+      {t:'Tickets', f:['Inc.','TE','TI','RED']},
+      {t:'Equipo', f:['Sala *','N° Equipo *','Tipo de Equipo *','Marca','Modelo / N° de Serie']},
+      {t:'Mediciones técnicas', f:['Compresor (V/A)','Evaporador (V/A)','Condensador (V/A)','Temp. Inyección','Temp. Retorno']},
+      {t:'Cierre', f:['Resumen de actividades','Observaciones','Fotografías (antes / después)']},
+    ]
+  },
+  wom: {
+    nombre:'Formato WOM', badge:'WOM', clase:'tb-wom', barra:'purple', color:'#6161FF',
+    desc:'Correctivo / tickets de servicio, con técnicos y actividades múltiples.',
+    secciones:[
+      {t:'Datos del ticket', f:['Ticket *','Código Interno','Fecha/Hora Inicio *','Fecha/Hora Término']},
+      {t:'Servicio', f:['Cliente','Infraestructura / Sistemas','Tipo de Actividad *','Instalación (RSO) *','Dirección']},
+      {t:'Equipo', f:['Sala','Equipo N°','Marca','Modelo / Serie']},
+      {t:'Actividades', f:['Actividad 1','Actividad 2','… (múltiples)']},
+      {t:'Cierre', f:['Descripción de trabajos *','Observaciones','Fotografías']},
+    ]
+  }
+};
+let _fmtActual = null;
+
+function abrirFormato(t){
+  const f = FORMATOS[t]; if(!f) return;
+  _fmtActual = t;
+  const purple = t==='wom';
+  document.getElementById('fmtModalTitle').textContent = 'Vista previa · ' + f.nombre;
+  document.getElementById('fmtModalBody').innerHTML = `
+    <div class="fmt-head">
+      <div class="fmt-bar ${f.barra}"></div>
+      <div class="fmt-head-in">
+        <div class="tpl-name"><span class="tpl-badge ${f.clase}">${f.badge}</span> ${f.nombre}</div>
+        <div class="tpl-desc">${f.desc}</div>
+      </div>
+    </div>
+    ${f.secciones.map(s=>`<div class="fmt-sec">
+      <div class="fmt-sec-t ${purple?'purple':''}">${s.t}</div>
+      <div class="fmt-fields">${s.f.map(x=>`<span class="fmt-field">${x}</span>`).join('')}</div>
+    </div>`).join('')}`;
+  document.getElementById('fmtUseBtn').style.background = f.color;
+  document.getElementById('fmtModalBg').classList.add('open');
+}
+function cerrarFormato(){ document.getElementById('fmtModalBg').classList.remove('open'); }
+function usarFormato(){ if(_fmtActual) selTpl(_fmtActual); cerrarFormato(); }
+
 function selTpl(t) {
   state.template = t;
   document.getElementById('tplTigo').classList.toggle('sel', t==='tigo');
@@ -568,13 +685,14 @@ function buildReview() {
   state.slug   = document.getElementById('pSlug').value.trim();
   state.color  = document.getElementById('pColor').value;
 
+  document.getElementById('rv-empresa').textContent = state.empresa_nombre || '—';
   document.getElementById('rv-nombre').textContent = state.nombre;
   document.getElementById('rv-slug').textContent   = state.slug;
 
   const colorEl = document.getElementById('rv-color');
   colorEl.innerHTML = `<span class="color-dot" style="background:${state.color}"></span>${state.color}`;
 
-  document.getElementById('rv-tpl').textContent = state.template === 'tigo' ? '📋 Formato Tigo' : '📋 Formato WOM';
+  document.getElementById('rv-tpl').textContent = state.template === 'tigo' ? 'Formato Tigo' : 'Formato WOM';
 
   const logoEl = document.getElementById('rv-logo');
   if (state.logo) {
@@ -606,9 +724,10 @@ function buildReview() {
 // ── Crear ────────────────────────────────────────────────────────
 async function crearProyecto() {
   const btn = document.getElementById('btnCrear');
-  btn.disabled = true; btn.textContent = '⏳ Creando...';
+  btn.disabled = true; btn.textContent = 'Creando...';
   try {
     const payload = {
+      empresa_id: state.empresa_id,
       nombre: state.nombre, slug: state.slug, template: state.template,
       color: state.color, logo: state.logo,
       sitios: state.sitios, supervisores: state.supervisores, tecnicos: state.tecnicos
@@ -635,7 +754,27 @@ function toast(msg, type='ok') {
   clearTimeout(el._t); el._t = setTimeout(() => el.className='', 2500);
 }
 
+// ── Cargar empresas en el selector del Paso 1 ───────────────────
+async function cargarEmpresas() {
+  const sel = document.getElementById('pEmpresa');
+  try {
+    const r = await fetch('/auth/empresas', { headers: authH() });
+    if (!r.ok) throw new Error('No se pudieron cargar las empresas');
+    const empresas = await r.json();
+    if (!empresas.length) {
+      sel.innerHTML = '<option value="">No hay empresas — crea una primero</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">— Selecciona empresa —</option>' +
+      empresas.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+  } catch(e) {
+    sel.innerHTML = '<option value="">Error al cargar empresas</option>';
+    showErr(e.message);
+  }
+}
+
 // ── Init: primer sitio vacío y primer persona vacía ──────────────
+cargarEmpresas();
 addSitioRow();
 addPersona('sup');
 addPersona('tec');

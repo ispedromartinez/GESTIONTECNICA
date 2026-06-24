@@ -2,143 +2,132 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Gestión de Personal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Gestión</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Poppins',system-ui,sans-serif;background:#F6F7FB;color:#323338;min-height:100vh;}
+body{font-family:'Poppins',system-ui,sans-serif;background:#F6F7FB;color:#323338;min-height:100vh;display:flex;}
 
-/* ── HEADER ── */
-header{
-  background:#1C1F3B;padding:14px 20px;
-  display:flex;align-items:center;justify-content:space-between;
-  box-shadow:0 2px 12px rgba(0,0,0,.25);
+/* ── SIDEBAR ── */
+.sidebar{
+  width:220px;background:#1C1F3B;min-height:100vh;flex-shrink:0;
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;
+  transition:transform .25s;
 }
-.hdr-left{display:flex;align-items:center;gap:12px;}
-.back-btn{
-  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
-  color:#fff;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;
-  cursor:pointer;font-family:inherit;transition:.15s;text-decoration:none;display:flex;align-items:center;gap:6px;
+.sb-brand{padding:20px 20px 14px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-brand h2{color:#fff;font-size:16px;font-weight:800;}
+.sb-brand span{color:rgba(255,255,255,.4);font-size:11px;font-weight:500;}
+.sb-nav{flex:1;overflow-y:auto;padding:12px 10px;}
+.sb-group-label{color:rgba(255,255,255,.3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:14px 12px 6px;}
+.sb-item{
+  display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;
+  color:rgba(255,255,255,.55);font-size:13px;font-weight:500;cursor:pointer;
+  transition:.15s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left;font-family:inherit;
 }
-.back-btn:hover{background:rgba(255,255,255,.18);}
-.hdr-title{font-size:15px;font-weight:700;color:#fff;}
-.hdr-user{font-size:11px;color:rgba(255,255,255,.45);font-weight:500;}
-
-/* ── HERO ── */
-.hero{
-  background:linear-gradient(135deg,#1C1F3B,#2D3060);
-  padding:32px 20px 40px;text-align:center;
-}
-.hero h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;}
-.hero p{font-size:13px;color:rgba(255,255,255,.55);}
-.rol-badge{
-  display:inline-block;margin-top:12px;
-  padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;
-  letter-spacing:.5px;text-transform:uppercase;
-}
-.badge-superadmin{background:rgba(255,180,0,.2);color:#ffd000;border:1px solid rgba(255,210,0,.3);}
-.badge-admin_empresa{background:rgba(0,115,234,.2);color:#5aafff;border:1px solid rgba(0,115,234,.3);}
-.badge-supervisor{background:rgba(0,200,117,.15);color:#00C875;border:1px solid rgba(0,200,117,.25);}
+.sb-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9);}
+.sb-item.active{background:rgba(0,115,234,.22);color:#fff;font-weight:600;}
+.sb-ico{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+/* Tamaño uniforme de TODOS los íconos del sidebar (robusto para futuros íconos) */
+.sb-ico svg{width:18px;height:18px;display:block;margin:0 auto;}
+.sb-home{text-decoration:none;background:rgba(255,255,255,.05);margin-bottom:10px;}
+.sb-home:hover{background:rgba(255,255,255,.13);color:#fff;}
+.sb-home .sb-ico{opacity:.85;}
+.sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);}
+.sb-user{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:#0073EA;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.sb-uname{color:#fff;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-urol{color:rgba(255,255,255,.4);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.sb-logout{display:block;width:100%;text-align:center;padding:9px;border-radius:8px;background:rgba(226,68,92,.15);color:#ff8a9b;border:1px solid rgba(226,68,92,.25);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;}
+.sb-logout:hover{background:rgba(226,68,92,.25);}
 
 /* ── MAIN ── */
-main{max-width:780px;margin:0 auto;padding:24px 16px 60px;}
+.wrap{margin-left:220px;flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{background:#fff;border-bottom:1px solid #E6E9EF;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;}
+.tb-title{font-size:15px;font-weight:800;color:#323338;}
+.tb-sub{font-size:12px;color:#676879;margin-top:1px;}
+.menu-toggle{display:none;background:#1C1F3B;color:#fff;border:none;border-radius:8px;width:38px;height:38px;font-size:18px;cursor:pointer;}
+.tb-home{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;background:#F6F7FB;color:#323338;border:1px solid #E6E9EF;font-size:13px;font-weight:700;font-family:inherit;text-decoration:none;cursor:pointer;transition:.15s;white-space:nowrap;}
+.tb-home:hover{background:#EEF5FF;border-color:#0073EA;color:#0073EA;}
+.content{padding:24px 28px 60px;max-width:1100px;width:100%;}
 
-/* ── SECTION ── */
-.section{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);margin-bottom:20px;overflow:hidden;}
-.sec-head{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:18px 20px;border-bottom:1px solid #E6E9EF;
-}
-.sec-title{display:flex;align-items:center;gap:10px;}
-.sec-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
-.si-blue{background:#EEF5FF;}
-.si-green{background:#EDFFF6;}
-.sec-name{font-size:15px;font-weight:700;color:#323338;}
-.sec-count{font-size:11px;color:#676879;margin-top:1px;}
-.btn-add{
-  padding:8px 16px;border-radius:8px;border:none;cursor:pointer;
-  font-size:12px;font-weight:700;font-family:inherit;
-  display:flex;align-items:center;gap:5px;transition:.15s;
-}
-.btn-add.blue{background:#0073EA;color:#fff;}
-.btn-add.green{background:#00C875;color:#fff;}
-.btn-add:hover{opacity:.85;}
-.btn-add:disabled{opacity:.4;cursor:not-allowed;}
+/* ── CARDS / STATS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05);}
+.stat-ico{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px;}
+.stat-val{font-size:28px;font-weight:800;color:#323338;line-height:1;}
+.stat-label{font-size:12px;color:#676879;margin-top:5px;font-weight:600;}
+.si-blue{background:#EEF5FF;color:#0073EA;}.si-green{background:#EDFFF6;color:#00A862;}.si-purple{background:#F3F0FF;color:#6161FF;}.si-orange{background:#FFF6ED;color:#E8910A;}
+.stat-ico svg{width:22px;height:22px;}
+.empty-icon{color:#A0A3B1;}
+.empty-icon svg{width:34px;height:34px;}
+.tb-home svg{width:16px;height:16px;}
 
-/* ── LIST ── */
-.person-list{padding:8px 12px;}
-.person-item{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 8px;border-bottom:1px solid #F0F1F5;gap:12px;
-}
-.person-item:last-child{border-bottom:none;}
-.person-info{display:flex;align-items:center;gap:12px;flex:1;min-width:0;}
-.person-avatar{
-  width:36px;height:36px;border-radius:50%;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;font-weight:700;color:#fff;
-}
-.av-blue{background:#0073EA;}
-.av-green{background:#00C875;}
-.person-name{font-size:13px;font-weight:600;color:#323338;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.person-email{font-size:11px;color:#676879;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.btn-del{
-  background:#fef2f2;color:#E2445C;border:1px solid #fca5a5;
-  border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;
-  cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:.15s;
-}
-.btn-del:hover{background:#fee2e2;}
-.empty-state{padding:32px;text-align:center;color:#676879;font-size:13px;}
-.empty-icon{font-size:32px;margin-bottom:8px;}
+/* ── SECTION / TABLE ── */
+.section{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05);margin-bottom:20px;overflow:hidden;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #E6E9EF;flex-wrap:wrap;gap:12px;}
+.sec-name{font-size:15px;font-weight:700;}
+.sec-sub{font-size:12px;color:#676879;margin-top:1px;}
+.sec-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.btn{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:.15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-blue{background:#0073EA;color:#fff;}.btn-green{background:#00C875;color:#fff;}
+.btn:hover{opacity:.88;}.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-sm{padding:6px 11px;font-size:11px;border-radius:7px;}
+.btn-ghost{background:#F6F7FB;color:#676879;border:1px solid #E6E9EF;}
+.btn-del{background:#fef2f2;color:#E2445C;border:1px solid #fca5a5;}
+.btn-del:hover{background:#fee2e2;opacity:1;}
+select.filter,input.filter{border:1.5px solid #E6E9EF;border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;color:#323338;background:#fff;outline:none;}
+select.filter:focus,input.filter:focus{border-color:#0073EA;}
+
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:11px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.5px;padding:12px 22px;border-bottom:1px solid #E6E9EF;background:#FAFBFC;}
+td{padding:13px 22px;font-size:13px;border-bottom:1px solid #F0F1F5;color:#323338;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#FAFBFC;}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.pill-activo,.pill-aprobado{background:#EDFFF6;color:#00A862;}
+.pill-pausado,.pill-borrador{background:#FFF6ED;color:#E8910A;}
+.pill-finalizado,.pill-enviado{background:#EEF5FF;color:#0073EA;}
+.pill-cancelado,.pill-rechazado,.pill-planificado{background:#F6F7FB;color:#676879;}
+.pill-superadmin{background:#FFF7E0;color:#C99400;}.pill-admin_empresa{background:#EEF5FF;color:#0073EA;}
+.pill-supervisor{background:#EDFFF6;color:#00A862;}.pill-tecnico{background:#F3F0FF;color:#6161FF;}
+.empty-state{padding:44px;text-align:center;color:#676879;font-size:13px;}
+.empty-icon{font-size:34px;margin-bottom:10px;opacity:.6;}
+.muted{color:#A0A3B1;}
 
 /* ── MODAL ── */
-.modal-bg{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
-  z-index:200;align-items:center;justify-content:center;padding:20px;
-}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
 .modal-bg.open{display:flex;}
-.modal{
-  background:#fff;border-radius:16px;width:100%;max-width:420px;
-  box-shadow:0 20px 60px rgba(0,0,0,.3);padding:28px 24px;
-}
-.modal h3{font-size:17px;font-weight:800;color:#323338;margin-bottom:6px;}
-.modal-sub{font-size:13px;color:#676879;margin-bottom:22px;}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:26px 24px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:17px;font-weight:800;margin-bottom:5px;}
+.modal-sub{font-size:13px;color:#676879;margin-bottom:20px;}
 .field{margin-bottom:14px;}
-.field label{font-size:12px;font-weight:600;color:#676879;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;}
-.field input,.field select{
-  width:100%;border:1.5px solid #E6E9EF;border-radius:8px;
-  padding:10px 13px;font-size:14px;color:#323338;font-family:inherit;
-  background:#fff;outline:none;transition:.15s;
-}
-.field input:focus,.field select:focus{border-color:#0073EA;box-shadow:0 0 0 3px rgba(0,115,234,.1);}
-.modal-err{font-size:12px;color:#E2445C;margin-bottom:12px;display:none;}
-.modal-actions{display:flex;gap:10px;margin-top:8px;}
-.btn-cancel{flex:1;padding:11px;border-radius:8px;border:1.5px solid #E6E9EF;background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#676879;transition:.15s;}
-.btn-cancel:hover{background:#F6F7FB;}
-.btn-confirm{flex:2;padding:11px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;background:#0073EA;transition:.15s;}
-.btn-confirm:hover{background:#005bb5;}
+.field label{font-size:11px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid #E6E9EF;border-radius:8px;padding:10px 13px;font-size:14px;color:#323338;font-family:inherit;background:#fff;outline:none;transition:.15s;}
+.field textarea{min-height:90px;resize:vertical;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#0073EA;box-shadow:0 0 0 3px rgba(0,115,234,.1);}
+.field .hint{font-size:11px;color:#A0A3B1;margin-top:5px;}
+.modal-err{font-size:12px;color:#E2445C;margin-bottom:12px;display:none;background:#fef2f2;padding:9px 12px;border-radius:8px;}
+.modal-actions{display:flex;gap:10px;margin-top:6px;}
+.btn-cancel{flex:1;padding:11px;border-radius:8px;border:1.5px solid #E6E9EF;background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#676879;}
+.btn-confirm{flex:2;padding:11px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;background:#0073EA;}
 .btn-confirm:disabled{opacity:.5;cursor:not-allowed;}
 
-/* ── CONFIRM DEL ── */
-.confirm-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px;}
-.confirm-bg.open{display:flex;}
-.confirm-box{background:#fff;border-radius:14px;max-width:360px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
-.confirm-box h4{font-size:16px;font-weight:800;color:#323338;margin-bottom:8px;}
-.confirm-box p{font-size:13px;color:#676879;margin-bottom:20px;line-height:1.6;}
-.confirm-actions{display:flex;gap:10px;}
-.btn-no{flex:1;padding:10px;border-radius:8px;border:1.5px solid #E6E9EF;background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
-.btn-yes-del{flex:2;padding:10px;border-radius:8px;border:none;background:#E2445C;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
-
-/* ── TOAST ── */
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:#323338;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;
-  opacity:0;transition:.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#323338;color:#fff;padding:11px 22px;border-radius:22px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-#toast.ok{background:#00C875;}
-#toast.err{background:#E2445C;}
+#toast.ok{background:#00C875;}#toast.err{background:#E2445C;}
+.overlay{display:none;}
+
+@media(max-width:840px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .wrap{margin-left:0;}
+  .menu-toggle{display:block;}
+  .overlay.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;}
+}
 </style>
 </head>
 <body>
@@ -147,239 +136,822 @@ main{max-width:780px;margin:0 auto;padding:24px 16px 60px;}
 (function(){
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (!token) { window.location.replace('/login'); throw ''; }
-  fetch('/auth/me', { headers: { Authorization: 'Bearer ' + token } })
-    .then(r => { if (!r.ok) { localStorage.removeItem('token'); sessionStorage.removeItem('token'); window.location.replace('/login'); } })
-    .catch(() => window.location.replace('/login'));
 })();
 </script>
 
-<header>
-  <div class="hdr-left">
-    <a href="/selector" class="back-btn">← Volver</a>
-    <span class="hdr-title">Gestión de Personal</span>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand"><h2>Panel de Gestión</h2><span id="brandRol">—</span></div>
+  <nav class="sb-nav" id="sbNav"></nav>
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-avatar" id="sbAvatar">–</div>
+      <div style="min-width:0"><div class="sb-uname" id="sbUname">—</div><div class="sb-urol" id="sbUrol">—</div></div>
+    </div>
+    <a class="sb-logout" id="btnLogout">Cerrar sesión</a>
   </div>
-  <span class="hdr-user" id="hdrUser">—</span>
-</header>
+</aside>
+<div class="overlay" id="overlay" onclick="toggleMenu(false)"></div>
 
-<div class="hero">
-  <h1>Personal del sistema</h1>
-  <p>Administra supervisores y técnicos de tu equipo</p>
-  <div class="rol-badge" id="rolBadge"></div>
+<div class="wrap">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <button class="menu-toggle" onclick="toggleMenu(true)">☰</button>
+      <a href="/dashboard" class="tb-home" title="Volver al inicio"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Inicio</a>
+      <div><div class="tb-title" id="tbTitle">Dashboard</div><div class="tb-sub" id="tbSub">Resumen general</div></div>
+    </div>
+  </div>
+  <div class="content" id="content"><div class="empty-state">Cargando…</div></div>
 </div>
 
-<main>
-
-  <!-- SUPERVISORES -->
-  <div class="section" id="secSupervisores">
-    <div class="sec-head">
-      <div class="sec-title">
-        <div class="sec-icon si-blue">👤</div>
-        <div>
-          <div class="sec-name">Supervisores</div>
-          <div class="sec-count" id="countSup">—</div>
-        </div>
-      </div>
-      <button class="btn-add blue" id="btnAddSup" onclick="openModal('supervisor')" style="display:none">+ Agregar</button>
-    </div>
-    <div class="person-list" id="listSup"><div class="empty-state"><div class="empty-icon">👥</div><p>Cargando...</p></div></div>
-  </div>
-
-  <!-- TECNICOS -->
-  <div class="section">
-    <div class="sec-head">
-      <div class="sec-title">
-        <div class="sec-icon si-green">🔧</div>
-        <div>
-          <div class="sec-name">Técnicos</div>
-          <div class="sec-count" id="countTec">—</div>
-        </div>
-      </div>
-      <button class="btn-add green" id="btnAddTec" onclick="openModal('tecnico')">+ Agregar</button>
-    </div>
-    <div class="person-list" id="listTec"><div class="empty-state"><div class="empty-icon">🔧</div><p>Cargando...</p></div></div>
-  </div>
-
-</main>
-
-<!-- MODAL AGREGAR -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal">
-    <h3 id="modalTitle">Agregar</h3>
-    <p class="modal-sub" id="modalSub">Completa los datos para crear el acceso al sistema.</p>
-    <div class="field"><label>Nombre completo</label><input type="text" id="inNombre" placeholder="Juan Pérez" autocomplete="off"></div>
-    <div class="field"><label>Correo electrónico</label><input type="email" id="inEmail" placeholder="correo@dominio.com" autocomplete="off"></div>
-    <div class="field"><label>Contraseña temporal</label><input type="password" id="inPass" placeholder="Mínimo 6 caracteres"></div>
-    <div class="modal-err" id="modalErr"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-confirm" id="btnConfirm" onclick="crearUsuario()">Crear cuenta</button>
-    </div>
-  </div>
-</div>
-
-<!-- CONFIRM ELIMINAR -->
-<div class="confirm-bg" id="confirmBg">
-  <div class="confirm-box">
-    <h4>¿Eliminar usuario?</h4>
-    <p id="confirmMsg">Esta acción no se puede deshacer.</p>
-    <div class="confirm-actions">
-      <button class="btn-no" onclick="closeConfirm()">Cancelar</button>
-      <button class="btn-yes-del" onclick="confirmarEliminar()">Sí, eliminar</button>
-    </div>
-  </div>
-</div>
-
+<div class="modal-bg" id="modalBg"><div class="modal" id="modalBox"></div></div>
 <div id="toast"></div>
 
 <script>
 const T = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-const aH = (x={}) => ({ Authorization: 'Bearer ' + T(), ...x });
+const aH = (x={}) => ({ Authorization:'Bearer '+T(), ...x });
+const jH = () => aH({ 'Content-Type':'application/json' });
 const $ = id => document.getElementById(id);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const initials = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
-let miRol = '';
-let pendingDelId = null;
-let modalRol = '';
+let ME = null;
 
-function toast(msg, type='ok') {
-  const el = $('toast');
-  el.textContent = msg; el.className = 'show ' + type;
-  clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 2500);
+function toast(msg,type='ok'){const e=$('toast');e.textContent=msg;e.className='show '+type;clearTimeout(e._t);e._t=setTimeout(()=>e.className='',2600);}
+function toggleMenu(open){$('sidebar').classList.toggle('open',open);$('overlay').classList.toggle('open',open);}
+
+async function api(path, opts={}){
+  const r = await fetch(path,{ headers: opts.body?jH():aH(), ...opts });
+  if(r.status===401){ localStorage.removeItem('token');sessionStorage.removeItem('token');location.replace('/login');throw new Error('401'); }
+  const data = await r.json().catch(()=>null);
+  if(!r.ok) throw new Error((data&&data.error)||('Error '+r.status));
+  return data;
 }
 
-// ── Cargar perfil ──
-async function init() {
-  const r = await fetch('/auth/me', { headers: aH() });
-  if (!r.ok) { window.location.replace('/login'); return; }
-  const { usuario } = await r.json();
-  miRol = usuario.rol;
-  $('hdrUser').textContent = usuario.nombre;
+// ── MENÚ por rol ───────────────────────────────────────────────
+const ITEMS = {
+  dashboard:    { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>', label:'Dashboard',  sub:'Resumen general',           grp:'Inicio' },
+  empresas:     { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg>', label:'Empresas',   sub:'Crear y administrar empresas', grp:'Estructura' },
+  proyectos:    { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>', label:'Proyectos',  sub:'Proyectos por empresa',     grp:'Estructura' },
+  'mis-proyectos':{ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',label:'Mis proyectos',sub:'Proyectos asignados a ti',grp:'Estructura' },
+  usuarios:     { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', label:'Usuarios',   sub:'Supervisores y técnicos',   grp:'Equipo' },
+  asignaciones: { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>', label:'Asignaciones',sub:'Quién trabaja en qué',     grp:'Equipo' },
+  tecnicos:     { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>', label:'Técnicos de mis proyectos', sub:'Equipo de tus proyectos', grp:'Equipo' },
+  informes:     { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>', label:'Informes',   sub:'Informes por proyecto',     grp:'Trabajo' },
+  'mis-informes':{ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>', label:'Mis informes',sub:'Informes que registraste', grp:'Trabajo' },
+  config:       { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>', label:'Configuración',sub:'Ajustes generales',       grp:'Cuenta' },
+  perfil:       { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M14 9h4"/><path d="M14 13h4"/><path d="M6 16h6"/></svg>', label:'Mi perfil',  sub:'Tus datos personales',      grp:'Cuenta' },
+};
+const MENU = {
+  superadmin:    ['dashboard','empresas','proyectos','usuarios','asignaciones','informes','config','perfil'],
+  admin_empresa: ['dashboard','empresas','proyectos','usuarios','asignaciones','informes','config','perfil'],
+  supervisor:    ['dashboard','mis-proyectos','tecnicos','informes','perfil'],
+  tecnico:       ['dashboard','mis-proyectos','mis-informes','perfil'],
+};
+const ROL_LABEL = { superadmin:'Superadmin', admin_empresa:'Administrador', supervisor:'Supervisor', tecnico:'Técnico' };
 
-  const badges = { superadmin:'badge-superadmin', admin_empresa:'badge-admin_empresa', supervisor:'badge-supervisor' };
-  const labels = { superadmin:'Superadmin', admin_empresa:'Administrador', supervisor:'Supervisor' };
-  const badge = $('rolBadge');
-  badge.textContent = labels[miRol] || miRol;
-  badge.className = 'rol-badge ' + (badges[miRol] || '');
+function buildSidebar(){
+  const items = MENU[ME.rol] || ['dashboard','perfil'];
+  // Botón fijo para volver al panel principal (/dashboard, el nodo central)
+  let html = `<a class="sb-item sb-home" href="/dashboard" title="Ir al panel principal">
+    <span class="sb-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>Inicio</a>`;
+  let lastGrp=null;
+  items.forEach(id=>{
+    const it = ITEMS[id]; if(!it) return;
+    if(it.grp!==lastGrp){ html+=`<div class="sb-group-label">${it.grp}</div>`; lastGrp=it.grp; }
+    const label = (id==='empresas' && ME.rol==='admin_empresa') ? 'Mi empresa' : it.label;
+    html+=`<button class="sb-item" data-view="${id}" onclick="go('${id}')"><span class="sb-ico">${it.ico}</span>${label}</button>`;
+  });
+  $('sbNav').innerHTML = html;
+}
 
-  // Mostrar botón de supervisores solo si admin o superadmin
-  if (miRol === 'superadmin' || miRol === 'admin_empresa') {
-    $('btnAddSup').style.display = 'flex';
+function go(view){
+  toggleMenu(false);
+  if(location.hash.slice(1)!==view) history.replaceState(null,'','#'+view);
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+  const it = ITEMS[view] || ITEMS.dashboard;
+  $('tbTitle').textContent = it.label; $('tbSub').textContent = it.sub;
+  $('content').innerHTML = '<div class="empty-state">Cargando…</div>';
+  (VIEWS[view] || VIEWS.dashboard)();
+}
+
+// ════════════════════════════════════════════════════════════════
+// VISTAS
+// ════════════════════════════════════════════════════════════════
+const VIEWS = {};
+
+// ── Dashboard ──
+VIEWS.dashboard = async () => {
+  const r = await api('/api/gestion/resumen');
+  const cards = [];
+  if(r.empresas!=null) cards.push(['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg>','si-blue',r.empresas,'Empresas']);
+  cards.push(['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>','si-green',r.proyectos_activos??0,'Proyectos activos']);
+  if(r.proyectos_total!=null && ME.rol!=='superadmin' && ME.rol!=='admin_empresa') cards[cards.length-1]=['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>','si-green',r.proyectos_total,'Mis proyectos'];
+  if(r.informes_total!=null) cards.push(['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>','si-purple',r.informes_total,'Mis informes']);
+  else cards.push(['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>','si-purple',(r.informes_recientes||[]).length,'Informes recientes']);
+
+  const rec = r.informes_recientes||[];
+  $('content').innerHTML = `
+    <div class="stats">${cards.map(([i,c,v,l])=>`
+      <div class="stat-card"><div class="stat-ico ${c}">${i}</div><div class="stat-val">${v}</div><div class="stat-label">${l}</div></div>`).join('')}
+    </div>
+    <div class="section">
+      <div class="sec-head"><div><div class="sec-name">Informes recientes</div><div class="sec-sub">Últimos registros</div></div></div>
+      ${rec.length? `<table><thead><tr><th>Título</th><th>Proyecto</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+        ${rec.map(i=>`<tr><td><b>${esc(i.titulo)}</b></td><td>${esc(i.proyecto_nombre||'—')}</td>
+          <td><span class="pill pill-${i.estado}">${i.estado}</span></td><td class="muted">${(i.fecha_creacion||'').slice(0,10)}</td></tr>`).join('')}
+      </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>Aún no hay informes.</div>`}
+    </div>`;
+};
+
+// ── Empresas / Clientes (superadmin) — LISTA ──
+VIEWS.empresas = async () => {
+  const esSuper = ME.rol==='superadmin';
+  const list = await api('/api/empresas');
+  window._empresasList = list;
+  if(!esSuper){ $('tbTitle').textContent='Mi empresa'; $('tbSub').textContent='Datos, usuarios y proyectos'; }
+  const tools = esSuper
+    ? `<input class="filter" id="empSearch" placeholder="Buscar nombre o RUT…" oninput="renderEmpresasList()">
+       <button class="btn btn-blue" onclick="modalEmpresa()">+ Nueva empresa</button>` : '';
+  $('content').innerHTML = `<div class="section">
+    <div class="sec-head">
+      <div><div class="sec-name">${esSuper?'Empresas / Clientes':'Mi empresa'}</div><div class="sec-sub">${esSuper?list.length+' registradas':'Selecciona para ver el detalle'}</div></div>
+      <div class="sec-tools">${tools}</div></div>
+    <div id="empListBody"></div></div>`;
+  renderEmpresasList();
+};
+function renderEmpresasList(){
+  const esSuper = ME.rol==='superadmin';
+  const q = ($('empSearch')?.value||'').toLowerCase();
+  let list = (window._empresasList||[]);
+  if(q) list = list.filter(e=>(e.nombre||'').toLowerCase().includes(q) || (e.rut_empresa||'').toLowerCase().includes(q));
+  $('empListBody').innerHTML = list.length ? `<table><thead><tr>
+      <th>Empresa</th><th>RUT</th><th>Usuarios</th><th>Proyectos</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${list.map(e=>`<tr style="cursor:pointer" onclick="verEmpresa('${e.id}')" title="Ver usuarios de ${esc(e.nombre)}">
+      <td><b>${esc(e.nombre)}</b> <span class="muted">/${esc(e.slug)}</span></td>
+      <td class="muted">${esc(e.rut_empresa||'—')}</td>
+      <td>${e.total_usuarios}</td><td>${e.total_proyectos}</td>
+      <td><span class="pill ${e.activa?'pill-activo':'pill-cancelado'}">${e.activa?'activa':'inactiva'}</span></td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();verEmpresa('${e.id}')">Ver</button>
+        ${esSuper?`<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();modalEditarEmpresa('${e.id}')">Editar</button>
+        <button class="btn btn-sm ${e.activa?'btn-del':'btn-green'}" onclick="event.stopPropagation();toggleEmpresa('${e.id}',${e.activa?0:1})">${e.activa?'Desactivar':'Activar'}</button>`:''}
+      </td></tr>`).join('')}
+  </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg></div>${q?'Sin resultados.':'No hay empresas.'}</div>`;
+}
+
+// ── Empresas — DETALLE ──
+async function verEmpresa(id){
+  $('content').innerHTML = '<div class="empty-state">Cargando…</div>';
+  const [emp, usuarios, proyectos] = await Promise.all([
+    api('/api/empresas/'+id), api('/api/empresas/'+id+'/usuarios'), api('/api/empresas/'+id+'/proyectos')
+  ]);
+  $('tbTitle').textContent = emp.nombre; $('tbSub').textContent = 'Detalle de empresa';
+  const userRows = usuarios.length ? `<table><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th></th></tr></thead><tbody>
+    ${usuarios.map(u=>`<tr><td><b>${esc(u.nombre)}</b></td><td class="muted">${esc(u.email)}</td>
+      <td><span class="pill pill-${u.rol}">${ROL_LABEL[u.rol]||u.rol}</span></td>
+      <td style="text-align:right"><button class="btn btn-sm btn-ghost" onclick="reenviarInvitacion('${u.id}')">Reenviar invitación</button></td></tr>`).join('')}
+    </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Sin usuarios.</div>`;
+  const puedeEditarProy = ['superadmin','admin_empresa'].includes(ME.rol);
+  const projRows = proyectos.length ? `<table><thead><tr><th>Proyecto</th><th>Estado</th><th>Inicio</th><th>Creado</th>${puedeEditarProy?'<th></th>':''}</tr></thead><tbody>
+    ${proyectos.map(p=>`<tr><td><b>${esc(p.nombre)}</b>${p.slug?` <span class="muted">/${esc(p.slug)}</span>`:''}</td>
+      <td><span class="pill pill-${p.estado||'activo'}">${esc(p.estado||'activo')}</span></td>
+      <td class="muted">${p.fecha_inicio||'—'}</td><td class="muted">${(p.creado_en||'').slice(0,10)}</td>
+      ${puedeEditarProy?`<td style="text-align:right"><button class="btn btn-sm btn-ghost" onclick="modalEditarProyecto('${p.id}','${emp.id}')">Editar</button></td>`:''}</tr>`).join('')}
+    </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>Sin proyectos.</div>`;
+  $('content').innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="go('empresas')" style="margin-bottom:16px">← Volver a empresas</button>
+    <div class="section">
+      <div class="sec-head"><div><div class="sec-name">Datos de la empresa</div><div class="sec-sub">/${esc(emp.slug)}</div></div>
+        <div class="sec-tools"><span class="pill ${emp.activa?'pill-activo':'pill-cancelado'}">${emp.activa?'activa':'inactiva'}</span>
+          <button class="btn btn-sm btn-blue" onclick="modalEditarEmpresa('${emp.id}')">Editar datos</button></div></div>
+      <div style="padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div><div class="sec-sub">Nombre</div><div style="font-weight:700;margin-top:2px">${esc(emp.nombre)}</div></div>
+        <div><div class="sec-sub">RUT empresa</div><div style="font-weight:700;margin-top:2px">${esc(emp.rut_empresa||'—')}</div></div>
+      </div></div>
+    <div class="section">
+      <div class="sec-head"><div><div class="sec-name">Usuarios</div><div class="sec-sub">${usuarios.length}</div></div>
+        <button class="btn btn-green btn-sm" onclick="modalUsuarioEmpresa('${emp.id}','${esc(emp.nombre)}')">+ Nuevo usuario</button></div>
+      ${userRows}</div>
+    <div class="section">
+      <div class="sec-head"><div><div class="sec-name">Proyectos</div><div class="sec-sub">${proyectos.length}</div></div>
+        ${['superadmin','admin_empresa'].includes(ME.rol)?`<button class="btn btn-blue btn-sm" onclick="modalProyecto('${emp.id}','${esc(emp.nombre)}')">+ Nuevo proyecto</button>`:''}</div>
+      ${projRows}</div>`;
+}
+async function toggleEmpresa(id, activa){
+  try{ await api('/api/empresas/'+id,{method:'PUT',body:JSON.stringify({activa:!!activa})});
+    toast(activa?'Empresa activada':'Empresa desactivada','ok'); go('empresas');
+  }catch(e){ toast(e.message,'err'); }
+}
+async function reenviarInvitacion(uid){
+  try{ const r = await api('/api/usuarios/'+uid+'/invitacion',{method:'POST',body:'{}'});
+    openModal(`<h3>Invitación generada</h3><p class="modal-sub">Comparte estas credenciales temporales con ${esc(r.email)}.</p>
+      <div class="field"><label>Correo</label><input value="${esc(r.email)}" disabled style="background:#F6F7FB"></div>
+      <div class="field"><label>Contraseña temporal</label><input value="${esc(r.password_temporal)}" disabled style="background:#F6F7FB;font-family:monospace"></div>
+      <div class="modal-actions"><button class="btn-confirm" onclick="closeModal()">Entendido</button></div>`);
+  }catch(e){ toast(e.message,'err'); }
+}
+
+// ── Proyectos ──
+VIEWS.proyectos = async () => {
+  let empresas=[]; let selEmp = '';
+  if(ME.rol==='superadmin'){ empresas = await api('/auth/empresas'); }
+  const url = (ME.rol==='superadmin' && selEmp) ? '/api/gestion/proyectos?empresa_id='+selEmp : '/api/gestion/proyectos';
+  const list = await api(url);
+  const empFilter = ME.rol==='superadmin'
+    ? `<select class="filter" id="fEmp" onchange="filterProyectos()"><option value="">Todas las empresas</option>${empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('')}</select>` : '';
+  window._empresas = empresas;
+  $('content').innerHTML = sectionTable({
+    name:'Proyectos', sub:list.length+' proyectos',
+    tools: empFilter,
+    addBtn:`<button class="btn btn-blue" onclick="modalProyecto()">+ Nuevo proyecto</button>`,
+    head:['Proyecto', ...(ME.rol==='superadmin'?['Empresa']:[]),'Estado','Inicio'],
+    rows: list.map(p=>`<tr><td><b>${esc(p.nombre)}</b>${p.slug?` <span class="muted">/${esc(p.slug)}</span>`:''}</td>
+      ${ME.rol==='superadmin'?`<td class="muted">${esc(p.empresa_nombre||'—')}</td>`:''}
+      <td><span class="pill pill-${p.estado}">${p.estado}</span></td><td class="muted">${p.fecha_inicio||'—'}</td></tr>`),
+    emptyIcon:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>', emptyMsg:'No hay proyectos todavía.'
+  });
+};
+async function filterProyectos(){
+  const emp = $('fEmp').value;
+  const list = await api('/api/gestion/proyectos'+(emp?'?empresa_id='+emp:''));
+  // re-render solo el cuerpo
+  VIEWS.proyectos();
+}
+
+// ── Mis proyectos (supervisor/técnico) ──
+VIEWS['mis-proyectos'] = async () => {
+  const list = await api('/api/gestion/mis-proyectos');
+  $('content').innerHTML = sectionTable({
+    name:'Mis proyectos', sub:list.length+' asignados',
+    head:['Proyecto','Mi rol','Estado'],
+    rows: list.map(p=>`<tr><td><b>${esc(p.proyecto_nombre||p.nombre)}</b></td>
+      <td><span class="pill pill-${p.rol_en_proyecto||'tecnico'}">${p.rol_en_proyecto||'—'}</span></td>
+      <td><span class="pill pill-${p.estado}">${p.estado}</span></td></tr>`),
+    emptyIcon:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>', emptyMsg:'No tienes proyectos asignados.'
+  });
+};
+
+// ── Usuarios ──
+VIEWS.usuarios = async () => {
+  const list = await api('/auth/usuarios');
+  window._usuarios = list;
+  const filtro = `<select class="filter" id="fRol" onchange="renderUsuarios()">
+    <option value="">Todos los roles</option><option value="supervisor">Supervisores</option><option value="tecnico">Técnicos</option>
+    ${ME.rol==='superadmin'?'<option value="admin_empresa">Administradores</option>':''}</select>`;
+  $('content').innerHTML = `<div class="section">
+    <div class="sec-head"><div><div class="sec-name">Usuarios</div><div class="sec-sub" id="uCount"></div></div>
+      <div class="sec-tools">${filtro}<button class="btn btn-green" onclick="modalUsuario()">+ Crear acceso</button></div></div>
+    <div id="uBody"></div></div>`;
+  renderUsuarios();
+};
+function renderUsuarios(){
+  const f = $('fRol')?.value || '';
+  let list = (window._usuarios||[]).filter(u=>u.rol!=='superadmin');
+  if(f) list = list.filter(u=>u.rol===f);
+  $('uCount').textContent = list.length+' usuario'+(list.length!==1?'s':'');
+  const admin = ME.rol==='superadmin';
+  $('uBody').innerHTML = list.length? `<table><thead><tr>
+      <th>Nombre</th><th>Email</th><th>RUT</th><th>Empresa</th><th>Rol</th>${admin?'<th></th>':''}</tr></thead><tbody>
+    ${list.map(u=>`<tr><td><b>${esc(u.nombre)}</b></td><td class="muted">${esc(u.email)}</td>
+      <td class="muted">${esc(u.rut||'—')}</td><td class="muted">${esc(u.empresa_nombre||'—')}</td>
+      <td><span class="pill pill-${u.rol}">${ROL_LABEL[u.rol]||u.rol}</span></td>
+      ${admin?`<td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-sm btn-ghost" onclick="editarUsuario('${u.id}')">Editar</button>
+        <button class="btn btn-sm btn-del" onclick="delUsuario('${u.id}','${esc(u.nombre)}')">Eliminar</button></td>`:''}</tr>`).join('')}
+  </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>No hay usuarios con ese filtro.</div>`;
+}
+
+// ── Asignaciones: TODOS los proyectos con su empresa y equipo ──
+VIEWS.asignaciones = async () => {
+  const esSuper = ME.rol === 'superadmin';
+  const proyectos = await api('/api/gestion/proyectos');
+  // El equipo de cada proyecto en paralelo
+  const equipos = await Promise.all(
+    proyectos.map(p => api('/api/gestion/proyectos/'+p.id+'/personal').catch(()=>[]))
+  );
+  window._asignProy = proyectos;
+
+  const chips = arr => arr.length
+    ? arr.map(x=>`<span class="pill pill-${x.rol}">${esc(x.nombre)}</span>`).join(' ')
+    : '<span class="muted">—</span>';
+
+  const rows = proyectos.map((p, i) => {
+    const personal = equipos[i] || [];
+    const sups = personal.filter(x => x.rol_en_proyecto==='supervisor' || x.rol_en_proyecto==='responsable');
+    const tecs = personal.filter(x => x.rol_en_proyecto==='tecnico');
+    return `<tr style="cursor:pointer" onclick="gestionarEquipo('${p.id}')" title="Gestionar equipo de ${esc(p.nombre)}">
+      <td><b>${esc(p.nombre)}</b>${p.slug?` <span class="muted">/${esc(p.slug)}</span>`:''}</td>
+      ${esSuper?`<td class="muted">${esc(p.empresa_nombre||'—')}</td>`:''}
+      <td>${chips(sups)}</td>
+      <td>${chips(tecs)}</td>
+      <td style="text-align:right"><button class="btn btn-sm btn-blue" onclick="event.stopPropagation();gestionarEquipo('${p.id}')">Gestionar</button></td>
+    </tr>`;
+  });
+
+  $('content').innerHTML = sectionTable({
+    name:'Asignaciones', sub:proyectos.length+' proyecto'+(proyectos.length!==1?'s':''),
+    head:['Proyecto', ...(esSuper?['Empresa']:[]), 'Supervisores', 'Técnicos', ''],
+    rows,
+    emptyIcon:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>', emptyMsg:'No hay proyectos. Crea uno en la sección Proyectos.'
+  });
+};
+
+// Panel de un proyecto: empresa + supervisores + técnicos
+async function gestionarEquipo(pid){
+  $('content').innerHTML = '<div class="empty-state">Cargando…</div>';
+  const esSuper = ME.rol === 'superadmin';
+  const [proyecto, personal] = await Promise.all([
+    api('/api/gestion/proyectos/'+pid),
+    api('/api/gestion/proyectos/'+pid+'/personal')
+  ]);
+  window._equipoProy = proyecto;
+  const sups = personal.filter(x => x.rol_en_proyecto==='supervisor' || x.rol_en_proyecto==='responsable');
+  const tecs = personal.filter(x => x.rol_en_proyecto==='tecnico');
+
+  let empresaBlock;
+  if (esSuper) {
+    const emps = window._empresas?.length ? window._empresas : await api('/auth/empresas');
+    window._empresas = emps;
+    empresaBlock = `<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div class="field" style="margin:0;flex:1;min-width:220px"><label>Empresa</label>
+        <select id="eqEmp">${emps.map(e=>`<option value="${e.id}" ${e.id===proyecto.empresa_id?'selected':''}>${esc(e.nombre)}</option>`).join('')}</select></div>
+      <button class="btn btn-blue" onclick="reasignarEmpresa('${pid}')">Guardar empresa</button></div>`;
+  } else {
+    empresaBlock = `<div class="field" style="margin:0"><label>Empresa</label>
+      <div style="font-weight:700;margin-top:2px">${esc(proyecto.empresa_nombre||'—')}</div></div>`;
   }
 
-  // Redirigir técnicos — no tienen acceso a esta página
-  if (miRol === 'tecnico') {
-    window.location.replace('/selector');
+  const teamTable = (titulo, arr, rolProy) => `<div class="section">
+    <div class="sec-head"><div><div class="sec-name">${titulo}</div><div class="sec-sub">${arr.length} asignado${arr.length!==1?'s':''}</div></div>
+      <button class="btn btn-green btn-sm" onclick="modalAsignar('${pid}','${rolProy}')">+ Asignar</button></div>
+    ${arr.length? `<table><thead><tr><th>Nombre</th><th>Rol del usuario</th><th>Rol en proyecto</th><th></th></tr></thead><tbody>
+      ${arr.map(p=>`<tr><td><b>${esc(p.nombre)}</b></td>
+        <td><span class="pill pill-${p.rol}">${ROL_LABEL[p.rol]||p.rol}</span></td>
+        <td><span class="pill pill-${p.rol_en_proyecto}">${p.rol_en_proyecto}</span></td>
+        <td style="text-align:right"><button class="btn btn-sm btn-del" onclick="quitarAsignacion('${pid}','${p.id}','${esc(p.nombre)}')">Quitar</button></td></tr>`).join('')}
+    </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Nadie asignado.</div>`}</div>`;
+
+  $('tbTitle').textContent = proyecto.nombre;
+  $('tbSub').textContent = 'Equipo del proyecto';
+  $('content').innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="go('asignaciones')" style="margin-bottom:16px">← Volver a asignaciones</button>
+    <div class="section"><div class="sec-head"><div><div class="sec-name">Vínculo con empresa</div>
+      <div class="sec-sub">A qué empresa pertenece el proyecto</div></div></div>
+      <div style="padding:18px 22px">${empresaBlock}</div></div>
+    ${teamTable('Supervisores', sups, 'supervisor')}
+    ${teamTable('Técnicos', tecs, 'tecnico')}`;
+}
+async function reasignarEmpresa(pid){
+  try{
+    await api('/api/gestion/proyectos/'+pid,{method:'PUT',body:JSON.stringify({empresa_id:$('eqEmp').value})});
+    toast('Empresa del proyecto actualizada','ok'); gestionarEquipo(pid);
+  }catch(e){ toast(e.message,'err'); }
+}
+
+// ── Técnicos de mis proyectos (supervisor) ──
+VIEWS.tecnicos = async () => {
+  const proyectos = await api('/api/gestion/mis-proyectos');
+  $('content').innerHTML = `<div class="section">
+    <div class="sec-head"><div><div class="sec-name">Técnicos de mis proyectos</div><div class="sec-sub">Elige un proyecto</div></div>
+      <div class="sec-tools"><select class="filter" id="tProy" onchange="loadTecnicos()">
+        <option value="">— Selecciona proyecto —</option>
+        ${proyectos.map(p=>`<option value="${p.proyecto_id||p.id}">${esc(p.proyecto_nombre||p.nombre)}</option>`).join('')}
+      </select></div></div>
+    <div id="tBody"><div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>Selecciona un proyecto.</div></div></div>`;
+};
+async function loadTecnicos(){
+  const pid = $('tProy').value; if(!pid){ $('tBody').innerHTML=`<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>Selecciona un proyecto.</div>`; return; }
+  $('tBody').innerHTML = '<div class="empty-state">Cargando…</div>';
+  // Cruce: equipo del proyecto + informes (cada informe trae tecnico_id, estado y fecha)
+  const [personal, informes] = await Promise.all([
+    api('/api/gestion/proyectos/'+pid+'/personal'),
+    api('/api/gestion/proyectos/'+pid+'/informes').catch(()=>[])
+  ]);
+  if(!personal.length){
+    $('tBody').innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Sin equipo en este proyecto.</div>`;
     return;
   }
+  // Agrupar informes por técnico
+  const yM = new Date().toISOString().slice(0,7);
+  const porTec = {}; // tecnico_id -> [informes]
+  (informes||[]).forEach(i=>{ if(!i.tecnico_id) return; (porTec[i.tecnico_id] = porTec[i.tecnico_id] || []).push(i); });
+  window._tecInformes = porTec;
 
-  await cargarPersonal();
-}
+  // ── Métrica del equipo ──
+  const conTec   = (informes||[]).filter(i=>i.tecnico_id);
+  const totalEq  = conTec.length;
+  const mesEq    = conTec.filter(i=>(i.fecha_creacion||'').slice(0,7)===yM).length;
+  const tecnicos = personal.filter(p=>p.rol_en_proyecto==='tecnico');
+  const activos  = tecnicos.filter(t=>porTec[t.id]?.length).length;
+  const metric = `<div class="stats" style="margin-bottom:18px">
+    <div class="stat-card"><div class="stat-ico si-purple"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div><div class="stat-val">${totalEq}</div><div class="stat-label">Informes del equipo</div></div>
+    <div class="stat-card"><div class="stat-ico si-green"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="stat-val">${mesEq}</div><div class="stat-label">Informes este mes</div></div>
+    <div class="stat-card"><div class="stat-ico si-blue"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="stat-val">${activos}/${tecnicos.length}</div><div class="stat-label">Técnicos con informes</div></div>
+  </div>`;
 
-// ── Cargar listas ──
-async function cargarPersonal() {
-  const r = await fetch('/auth/personal', { headers: aH() });
-  if (!r.ok) { toast('Error al cargar personal', 'err'); return; }
-  const personal = await r.json();
-
-  const sups = personal.filter(p => p.rol === 'supervisor');
-  const tecs = personal.filter(p => p.rol === 'tecnico');
-
-  $('countSup').textContent = sups.length + ' supervisor' + (sups.length !== 1 ? 'es' : '');
-  $('countTec').textContent = tecs.length + ' técnico' + (tecs.length !== 1 ? 's' : '');
-
-  renderLista('listSup', sups, 'av-blue');
-  renderLista('listTec', tecs, 'av-green');
-}
-
-function renderLista(containerId, items, avatarClass) {
-  const el = $(containerId);
-  if (!items.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>No hay usuarios en este rol aún.</p></div>';
-    return;
-  }
-  el.innerHTML = items.map(p => {
-    const initials = p.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-    const delBtn = miRol === 'superadmin'
-      ? `<button class="btn-del" onclick="pedirEliminar('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">Eliminar</button>`
-      : '';
-    return `
-      <div class="person-item">
-        <div class="person-info">
-          <div class="person-avatar ${avatarClass}">${initials}</div>
-          <div>
-            <div class="person-name">${p.nombre}</div>
-          </div>
-        </div>
-        ${delBtn}
-      </div>`;
+  const filas = personal.map(p=>{
+    const arr = porTec[p.id] || [];
+    const mes = arr.filter(i=>(i.fecha_creacion||'').slice(0,7)===yM).length;
+    const tieneDetalle = arr.length > 0;
+    return `<tr ${tieneDetalle?`style="cursor:pointer" onclick="toggleTecInformes('${p.id}')" title="Ver informes de ${esc(p.nombre)}"`:''}>
+      <td><b>${esc(p.nombre)}</b>${tieneDetalle?' <span class="muted" style="font-size:11px">▸</span>':''}</td>
+      <td><span class="pill pill-${p.rol}">${ROL_LABEL[p.rol]||p.rol}</span></td>
+      <td><span class="pill pill-${p.rol_en_proyecto}">${p.rol_en_proyecto}</span></td>
+      <td style="text-align:center"><b>${arr.length}</b></td>
+      <td style="text-align:center">${mes}</td></tr>
+    <tr id="det-${p.id}" style="display:none"><td colspan="5" style="background:#FAFBFC;padding:0">
+      ${arr.length? `<table style="margin:0"><thead><tr><th style="padding-left:34px">Informe</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+        ${arr.map(i=>`<tr><td style="padding-left:34px">${esc(i.titulo||'—')}</td><td><span class="pill pill-${i.estado}">${i.estado}</span></td><td class="muted">${(i.fecha_creacion||'').slice(0,10)}</td></tr>`).join('')}
+      </tbody></table>` : ''}
+    </td></tr>`;
   }).join('');
+
+  $('tBody').innerHTML = metric + `<table><thead><tr>
+      <th>Nombre</th><th>Rol</th><th>En proyecto</th>
+      <th style="text-align:center">Informes</th><th style="text-align:center">Este mes</th></tr></thead>
+    <tbody>${filas}</tbody></table>`;
+}
+function toggleTecInformes(id){
+  const row = document.getElementById('det-'+id);
+  if(row) row.style.display = row.style.display==='none' ? 'table-row' : 'none';
 }
 
-// ── Modal agregar ──
-function openModal(rol) {
-  modalRol = rol;
-  $('modalTitle').textContent = rol === 'supervisor' ? 'Agregar Supervisor' : 'Agregar Técnico';
-  $('modalSub').textContent = `Se creará una cuenta de acceso con rol ${rol}.`;
-  $('inNombre').value = ''; $('inEmail').value = ''; $('inPass').value = '';
-  $('modalErr').style.display = 'none';
-  $('modalBg').classList.add('open');
-  setTimeout(() => $('inNombre').focus(), 100);
+// ── Informes (admin/supervisor): por proyecto ──
+VIEWS.informes = async () => {
+  const proyectos = await api(ME.rol==='supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos');
+  $('content').innerHTML = `<div class="section">
+    <div class="sec-head"><div><div class="sec-name">Informes</div><div class="sec-sub">Filtra por proyecto</div></div>
+      <div class="sec-tools"><select class="filter" id="iProy" onchange="loadInformes()">
+        <option value="">— Selecciona proyecto —</option>
+        ${proyectos.map(p=>`<option value="${p.proyecto_id||p.id}">${esc(p.proyecto_nombre||p.nombre)}${p.empresa_nombre?' · '+esc(p.empresa_nombre):''}</option>`).join('')}
+      </select></div></div>
+    <div id="iBody"><div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>Selecciona un proyecto para ver sus informes.</div></div></div>`;
+};
+async function loadInformes(){
+  const pid = $('iProy').value; if(!pid){ $('iBody').innerHTML=`<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>Selecciona un proyecto.</div>`; return; }
+  const list = await api('/api/gestion/proyectos/'+pid+'/informes');
+  $('iBody').innerHTML = `<div style="padding:14px 22px;border-bottom:1px solid #F0F1F5;">
+      <button class="btn btn-green btn-sm" onclick="modalInforme('${pid}')">+ Nuevo informe</button></div>
+    ${list.length? `<table><thead><tr><th>Título</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+      ${list.map(i=>`<tr><td><b>${esc(i.titulo)}</b></td><td><span class="pill pill-${i.estado}">${i.estado}</span></td>
+        <td class="muted">${(i.fecha_creacion||'').slice(0,10)}</td></tr>`).join('')}
+    </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>Este proyecto no tiene informes.</div>`}`;
 }
-function closeModal() { $('modalBg').classList.remove('open'); }
 
-async function crearUsuario() {
-  const nombre = $('inNombre').value.trim();
-  const email  = $('inEmail').value.trim();
-  const pass   = $('inPass').value;
-  const errEl  = $('modalErr');
+// ── Mis informes (técnico) ──
+VIEWS['mis-informes'] = async () => {
+  const list = await api('/api/gestion/mis-informes');
+  $('content').innerHTML = sectionTable({
+    name:'Mis informes', sub:list.length+' registros',
+    head:['Título','Proyecto','Estado','Fecha'],
+    rows: list.map(i=>`<tr><td><b>${esc(i.titulo)}</b></td><td class="muted">${esc(i.proyecto_nombre||'—')}</td>
+      <td><span class="pill pill-${i.estado}">${i.estado}</span></td><td class="muted">${(i.fecha_creacion||'').slice(0,10)}</td></tr>`),
+    emptyIcon:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>', emptyMsg:'Todavía no registraste informes.'
+  });
+};
 
-  if (!nombre || !email || !pass) { errEl.textContent = 'Todos los campos son requeridos.'; errEl.style.display = 'block'; return; }
-  if (pass.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.style.display = 'block'; return; }
+// ── Configuración ──
+VIEWS.config = async () => {
+  $('content').innerHTML = `<div class="section">
+    <div class="sec-head"><div><div class="sec-name">Configuración</div><div class="sec-sub">Ajustes generales</div></div></div>
+    <div style="padding:22px">
+      <div class="field"><label>Sesión</label><div style="font-size:13px;color:#676879">Conectado como <b>${esc(ME.nombre)}</b> (${ROL_LABEL[ME.rol]||ME.rol}).</div></div>
+      <div class="field"><label>Fuente de datos</label><div style="font-size:13px;color:#676879">El backend decide entre Supabase y SQLite local automáticamente.</div></div>
+      <a class="btn btn-ghost" href="/dashboard">← Ir al inicio</a>
+    </div></div>`;
+};
 
-  const btn = $('btnConfirm'); btn.disabled = true; btn.textContent = 'Creando...';
-  errEl.style.display = 'none';
+// ── Mi perfil ──
+VIEWS.perfil = async () => {
+  const p = await api('/api/gestion/perfil') || {};
+  $('content').innerHTML = `<div class="section" style="max-width:520px">
+    <div class="sec-head"><div><div class="sec-name">Mi perfil</div><div class="sec-sub">${esc(ME.email)}</div></div></div>
+    <div style="padding:22px">
+      <div class="field"><label>RUT</label><input id="pRut" class="" value="${esc(p.rut||'')}" placeholder="12.345.678-5" style="width:100%;border:1.5px solid #E6E9EF;border-radius:8px;padding:10px 13px;font-size:14px;font-family:inherit;outline:none"><div class="hint">Se valida con dígito verificador (módulo 11).</div></div>
+      <div class="field"><label>Nombre</label><input id="pNombre" value="${esc(p.nombre||'')}" style="width:100%;border:1.5px solid #E6E9EF;border-radius:8px;padding:10px 13px;font-size:14px;font-family:inherit;outline:none"></div>
+      <div class="field"><label>Apellidos</label><input id="pApe" value="${esc(p.apellidos||'')}" style="width:100%;border:1.5px solid #E6E9EF;border-radius:8px;padding:10px 13px;font-size:14px;font-family:inherit;outline:none"></div>
+      <div class="field"><label>Teléfono</label><input id="pTel" value="${esc(p.telefono||'')}" style="width:100%;border:1.5px solid #E6E9EF;border-radius:8px;padding:10px 13px;font-size:14px;font-family:inherit;outline:none"></div>
+      <div class="field"><label>Cargo</label><input id="pCargo" value="${esc(p.cargo||'')}" style="width:100%;border:1.5px solid #E6E9EF;border-radius:8px;padding:10px 13px;font-size:14px;font-family:inherit;outline:none"></div>
+      <button class="btn btn-blue" id="pSave" onclick="guardarPerfil()">Guardar cambios</button>
+    </div></div>`;
+};
+async function guardarPerfil(){
+  const btn=$('pSave'); btn.disabled=true; btn.textContent='Guardando…';
+  try{
+    await api('/api/gestion/perfil',{ method:'PUT', body:JSON.stringify({
+      rut:$('pRut').value.trim()||null, nombre:$('pNombre').value.trim(),
+      apellidos:$('pApe').value.trim(), telefono:$('pTel').value.trim(), cargo:$('pCargo').value.trim()
+    })});
+    toast('Perfil actualizado','ok');
+    go('dashboard');   // tras guardar, volver al panel
+  }catch(e){ toast(e.message,'err'); btn.disabled=false; btn.textContent='Guardar cambios'; }
+}
 
-  try {
-    const r = await fetch('/auth/crear-usuario', {
-      method: 'POST',
-      headers: aH({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ nombre, email, password: pass, rol: modalRol })
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Error al crear usuario');
-    closeModal();
-    toast(`✓ ${modalRol === 'supervisor' ? 'Supervisor' : 'Técnico'} creado correctamente`, 'ok');
-    await cargarPersonal();
-  } catch(e) {
-    errEl.textContent = e.message; errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false; btn.textContent = 'Crear cuenta';
+// ── Helper de tabla genérica ──
+function sectionTable({name,sub,tools='',addBtn='',head,rows,emptyIcon,emptyMsg}){
+  return `<div class="section">
+    <div class="sec-head"><div><div class="sec-name">${name}</div><div class="sec-sub">${sub||''}</div></div>
+      <div class="sec-tools">${tools}${addBtn}</div></div>
+    ${rows.length? `<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`
+      : `<div class="empty-state"><div class="empty-icon">${emptyIcon}</div>${emptyMsg}</div>`}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODALES
+// ════════════════════════════════════════════════════════════════
+function openModal(html){ $('modalBox').innerHTML=html; $('modalBg').classList.add('open'); }
+function closeModal(){ $('modalBg').classList.remove('open'); }
+$('modalBg').addEventListener('click',e=>{ if(e.target===$('modalBg')) closeModal(); });
+
+function modalEmpresa(){
+  openModal(`<h3>Nueva empresa</h3><p class="modal-sub">Crea un nuevo cliente en la plataforma.</p>
+    <div class="field"><label>Nombre</label><input id="mNombre" placeholder="ICETEL SpA"></div>
+    <div class="field"><label>RUT empresa</label><input id="mRut" placeholder="76.086.428-5"><div class="hint">Opcional · se valida con dígito verificador.</div></div>
+    <div class="field"><label>Identificador (slug)</label><input id="mSlug" placeholder="icetel"><div class="hint">Opcional · se genera del nombre si lo dejas vacío.</div></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="crearEmpresa(this)">Crear empresa</button></div>`);
+  setTimeout(()=>$('mNombre').focus(),80);
+}
+async function crearEmpresa(btn){
+  const nombre=$('mNombre').value.trim(), slug=$('mSlug').value.trim().toLowerCase(), rut_empresa=$('mRut').value.trim();
+  if(!nombre) return showErr('El nombre es requerido');
+  btn.disabled=true;
+  try{ await api('/api/empresas',{method:'POST',body:JSON.stringify({nombre,slug:slug||undefined,rut_empresa:rut_empresa||undefined})});
+    closeModal(); toast('Empresa creada','ok'); go('empresas');
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+async function modalEditarEmpresa(id){
+  const esSuper = ME.rol==='superadmin';
+  const e = await api('/api/empresas/'+id);
+  const camposSuper = esSuper ? `
+    <div class="field"><label>Identificador (slug)</label><input id="eeSlug" value="${esc(e.slug)}"></div>
+    <div class="field"><label>Estado</label><select id="eeActiva"><option value="1" ${e.activa?'selected':''}>Activa</option><option value="0" ${!e.activa?'selected':''}>Inactiva</option></select></div>` : '';
+  openModal(`<h3>Editar empresa</h3><p class="modal-sub">Modifica los datos${esSuper?' del cliente':''}.</p>
+    <div class="field"><label>Nombre</label><input id="eeNombre" value="${esc(e.nombre)}"></div>
+    <div class="field"><label>RUT empresa</label><input id="eeRut" value="${esc(e.rut_empresa||'')}" placeholder="76.086.428-5"></div>
+    ${camposSuper}
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="guardarEmpresa('${id}',this)">Guardar cambios</button></div>`);
+}
+async function guardarEmpresa(id,btn){
+  const body={ nombre:$('eeNombre').value.trim(), rut_empresa:$('eeRut').value.trim() };
+  if($('eeSlug')) body.slug = $('eeSlug').value.trim().toLowerCase();
+  if($('eeActiva')) body.activa = $('eeActiva').value==='1';
+  if(!body.nombre) return showErr('El nombre es requerido');
+  btn.disabled=true;
+  try{ await api('/api/empresas/'+id,{method:'PUT',body:JSON.stringify(body)});
+    closeModal(); toast('Empresa actualizada','ok'); go('empresas');
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+// Nuevo usuario con empresa preseleccionada (desde el detalle de empresa)
+function modalUsuarioEmpresa(empId, empNombre){
+  openModal(`<h3>Nuevo usuario</h3><p class="modal-sub">Se creará en <b>${esc(empNombre)}</b>.</p>
+    <div class="field"><label>Nombre completo</label><input id="nuNombre" placeholder="Juan Pérez"></div>
+    <div class="field"><label>Email</label><input id="nuEmail" type="email" placeholder="correo@dominio.com"></div>
+    <div class="field"><label>Contraseña temporal</label><input id="nuPass" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label>Rol</label><select id="nuRol">
+      ${ME.rol==='superadmin'?'<option value="admin_empresa">Administrador</option>':''}<option value="supervisor">Supervisor</option><option value="tecnico" selected>Técnico</option></select></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="crearUsuarioEmpresa('${empId}',this)">Crear usuario</button></div>`);
+  setTimeout(()=>$('nuNombre').focus(),80);
+}
+async function crearUsuarioEmpresa(empId,btn){
+  const nombre=$('nuNombre').value.trim(), email=$('nuEmail').value.trim(), password=$('nuPass').value, rol=$('nuRol').value;
+  if(!nombre||!email||!password) return showErr('Todos los campos son requeridos');
+  if(password.length<6) return showErr('La contraseña debe tener 6+ caracteres');
+  btn.disabled=true;
+  try{ await api('/api/usuarios',{method:'POST',body:JSON.stringify({nombre,email,password,rol,empresa_id:empId})});
+    closeModal(); toast('Usuario creado','ok'); verEmpresa(empId);
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+
+async function modalProyecto(empresaId, empresaNombre){
+  let empOpts='';
+  if(empresaId){
+    // Empresa fija (abierto desde el detalle de una empresa)
+    empOpts=`<div class="field"><label>Empresa</label>
+      <input value="${esc(empresaNombre||'')}" disabled style="background:#F6F7FB">
+      <input type="hidden" id="mEmp" value="${esc(empresaId)}"></div>`;
+  } else if(ME.rol==='superadmin'){
+    const emps = window._empresas?.length?window._empresas:await api('/auth/empresas');
+    empOpts=`<div class="field"><label>Empresa</label><select id="mEmp">${emps.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('')}</select></div>`;
   }
+  openModal(`<h3>Nuevo proyecto</h3><p class="modal-sub">Quedará ligado a su empresa.</p>
+    ${empOpts}
+    <div class="field"><label>Nombre</label><input id="mPNombre" placeholder="Mantención Clima TIGO"></div>
+    <div class="field"><label>Identificador (slug)</label><input id="mPSlug" placeholder="tigo-clima"></div>
+    <div class="field"><label>Estado</label><select id="mPEstado">
+      <option value="activo">Activo</option><option value="planificado">Planificado</option>
+      <option value="pausado">Pausado</option><option value="finalizado">Finalizado</option></select></div>
+    <div class="field"><label>Fecha de inicio</label><input id="mPFecha" type="date"></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="crearProyecto(this, ${empresaId?`'${esc(empresaId)}'`:'null'})">Crear proyecto</button></div>`);
+  setTimeout(()=>$('mPNombre').focus(),80);
+}
+async function crearProyecto(btn, empresaId){
+  const body={ nombre:$('mPNombre').value.trim(), slug:$('mPSlug').value.trim().toLowerCase()||null,
+    estado:$('mPEstado').value, fecha_inicio:$('mPFecha').value||null };
+  if($('mEmp')) body.empresa_id=$('mEmp').value;
+  if(!body.nombre) return showErr('Nombre requerido');
+  btn.disabled=true;
+  try{ await api('/api/gestion/proyectos',{method:'POST',body:JSON.stringify(body)});
+    closeModal(); toast('Proyecto creado','ok');
+    if(empresaId) verEmpresa(empresaId); else go('proyectos');
+  }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 
-// ── Eliminar ──
-function pedirEliminar(id, nombre) {
-  pendingDelId = id;
-  $('confirmMsg').textContent = `"${nombre}" será eliminado del sistema permanentemente.`;
-  $('confirmBg').classList.add('open');
+async function modalEditarProyecto(pid, empresaId){
+  const p = await api('/api/gestion/proyectos/'+pid);
+  const estados = ['activo','planificado','pausado','finalizado','cancelado'];
+  openModal(`<h3>Editar proyecto</h3><p class="modal-sub">Actualiza la información del proyecto.</p>
+    <div class="field"><label>Nombre</label><input id="ePNombre" value="${esc(p.nombre||'')}"></div>
+    <div class="field"><label>Identificador (slug)</label><input id="ePSlug" value="${esc(p.slug||'')}"></div>
+    <div class="field"><label>Estado</label><select id="ePEstado">
+      ${estados.map(s=>`<option value="${s}" ${p.estado===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}</select></div>
+    <div class="field"><label>Fecha de inicio</label><input id="ePFecha" type="date" value="${esc((p.fecha_inicio||'').slice(0,10))}"></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="guardarProyecto('${pid}',${empresaId?`'${esc(empresaId)}'`:'null'},this)">Guardar cambios</button></div>`);
+  setTimeout(()=>$('ePNombre').focus(),80);
 }
-function closeConfirm() { $('confirmBg').classList.remove('open'); pendingDelId = null; }
-
-async function confirmarEliminar() {
-  if (!pendingDelId) return;
-  const id = pendingDelId; closeConfirm();
-  try {
-    const r = await fetch(`/auth/usuarios/${id}`, { method:'DELETE', headers:aH() });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Error al eliminar');
-    toast('Usuario eliminado', 'ok');
-    await cargarPersonal();
-  } catch(e) { toast(e.message, 'err'); }
+async function guardarProyecto(pid, empresaId, btn){
+  const body={ nombre:$('ePNombre').value.trim(), slug:$('ePSlug').value.trim().toLowerCase()||null,
+    estado:$('ePEstado').value, fecha_inicio:$('ePFecha').value||null };
+  if(!body.nombre) return showErr('Nombre requerido');
+  btn.disabled=true;
+  try{ await api('/api/gestion/proyectos/'+pid,{method:'PUT',body:JSON.stringify(body)});
+    closeModal(); toast('Proyecto actualizado','ok');
+    if(empresaId) verEmpresa(empresaId); else go('proyectos');
+  }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 
-$('modalBg').addEventListener('click', e => { if(e.target === $('modalBg')) closeModal(); });
-$('confirmBg').addEventListener('click', e => { if(e.target === $('confirmBg')) closeConfirm(); });
+function modalUsuario(){
+  const roles = ME.rol==='supervisor' ? [['tecnico','Técnico']]
+    : [['supervisor','Supervisor'],['tecnico','Técnico']];
+  openModal(`<h3>Crear acceso</h3><p class="modal-sub">Se genera una cuenta para tu empresa.</p>
+    <div class="field"><label>Nombre completo</label><input id="mUNombre" placeholder="Juan Pérez"></div>
+    <div class="field"><label>Email</label><input id="mUEmail" type="email" placeholder="correo@dominio.com"></div>
+    <div class="field"><label>Contraseña temporal</label><input id="mUPass" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label>Rol</label><select id="mURol">${roles.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="crearUsuario(this)">Crear cuenta</button></div>`);
+  setTimeout(()=>$('mUNombre').focus(),80);
+}
+async function crearUsuario(btn){
+  const nombre=$('mUNombre').value.trim(), email=$('mUEmail').value.trim(), password=$('mUPass').value, rol=$('mURol').value;
+  if(!nombre||!email||!password) return showErr('Todos los campos son requeridos');
+  if(password.length<6) return showErr('La contraseña debe tener 6+ caracteres');
+  btn.disabled=true;
+  try{ await api('/auth/crear-usuario',{method:'POST',body:JSON.stringify({nombre,email,password,rol})});
+    closeModal(); toast('Usuario creado','ok'); go('usuarios');
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+async function editarUsuario(id){
+  const u = (window._usuarios||[]).find(x=>x.id===id);
+  if(!u) return toast('Usuario no encontrado','err');
+  const empresas = await api('/auth/empresas');
+  const rolOpts = [['admin_empresa','Administrador'],['supervisor','Supervisor'],['tecnico','Técnico']]
+    .map(([v,l])=>`<option value="${v}" ${u.rol===v?'selected':''}>${l}</option>`).join('');
+  const empOpts = `<option value="">— Sin empresa —</option>`+empresas.map(e=>`<option value="${e.id}" ${u.empresa_id===e.id?'selected':''}>${esc(e.nombre)}</option>`).join('');
+  openModal(`<h3>Editar usuario</h3><p class="modal-sub">Modifica los datos de acceso de ${esc(u.nombre)}.</p>
+    <div class="field"><label>Nombre</label><input id="eNombre" value="${esc(u.nombre)}"></div>
+    <div class="field"><label>Correo electrónico</label><input id="eEmail" type="email" value="${esc(u.email)}"></div>
+    <div class="field"><label>Nueva contraseña</label><input id="ePass" type="password" placeholder="Dejar en blanco para no cambiar"><div class="hint">Mínimo 6 caracteres.</div></div>
+    <div class="field"><label>Rol</label><select id="eRol" onchange="toggleEmpEdit()">${rolOpts}</select></div>
+    <div class="field" id="eEmpWrap"><label>Empresa asignada</label><select id="eEmp">${empOpts}</select></div>
+    <div class="field"><label>RUT</label><input value="${esc(u.rut||'—')}" disabled style="background:#F6F7FB;color:#676879"><div class="hint">El RUT se edita desde el perfil del propio usuario.</div></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="guardarUsuario('${id}',this)">Guardar cambios</button></div>`);
+  toggleEmpEdit();
+}
+function toggleEmpEdit(){
+  const esSuper = $('eRol').value==='superadmin';
+  $('eEmpWrap').style.display = esSuper ? 'none' : 'block';
+}
+async function guardarUsuario(id,btn){
+  const body={ nombre:$('eNombre').value.trim(), email:$('eEmail').value.trim(), rol:$('eRol').value };
+  if($('eEmp') && $('eRol').value!=='superadmin') body.empresa_id=$('eEmp').value||null;
+  const pass=$('ePass').value;
+  if(pass) body.password=pass;
+  if(!body.nombre||!body.email) return showErr('Nombre y correo son requeridos');
+  btn.disabled=true;
+  try{ await api('/auth/usuarios/'+id,{method:'PATCH',body:JSON.stringify(body)});
+    closeModal(); toast('Usuario actualizado','ok'); go('usuarios');
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
 
-init();
+function delUsuario(id,nombre){
+  openModal(`<h3>¿Eliminar usuario?</h3><p class="modal-sub">"${nombre}" se eliminará permanentemente.</p>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" style="background:#E2445C" onclick="confirmDelUsuario('${id}',this)">Sí, eliminar</button></div>`);
+}
+async function confirmDelUsuario(id,btn){
+  btn.disabled=true;
+  try{ await api('/auth/usuarios/'+id,{method:'DELETE'}); closeModal(); toast('Usuario eliminado','ok'); go('usuarios'); }
+  catch(e){ toast(e.message,'err'); closeModal(); }
+}
+
+async function modalAsignar(pid, rolProyecto){
+  const proy = window._equipoProy || await api('/api/gestion/proyectos/'+pid);
+  // Regla 2: solo técnicos/supervisores activos de la empresa del proyecto
+  let usuarios = (await api('/auth/usuarios')).filter(u=>['supervisor','tecnico'].includes(u.rol)&&u.activo);
+  if (proy.empresa_id) usuarios = usuarios.filter(u=>u.empresa_id===proy.empresa_id);
+  if(!usuarios.length){
+    openModal(`<h3>Sin usuarios disponibles</h3><p class="modal-sub">No hay supervisores ni técnicos en la empresa de este proyecto. Crea usuarios primero en la sección Usuarios.</p>
+      <div class="modal-actions"><button class="btn-confirm" onclick="closeModal()">Entendido</button></div>`);
+    return;
+  }
+  const rolDef = rolProyecto || 'tecnico';
+  openModal(`<h3>Asignar al proyecto</h3><p class="modal-sub">Vincula a alguien a "${esc(proy.nombre)}".</p>
+    <div class="field"><label>Usuario</label><select id="mAUser">${usuarios.map(u=>`<option value="${u.id}">${esc(u.nombre)} (${ROL_LABEL[u.rol]})</option>`).join('')}</select></div>
+    <div class="field"><label>Rol en el proyecto</label><select id="mARol">
+      <option value="tecnico" ${rolDef==='tecnico'?'selected':''}>Técnico</option>
+      <option value="supervisor" ${rolDef==='supervisor'?'selected':''}>Supervisor</option>
+      <option value="responsable" ${rolDef==='responsable'?'selected':''}>Responsable</option></select></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmAsignar('${pid}',this)">Asignar</button></div>`);
+}
+async function confirmAsignar(pid,btn){
+  const usuario_id=$('mAUser').value, rol_en_proyecto=$('mARol').value;
+  if(!usuario_id) return showErr('Selecciona un usuario');
+  btn.disabled=true;
+  try{ await api('/api/gestion/proyectos/'+pid+'/asignaciones',{method:'POST',body:JSON.stringify({usuario_id,rol_en_proyecto})});
+    closeModal(); toast('Usuario asignado','ok'); gestionarEquipo(pid);
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+function quitarAsignacion(pid,uid,nombre){
+  openModal(`<h3>¿Quitar del proyecto?</h3><p class="modal-sub">"${nombre}" dejará de estar asignado.</p>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" style="background:#E2445C" onclick="confirmQuitar('${pid}','${uid}',this)">Sí, quitar</button></div>`);
+}
+async function confirmQuitar(pid,uid,btn){
+  btn.disabled=true;
+  try{ await api('/api/gestion/proyectos/'+pid+'/asignaciones/'+uid,{method:'DELETE'});
+    closeModal(); toast('Asignación eliminada','ok'); gestionarEquipo(pid);
+  }catch(e){ toast(e.message,'err'); closeModal(); }
+}
+
+async function modalInforme(pid){
+  // Regla 2: solo personal asignado de la empresa del proyecto
+  const personal = await api('/api/gestion/proyectos/'+pid+'/personal');
+  const tecs = personal.filter(p=>p.rol==='tecnico'), sups = personal.filter(p=>p.rol==='supervisor');
+  const opt = (arr)=>`<option value="">— ninguno —</option>`+arr.map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
+  openModal(`<h3>Nuevo informe</h3><p class="modal-sub">El técnico/supervisor solo puede ser personal asignado a este proyecto.</p>
+    <div class="field"><label>Título</label><input id="mITitulo" placeholder="Mantención preventiva sala A"></div>
+    <div class="field"><label>Técnico</label><select id="mITec">${opt(tecs)}</select>${tecs.length?'':'<div class="hint">No hay técnicos asignados a este proyecto.</div>'}</div>
+    <div class="field"><label>Supervisor</label><select id="mISup">${opt(sups)}</select></div>
+    <div class="field"><label>Contenido</label><textarea id="mICont" placeholder="Detalle de la actividad…"></textarea></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="crearInforme('${pid}',this)">Crear informe</button></div>`);
+  setTimeout(()=>$('mITitulo').focus(),80);
+}
+async function crearInforme(pid,btn){
+  const body={ titulo:$('mITitulo').value.trim(), tecnico_id:$('mITec').value||null,
+    supervisor_id:$('mISup').value||null, contenido:$('mICont').value.trim()||null };
+  if(!body.titulo) return showErr('Título requerido');
+  btn.disabled=true;
+  try{ await api('/api/gestion/proyectos/'+pid+'/informes',{method:'POST',body:JSON.stringify(body)});
+    closeModal(); toast('Informe creado','ok'); $('iProy').value=pid; loadInformes();
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+
+function showErr(msg){ const e=$('mErr'); if(e){ e.textContent=msg; e.style.display='block'; } }
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+$('btnLogout').addEventListener('click',()=>{ localStorage.removeItem('token');sessionStorage.removeItem('token');location.replace('/login'); });
+
+(async function init(){
+  try{
+    const { usuario } = await api('/auth/me');
+    ME = usuario;
+    $('brandRol').textContent = ROL_LABEL[ME.rol]||ME.rol;
+    $('sbAvatar').textContent = initials(ME.nombre);
+    $('sbUname').textContent = ME.nombre;
+    $('sbUrol').textContent = ROL_LABEL[ME.rol]||ME.rol;
+    buildSidebar();
+    // Abre la sección del hash si es válida para el rol; si no, dashboard
+    const hash = location.hash.slice(1);
+    const detEmp = hash.match(/^empresa:(.+)$/);
+    if (detEmp && ME.rol === 'superadmin') {
+      document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('active',b.dataset.view==='empresas'));
+      verEmpresa(detEmp[1]);
+    } else {
+      const permitido = (MENU[ME.rol]||[]).includes(hash);
+      go(permitido ? hash : 'dashboard');
+    }
+  }catch(e){ /* api() ya redirige en 401 */ }
+})();
 </script>
 </body>
 </html>

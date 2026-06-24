@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Perfil — ICETEL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --sb:#1C1F3B; --blue:#0073EA; --mag:#784BD1; --green:#00C875; --green-d:#00854D;
+  --red:#E2445C; --text:#323338; --muted:#676879; --border:#D0D4E4; --bg:#F6F7FB;
+  --white:#fff; --sh:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06); --r:12px;
+}
+body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* Top bar */
+.topbar{
+  background:var(--sb);padding:14px 24px;display:flex;align-items:center;
+  justify-content:space-between;box-shadow:0 2px 16px rgba(0,0,0,.2);
+}
+.tb-left{display:flex;align-items:center;gap:14px;}
+.logo-box{background:#fff;border-radius:8px;padding:4px 12px;display:flex;align-items:center;}
+.logo-box img{height:26px;object-fit:contain;display:block;}
+.tb-title{color:#fff;font-size:15px;font-weight:700;}
+.btn-volver{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.18);
+  border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;
+  text-decoration:none;cursor:pointer;transition:.15s;font-family:'Poppins',sans-serif;
+}
+.btn-volver:hover{background:rgba(255,255,255,.22);}
+
+/* Layout */
+.wrap{max-width:760px;margin:0 auto;padding:30px 20px 60px;}
+
+/* Cards */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:18px;overflow:hidden;}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:#FAFBFC;}
+.ch-bar{width:4px;height:18px;border-radius:3px;flex-shrink:0;}
+.ch-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;}
+.card-body{padding:22px;}
+
+/* Form */
+.frow{display:grid;gap:14px;margin-bottom:14px;}
+.frow.two{grid-template-columns:1fr 1fr;}
+.flabel{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;display:block;}
+.finput{
+  width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;
+  font-size:13.5px;color:var(--text);background:#fff;font-family:'Poppins',inherit;transition:.15s;
+}
+.finput:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,115,234,.12);}
+.finput:read-only{background:#F1F2F6;color:var(--muted);cursor:not-allowed;}
+.fhelp{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5;}
+@media(max-width:560px){.frow.two{grid-template-columns:1fr;}}
+
+/* Proyectos asignados */
+.proj-list{display:flex;flex-direction:column;gap:10px;}
+.proj-row{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border:1px solid var(--border);border-radius:10px;background:#fff;
+  color:inherit;cursor:default;
+}
+.proj-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.proj-row-name{font-size:13.5px;font-weight:600;}
+.proj-row-meta{margin-left:auto;font-size:11px;color:var(--muted);text-transform:capitalize;}
+.proj-empty{font-size:13px;color:var(--muted);padding:8px 2px;}
+
+/* Action bar */
+.action-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:4px;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;font-family:'Poppins',sans-serif;transition:.14s;}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(0,115,234,.25);}
+.btn-primary:hover{background:#005bb5;}
+.btn-primary:disabled{opacity:.6;cursor:default;}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue);}
+
+/* Encabezado de perfil */
+.prof-head{display:flex;align-items:center;gap:18px;padding:22px;}
+.prof-avatar{
+  width:60px;height:60px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#0073EA,#784BD1);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:700;letter-spacing:.5px;
+}
+.prof-meta{min-width:0;}
+.prof-name{font-size:18px;font-weight:800;color:var(--text);line-height:1.2;}
+.prof-rol{
+  display:inline-block;margin-top:5px;padding:3px 11px;border-radius:20px;
+  font-size:11px;font-weight:700;letter-spacing:.3px;
+  background:#EDE7F6;color:#784BD1;text-transform:capitalize;
+}
+.prof-contact{font-size:12.5px;color:var(--muted);margin-top:8px;word-break:break-word;}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--text);color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;
+  box-shadow:0 8px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.25s;z-index:200;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--green-d);}
+.toast.err{background:var(--red);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-left">
+    <div class="logo-box"><img src="icetel-logo.png" alt="ICETEL"></div>
+    <span class="tb-title">Mi Perfil</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <a class="btn-volver" id="btnVolver" href="/panel">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12,19 5,12 12,5"/></svg>
+      <span id="btnVolverTxt">Volver al panel</span>
+    </a>
+    <button class="btn-volver" onclick="cerrarSesion()" title="Cerrar sesión">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Cerrar sesión
+    </button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Encabezado: nombre, rol y contacto -->
+  <div class="card prof-head">
+    <div class="prof-avatar" id="pAvatar">—</div>
+    <div class="prof-meta">
+      <div class="prof-name" id="pName">—</div>
+      <span class="prof-rol" id="pRol">—</span>
+      <div class="prof-contact" id="pContact">—</div>
+    </div>
+  </div>
+
+  <!-- Datos personales -->
+  <div class="card">
+    <div class="card-header">
+      <span class="ch-bar" style="background:var(--blue);"></span>
+      <span class="ch-title">Datos personales</span>
+    </div>
+    <div class="card-body">
+      <div class="frow two">
+        <div>
+          <label class="flabel">Nombre completo *</label>
+          <input class="finput" id="f_nombre" type="text" placeholder="Nombre">
+        </div>
+        <div>
+          <label class="flabel">Apellidos *</label>
+          <input class="finput" id="f_apellidos" type="text" placeholder="Apellidos">
+        </div>
+      </div>
+      <div class="frow two">
+        <div>
+          <label class="flabel">RUT</label>
+          <input class="finput" id="f_rut" type="text" placeholder="12.345.678-9">
+        </div>
+        <div>
+          <label class="flabel">Cargo</label>
+          <input class="finput" id="f_cargo" type="text" placeholder="Ej: Técnico de clima">
+        </div>
+      </div>
+      <div class="frow">
+        <div>
+          <label class="flabel">Correo electrónico corporativo</label>
+          <input class="finput" id="f_email" type="email" readonly>
+          <p class="fhelp">Donde se reciben notificaciones de revisiones o aprobaciones.</p>
+        </div>
+      </div>
+      <div class="frow">
+        <div>
+          <label class="flabel">Teléfono directo o extensión</label>
+          <input class="finput" id="f_telefono" type="text" placeholder="+56 9 1234 5678 / ext. 123">
+          <p class="fhelp">Para consultas técnicas rápidas.</p>
+        </div>
+      </div>
+      <div class="action-bar">
+        <a class="btn btn-ghost" id="btnCancelar" href="/panel">Cancelar</a>
+        <button class="btn btn-primary" id="btnGuardar" onclick="guardar()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Proyectos asignados -->
+  <div class="card">
+    <div class="card-header">
+      <span class="ch-bar" style="background:var(--mag);"></span>
+      <span class="ch-title" id="projCardTitle">Proyectos asignados</span>
+    </div>
+    <div class="card-body">
+      <div class="proj-list" id="projList">
+        <p class="proj-empty">Cargando proyectos…</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+if (!token) { window.location.replace('/login'); }
+const authH = { Authorization: 'Bearer ' + token };
+
+const ROL_LABEL = { superadmin: 'Superadmin', admin_empresa: 'Jefe', supervisor: 'Supervisor', tecnico: 'Técnico' };
+let miRol = 'tecnico';
+let volverDestino = '/panel';
+
+function cerrarSesion() {
+  localStorage.removeItem('token');
+  sessionStorage.removeItem('token');
+  window.location.replace('/login');
+}
+
+// Encabezado: nombre, rol y contacto (lee los campos actuales del formulario)
+function pintarHeader() {
+  const nombre    = document.getElementById('f_nombre').value.trim();
+  const apellidos = document.getElementById('f_apellidos').value.trim();
+  const email     = document.getElementById('f_email').value.trim();
+  const tel       = document.getElementById('f_telefono').value.trim();
+  const full = (nombre + ' ' + apellidos).trim() || nombre || '—';
+  const ini  = full.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  document.getElementById('pAvatar').textContent  = ini || '—';
+  document.getElementById('pName').textContent    = full;
+  document.getElementById('pRol').textContent     = ROL_LABEL[miRol] || miRol;
+  document.getElementById('pContact').textContent = [email, tel].filter(Boolean).join('  ·  ') || 'Sin datos de contacto';
+}
+
+function toast(msg, tipo) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (tipo || '');
+  setTimeout(() => { t.className = 'toast ' + (tipo || ''); }, 2600);
+}
+
+// ── Cargar correo (de /auth/me) y perfil (de /api/gestion/perfil) ──
+async function cargar() {
+  let rol = 'tecnico';
+  try {
+    const [meR, perfR] = await Promise.all([
+      fetch('/auth/me', { headers: authH }),
+      fetch('/api/gestion/perfil', { headers: authH }),
+    ]);
+    if (meR.ok) {
+      const { usuario } = await meR.json();
+      rol = usuario.rol || 'tecnico';
+      miRol = rol;
+      document.getElementById('f_email').value = usuario.email || '';
+      // Si el perfil no tiene nombre, usa el del usuario
+      if (!document.getElementById('f_nombre').value && usuario.nombre)
+        document.getElementById('f_nombre').dataset.fallback = usuario.nombre;
+      // Botón "Volver" según rol: técnico → /panel, resto → /dashboard
+      volverDestino = rol === 'tecnico' ? '/panel' : '/dashboard';
+      const etiqueta = rol === 'tecnico' ? 'Volver al panel' : 'Volver al dashboard';
+      document.getElementById('btnVolver').href = volverDestino;
+      document.getElementById('btnCancelar').href = volverDestino;
+      document.getElementById('btnVolverTxt').textContent = etiqueta;
+    }
+    if (perfR.ok) {
+      const p = (await perfR.json()) || {};
+      document.getElementById('f_nombre').value    = p.nombre || document.getElementById('f_nombre').dataset.fallback || '';
+      document.getElementById('f_apellidos').value = p.apellidos || '';
+      document.getElementById('f_rut').value       = p.rut || '';
+      document.getElementById('f_cargo').value     = p.cargo || '';
+      document.getElementById('f_telefono').value  = p.telefono || '';
+    }
+    pintarHeader();
+  } catch (err) {
+    toast('Error cargando perfil: ' + err.message, 'err');
+  }
+  return rol;
+}
+
+// ── Proyectos del usuario ──
+// Técnico: solo los asignados. Supervisor/admin: todos los de su empresa.
+async function cargarProyectos(rol) {
+  const cont = document.getElementById('projList');
+  const esTecnico = rol === 'tecnico';
+  const endpoint  = esTecnico ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos';
+  const vacio     = esTecnico ? 'No tienes proyectos asignados.' : 'No hay proyectos en tu empresa.';
+  // Título de la tarjeta según el alcance
+  const tituloEl = document.getElementById('projCardTitle');
+  if (tituloEl) tituloEl.textContent = esTecnico ? 'Proyectos asignados' : 'Proyectos de tu empresa';
+  try {
+    const r = await fetch(endpoint, { headers: authH });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const list = await r.json();
+    if (!Array.isArray(list) || !list.length) {
+      cont.innerHTML = `<p class="proj-empty">${vacio}</p>`;
+      return;
+    }
+    cont.innerHTML = list.map(p => {
+      const nombre = p.proyecto_nombre || p.nombre || 'Proyecto';
+      const color  = p.color || '#0073EA';
+      const slug   = p.slug || '';
+      const meta   = esTecnico
+        ? (p.rol_en_proyecto || 'técnico') + ' · ' + (p.estado || 'activo')
+        : (p.estado || 'activo');
+      return `<div class="proj-row">
+        <span class="proj-dot" style="background:${color}"></span>
+        <span class="proj-row-name">${nombre}</span>
+        <span class="proj-row-meta">${meta}</span>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    cont.innerHTML = '<p class="proj-empty" style="color:var(--red)">Error: ' + err.message + '</p>';
+  }
+}
+
+// ── Guardar perfil ──
+async function guardar() {
+  const btn = document.getElementById('btnGuardar');
+  const body = {
+    nombre:    document.getElementById('f_nombre').value.trim(),
+    apellidos: document.getElementById('f_apellidos').value.trim(),
+    rut:       document.getElementById('f_rut').value.trim(),
+    cargo:     document.getElementById('f_cargo').value.trim(),
+    telefono:  document.getElementById('f_telefono').value.trim(),
+  };
+  if (!body.nombre || !body.apellidos) {
+    toast('Nombre y apellidos son obligatorios.', 'err');
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    const r = await fetch('/api/gestion/perfil', {
+      method: 'PUT',
+      headers: { ...authH, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+    toast('Perfil guardado. Redirigiendo…', 'ok');
+    // Guardar → cerrar y volver automáticamente
+    setTimeout(() => { window.location.href = volverDestino; }, 700);
+  } catch (err) {
+    toast(err.message, 'err');
+    btn.disabled = false; btn.textContent = 'Guardar cambios';
+  }
+}
+
+(async () => {
+  const rol = await cargar();
+  cargarProyectos(rol);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+/* ════════════════════════════════════════════════════════════════
+   TEMA CENTRAL — ICETEL / Gestión Técnica
+   Fuente única de verdad para colores, tipografía y tamaños.
+   Se enlaza ANTES del <style> de cada página, así define los valores
+   base y cada página puede ajustar componentes puntuales si hace falta.
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Paleta (Monday-style) ── */
+  --sb:            #1C1F3B;   /* sidebar / barras oscuras */
+  --sb-hover:      rgba(255,255,255,.07);
+  --sb-active:     #0073EA;
+  --sb-active-wom: #784BD1;
+  --blue:          #0073EA;
+  --blue-d:        #005bb5;
+  --mag:           #784BD1;
+  --green:         #00C875;
+  --green-d:       #00854D;
+  --red:           #E2445C;
+  --orange:        #FF7B1C;
+  --yellow:        #FDAB3D;
+
+  /* ── Texto y superficies ── */
+  --text:   #323338;
+  --muted:  #676879;
+  --border: #D0D4E4;
+  --bg:     #F6F7FB;
+  --white:  #fff;
+
+  /* ── Sombras y radios ── */
+  --sh:    0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+  --sh-lg: 0 4px 12px rgba(0,0,0,.1), 0 16px 40px rgba(0,0,0,.12);
+  --r:     10px;
+
+  /* ── Escala tipográfica unificada ──
+     Úsala con var(--fs-*) para mantener tamaños coherentes. */
+  --fs-base:  14px;   /* cuerpo / base de todos los paneles */
+  --fs-sm:    12.5px; /* texto secundario, metadatos */
+  --fs-xs:    11px;   /* etiquetas, chips */
+  --fs-h1:    20px;
+  --fs-h2:    17px;
+  --fs-h3:    15px;
+  --lh:       1.55;
+}
+
+/* ── Reset y tipografía base compartida ── */
+*{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: var(--fs-base);
+  line-height: var(--lh);
+  color: var(--text);
+}

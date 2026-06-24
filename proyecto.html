@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Proyecto – GestiónTécnica</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Poppins',sans-serif;background:#F0F2F8;color:#323338;min-height:100vh;}
@@ -28,7 +29,8 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
 .section-card{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.07);border:1px solid #E6E9EF;overflow:hidden;margin-bottom:18px;}
 .sec-head{padding:18px 22px;border-bottom:1px solid #F0F1F5;display:flex;align-items:center;justify-content:space-between;}
 .sec-title{font-size:14px;font-weight:700;color:#323338;display:flex;align-items:center;gap:8px;}
-.sec-title .icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.sec-title .icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#0073EA;}
+.sec-title .icon svg{width:17px;height:17px;}
 .sec-body{padding:22px;}
 
 .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
@@ -72,7 +74,7 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
 
 <header id="mainHeader">
   <div class="h-left">
-    <a href="/dashboard" class="h-back">← Panel</a>
+    <a href="/dashboard" class="h-back">← Inicio</a>
     <img src="" class="h-logo" id="hLogo" alt="">
     <span class="h-name" id="hName">Cargando...</span>
   </div>
@@ -93,7 +95,7 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
 
   <div class="section-card">
     <div class="sec-head">
-      <div class="sec-title"><div class="icon">📊</div>Resumen del proyecto</div>
+      <div class="sec-title"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>Resumen del proyecto</div>
     </div>
     <div class="sec-body">
       <div class="info-grid" id="infoGrid">
@@ -106,7 +108,7 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
 
   <div class="section-card">
     <div class="sec-head">
-      <div class="sec-title"><div class="icon">📋</div>Formato del informe</div>
+      <div class="sec-title"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></div>Formato del informe</div>
     </div>
     <div class="sec-body">
       <div class="tpl-info" id="tplInfo">
@@ -117,18 +119,18 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
   </div>
 
   <div class="section-card" id="secSups" style="display:none">
-    <div class="sec-head"><div class="sec-title"><div class="icon">👤</div>Supervisores</div></div>
+    <div class="sec-head"><div class="sec-title"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>Supervisores</div></div>
     <div class="sec-body"><div class="list-tags" id="listSups"></div></div>
   </div>
 
   <div class="section-card" id="secTecs" style="display:none">
-    <div class="sec-head"><div class="sec-title"><div class="icon">🔧</div>Técnicos</div></div>
+    <div class="sec-head"><div class="sec-title"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>Técnicos</div></div>
     <div class="sec-body"><div class="list-tags" id="listTecs"></div></div>
   </div>
 
   <div class="section-card" id="secSitios" style="display:none">
     <div class="sec-head">
-      <div class="sec-title"><div class="icon">📍</div>Sitios</div>
+      <div class="sec-title"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>Sitios</div>
       <span id="sitiosTotal" style="font-size:12px;color:#676879"></span>
     </div>
     <div class="sec-body" style="padding:0;">

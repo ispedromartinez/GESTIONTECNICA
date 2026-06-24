@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
 <style>
 :root{
   --mag:#784BD1; --mag-d:#4A148C; --mag-l:#EDE7F6; --mag-b:#B39DDB;
@@ -159,9 +160,20 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (!token) { window.location.replace('/login'); throw ''; }
   fetch('/auth/me', { headers: { Authorization: 'Bearer ' + token } })
-    .then(r => { if (!r.ok) { localStorage.removeItem('token'); sessionStorage.removeItem('token'); window.location.replace('/login'); } })
+    .then(r => { if (!r.ok) { localStorage.removeItem('token'); sessionStorage.removeItem('token'); window.location.replace('/login'); return; } return r.json(); })
+    .then(d => {
+      if (!d || !d.usuario) return;
+      // Casa → área de gestión según rol: técnico → /panel, resto → /dashboard
+      const home = document.getElementById('btnHome');
+      if (home) home.href = d.usuario.rol === 'tecnico' ? '/panel' : '/dashboard';
+    })
     .catch(() => window.location.replace('/login'));
 })();
+function cerrarSesion(){
+  localStorage.removeItem('token');
+  sessionStorage.removeItem('token');
+  window.location.replace('/login');
+}
 </script>
 
 <header>
@@ -176,7 +188,8 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
     </div>
     <div class="hdr-right">
       <span class="srv-dot" id="badge-estado" title="Servidor inactivo"></span>
-      <a href="/" class="back-btn" title="Inicio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></a>
+      <a href="/dashboard" id="btnHome" class="back-btn" title="Área de gestión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></a>
+      <button class="back-btn" onclick="cerrarSesion()" title="Cerrar sesión" style="cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     </div>
   </div>
 </header>
