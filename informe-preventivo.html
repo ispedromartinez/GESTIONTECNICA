@@ -321,23 +321,20 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
         <div class="field full">
           <label>Nombre Nodo / Hub / SW</label>
           <div class="field-locked-wrap">
-            <input id="nombreNodo" placeholder="Se carga desde la tarea" readonly tabindex="-1">
+            <input id="nombreNodo" placeholder="Nombre del nodo / hub / SW" list="sitiosList">
             <datalist id="sitiosList"></datalist>
-            <span class="lock-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
           </div>
         </div>
         <div class="field full">
           <label>Dirección</label>
           <div class="field-locked-wrap">
-            <input id="direccion" placeholder="Se carga automáticamente" readonly tabindex="-1">
-            <span class="lock-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="direccion" placeholder="Dirección del sitio">
           </div>
         </div>
         <div class="field">
           <label>Ciudad</label>
           <div class="field-locked-wrap">
-            <input id="ciudad" placeholder="Se carga automáticamente" readonly tabindex="-1">
-            <span class="lock-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="ciudad" placeholder="Ciudad">
           </div>
         </div>
         <div class="field">
@@ -348,17 +345,15 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
           </div>
         </div>
         <div class="field">
-          <label>Nombre Ejecutante</label>
+          <label>Técnico</label>
           <div class="field-locked-wrap">
-            <input id="ejecutante" placeholder="Nombre técnico" readonly tabindex="-1">
-            <span class="lock-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="ejecutante" placeholder="Nombre del técnico ejecutante">
           </div>
         </div>
         <div class="field">
           <label>N° CRQ / INC</label>
           <div class="field-locked-wrap">
-            <input id="crq" placeholder="CRQ-XXXXX" readonly tabindex="-1">
-            <span class="lock-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="crq" placeholder="Ej: CRQ-12345">
           </div>
         </div>
         <div class="field"><label>ID de Acceso</label><input id="idAcceso" placeholder=""></div>
@@ -634,6 +629,7 @@ async function cargarDatosTarea(id) {
     const res = await fetch(`/tareas/${id}`);
     if (!res.ok) return;
     const t = await res.json();
+    console.log('[tarea]', JSON.stringify({ sitio: t.sitio, tecnico: t.tecnico, crqInc: t.crqInc, ciudad: t.ciudad, direccion: t.direccion }));
     const nodoVal = t.sitio || t.nombreCliente || '';
     if (nodoVal)           setField('nombreNodo',        nodoVal);
     if (t.tecnico)         setField('ejecutante',        t.tecnico);
