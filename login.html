@@ -241,24 +241,6 @@ body{font-family:'Poppins',system-ui,sans-serif;min-height:100vh;display:flex;ba
         </div>
       </div>
 
-      <!-- Empresa -->
-      <div class="field">
-        <label for="empresa">Nombre de empresa</label>
-        <div class="field-wrap">
-          <input type="text" id="empresa" name="empresa" placeholder="nombre de tu empresa"
-            autocomplete="organization" spellcheck="false">
-          <span class="field-icon">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-              <path d="M3 21V7l9-4 9 4v14" stroke="#B0B3C0" stroke-width="2" stroke-linejoin="round"/>
-              <rect x="9" y="14" width="6" height="7" rx="1" stroke="#B0B3C0" stroke-width="2"/>
-              <rect x="5" y="10" width="3" height="3" rx=".5" fill="#B0B3C0"/>
-              <rect x="16" y="10" width="3" height="3" rx=".5" fill="#B0B3C0"/>
-            </svg>
-          </span>
-        </div>
-        <span class="field-hint">Opcional para superadmin · requerido para el resto</span>
-      </div>
-
       <!-- Recordar -->
       <div class="remember-row">
         <label>
@@ -375,7 +357,6 @@ form.addEventListener('submit', async (e) => {
 
   const email   = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  const empresa  = document.getElementById('empresa').value.trim().toLowerCase();
   const remember = document.getElementById('remember').checked;
 
   if (!email || !password) {
@@ -386,7 +367,6 @@ form.addEventListener('submit', async (e) => {
   setLoading(true);
   try {
     const body = { email, password };
-    if (empresa) body.empresa = empresa;
 
     const res = await fetch('/auth/login', {
       method:  'POST',
