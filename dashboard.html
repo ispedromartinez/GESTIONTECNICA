@@ -6,11 +6,11 @@
 <title>GestiónTécnica</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Poppins',system-ui,sans-serif;background:#F0F2F8;color:#323338;min-height:100vh;display:flex;}
+body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#EEF2F7;color:#0F172A;min-height:100vh;display:flex;}
 
 /* ═══════════════ SIDEBAR ═══════════════ */
 .sidebar{
@@ -97,57 +97,79 @@ body{font-family:'Poppins',system-ui,sans-serif;background:#F0F2F8;color:#323338
 .view.active{display:block;}
 
 /* ── VISTA: PROYECTOS ── */
-.welcome-bar{margin-bottom:26px;}
-.welcome-bar h1{font-size:22px;font-weight:800;color:#1C1F3B;margin-bottom:4px;}
-.welcome-bar p{font-size:13px;color:#676879;}
+.welcome-bar{margin-bottom:32px;}
+.welcome-bar h1{font-size:26px;font-weight:800;color:#0F172A;margin-bottom:5px;letter-spacing:-.03em;}
+.welcome-bar p{font-size:13.5px;color:#64748B;font-weight:500;}
 
-.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;max-width:860px;}
+.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:20px;max-width:900px;}
 
+/* double-bezel card shell */
 .proj-card{
-  background:#fff;border-radius:14px;padding:0 0 24px;
-  display:flex;flex-direction:column;align-items:center;
-  box-shadow:0 2px 8px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.04);
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:24px;padding:4px;
+  box-shadow:0 4px 24px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.04);
   cursor:pointer;text-decoration:none;
-  transition:transform .2s ease,box-shadow .2s ease;
-  border:1.5px solid #E8EAED;overflow:hidden;
+  transition:transform .22s cubic-bezier(.32,.72,0,1),box-shadow .22s cubic-bezier(.32,.72,0,1);
 }
-.proj-card:hover{transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.12);border-color:transparent;}
+.proj-card:hover{transform:translateY(-5px);box-shadow:0 16px 48px rgba(15,23,42,.14);}
 .proj-card:active{transform:translateY(-1px);}
-.proj-top{width:100%;height:5px;border-radius:12px 12px 0 0;flex-shrink:0;}
-.proj-tigo .proj-top{background:linear-gradient(90deg,#0073EA,#1976D2);}
-.proj-wom  .proj-top{background:linear-gradient(90deg,#6161FF,#7B1FA2);}
+
+/* inner core */
+.proj-card-inner{
+  background:#fff;border-radius:21px;
+  display:flex;flex-direction:column;align-items:center;
+  overflow:hidden;padding-bottom:22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+/* colored header strip → taller premium banner */
+.proj-top{width:100%;height:80px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;overflow:hidden;}
+.proj-tigo .proj-top{background:#0073EA;}
+.proj-wom  .proj-top{background:#6161FF;}
+.proj-preventivo .proj-top{background:#059669;}
 .proj-card.proj-custom .proj-top{background:var(--proj-color,#323338);}
+
 .proj-card.proj-custom .proj-btn{background:var(--proj-color,#323338);color:#fff;}
 
 .btn-new-proj{
-  background:#fff;border:2px dashed #D0D4E4;border-radius:14px;padding:0 0 24px;
+  background:rgba(255,255,255,.06);border:1.5px dashed #CBD5E1;
+  border-radius:24px;padding:4px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  cursor:pointer;font-family:inherit;transition:.15s;min-height:220px;
-  color:#9ba1b0;text-decoration:none;gap:10px;
+  cursor:pointer;font-family:inherit;
+  transition:border-color .2s,background .2s,transform .2s;
+  min-height:228px;color:#94A3B8;text-decoration:none;gap:10px;
 }
-.btn-new-proj:hover{border-color:#0073EA;background:#EEF5FF;color:#0073EA;}
-.btn-new-proj .np-icon{font-size:36px;}
-.btn-new-proj .np-label{font-size:13px;font-weight:700;}
-.btn-new-proj .np-sub{font-size:11px;opacity:.7;}
+.btn-new-proj:hover{border-color:#3B82F6;background:rgba(59,130,246,.04);color:#3B82F6;transform:translateY(-3px);}
+.btn-new-proj .np-icon{font-size:32px;opacity:.55;}
+.btn-new-proj .np-label{font-size:13px;font-weight:700;letter-spacing:.02em;}
+.btn-new-proj .np-sub{font-size:11px;opacity:.6;}
 
-.proj-logo-img{max-height:60px;max-width:160px;object-fit:contain;}
-.proj-divider{width:100%;padding:0 18px;margin:4px 0;display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;color:#9ba1b0;text-transform:uppercase;letter-spacing:.8px;}
+.proj-logo-img{max-height:50px;max-width:150px;object-fit:contain;filter:brightness(0) invert(1);position:relative;z-index:1;}
+.proj-divider{width:100%;padding:0 18px;margin:4px 0;display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;color:#9699A6;text-transform:uppercase;letter-spacing:.8px;}
 .proj-divider::before,.proj-divider::after{content:'';flex:1;height:1px;background:#E6E9EF;}
-.proj-inner{display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 24px 0;width:100%;}
-.proj-icon{height:70px;display:flex;align-items:center;justify-content:center;}
-.proj-icon img{max-height:70px;max-width:180px;object-fit:contain;}
-.wom-text{font-size:52px;font-weight:900;color:#7B1FA2;letter-spacing:-3px;line-height:1;font-style:italic;}
-.proj-name{font-size:13px;font-weight:700;color:#323338;letter-spacing:.2px;text-transform:uppercase;}
-.proj-desc{font-size:12px;color:#676879;text-align:center;line-height:1.6;}
+
+.proj-inner{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 22px 0;width:100%;}
+.proj-icon{height:64px;display:flex;align-items:center;justify-content:center;}
+.proj-icon img{max-height:64px;max-width:160px;object-fit:contain;}
+.wom-text{font-size:48px;font-weight:900;color:#fff;letter-spacing:-3px;line-height:1;font-style:italic;position:relative;z-index:1;}
+.proj-name{font-size:12px;font-weight:800;color:#0F172A;letter-spacing:.12em;text-transform:uppercase;}
+.proj-desc{font-size:12px;color:#64748B;text-align:center;line-height:1.65;}
+
 .proj-btn{
-  width:calc(100% - 48px);margin:14px 24px 0;
-  padding:10px 20px;border-radius:8px;
-  font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;
-  border:none;cursor:pointer;transition:opacity .15s;
+  width:calc(100% - 44px);margin:14px 22px 0;
+  padding:10px 20px;border-radius:100px;
+  font-size:13px;font-weight:700;
+  font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+  border:none;cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+  letter-spacing:.02em;
 }
-.proj-tigo .proj-btn{background:#0073EA;color:#fff;}
-.proj-wom  .proj-btn{background:#6161FF;color:#fff;}
-.proj-btn:hover{opacity:.85;}
+.proj-tigo .proj-btn{background:#0073EA;color:#fff;box-shadow:0 3px 10px rgba(0,115,234,.3);}
+.proj-wom  .proj-btn{background:#6161FF;color:#fff;box-shadow:0 3px 10px rgba(97,97,255,.3);}
+.proj-preventivo .proj-btn{background:#059669;color:#fff;box-shadow:0 3px 10px rgba(5,150,105,.3);}
+.proj-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.2);}
+.proj-btn:active{transform:scale(.97);}
 
 /* ── VISTA: INFORMES ── */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
@@ -345,39 +367,42 @@ tbody tr:hover{background:#F8FAFF;}
       <div class="projects-grid">
 
         <a href="/tigo" class="proj-card proj-tigo">
-          <div class="proj-top"></div>
-          <div class="proj-inner">
-            <div class="proj-icon">
-              <img src="tigo-logo.png" alt="Tigo" onerror="this.outerHTML='<svg width=\'46\' height=\'46\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#0073EA\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M5 12.55a11 11 0 0 1 14.08 0\'/><path d=\'M1.42 9a16 16 0 0 1 21.16 0\'/><path d=\'M8.53 16.11a6 6 0 0 1 6.95 0\'/><line x1=\'12\' y1=\'20\' x2=\'12.01\' y2=\'20\'/></svg>'">
+          <div class="proj-card-inner">
+            <div class="proj-top">
+              <img src="tigo-logo.png" alt="Tigo" class="proj-logo-img" onerror="this.style.display='none'">
             </div>
-            <span class="proj-name">Proyecto Tigo</span>
-            <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
+            <div class="proj-inner">
+              <span class="proj-name">Proyecto Tigo</span>
+              <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
+            </div>
+            <button class="proj-btn">Ingresar →</button>
           </div>
-          <button class="proj-btn">Ingresar →</button>
         </a>
 
         <a href="/wom" class="proj-card proj-wom">
-          <div class="proj-top"></div>
-          <div class="proj-inner">
-            <div class="proj-icon">
+          <div class="proj-card-inner">
+            <div class="proj-top">
               <span class="wom-text">wom</span>
             </div>
-            <span class="proj-name">Proyecto WOM</span>
-            <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
+            <div class="proj-inner">
+              <span class="proj-name">Proyecto WOM</span>
+              <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
+            </div>
+            <button class="proj-btn">Ingresar →</button>
           </div>
-          <button class="proj-btn">Ingresar →</button>
         </a>
 
         <a href="/preventivo" class="proj-card proj-preventivo">
-          <div class="proj-top" style="background:#00C875;"></div>
-          <div class="proj-inner">
-            <div class="proj-icon">
-              <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#00C875" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+          <div class="proj-card-inner">
+            <div class="proj-top">
+              <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:relative;z-index:1"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
             </div>
-            <span class="proj-name">Mantenimiento Preventivo</span>
-            <span class="proj-desc">Planificación y carga<br>masiva de tareas</span>
+            <div class="proj-inner">
+              <span class="proj-name">Mantenimiento Preventivo</span>
+              <span class="proj-desc">Planificación y carga<br>masiva de tareas</span>
+            </div>
+            <button class="proj-btn">Ingresar →</button>
           </div>
-          <button class="proj-btn" style="background:#00C875;">Ingresar →</button>
         </a>
 
       </div>
@@ -463,6 +488,35 @@ tbody tr:hover{background:#F8FAFF;}
         </div>
         <div class="chart-wrap" style="max-height:320px;overflow-y:auto;">
           <canvas id="chartSitios"></canvas>
+        </div>
+      </div>
+
+      <!-- PREVENTIVO STATS -->
+      <div class="chart-card" style="margin-bottom:24px;">
+        <div class="chart-head">
+          Mantenimiento Preventivo
+          <span class="chart-head-sub" id="prevSub">—</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;" id="prevStatCards">
+          <div class="proj-pill" style="border-left:3px solid #1a3a6c;">
+            <div class="proj-pill-num" id="prevTotal" style="color:#1a3a6c;">—</div>
+            <div class="proj-pill-label">Total tareas</div>
+          </div>
+          <div class="proj-pill" style="border-left:3px solid #2563EB;">
+            <div class="proj-pill-num" id="prevNuevo" style="color:#2563EB;">—</div>
+            <div class="proj-pill-label">Nuevo</div>
+          </div>
+          <div class="proj-pill" style="border-left:3px solid #B45309;">
+            <div class="proj-pill-num" id="prevProgreso" style="color:#B45309;">—</div>
+            <div class="proj-pill-label">En progreso</div>
+          </div>
+          <div class="proj-pill" style="border-left:3px solid #059669;">
+            <div class="proj-pill-num" id="prevCerrado" style="color:#059669;">—</div>
+            <div class="proj-pill-label">Cerradas</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="max-height:200px;">
+          <canvas id="chartPrevTec"></canvas>
         </div>
       </div>
 
@@ -619,6 +673,7 @@ function showView(v) {
     toggle.classList.add('visible');
     switchSubview('dashboard');
     if (!informesCargados) cargarInformes();
+    cargarPreventivo();
   } else {
     toggle.classList.remove('visible');
     document.getElementById('searchWrap').style.display = 'none';
@@ -743,6 +798,44 @@ function renderCharts(data) {
       }
     }
   });
+}
+
+// ── Datos preventivo ─────────────────────────────────────────────
+let _chartPrevTec = null;
+async function cargarPreventivo() {
+  try {
+    const r = await fetch('/tareas', { headers: authH() });
+    if (!r.ok) return;
+    const tareas = await r.json();
+    const total    = tareas.length;
+    const nuevo    = tareas.filter(t => (t.estado||'Nuevo') === 'Nuevo').length;
+    const progreso = tareas.filter(t => t.estado === 'En Progreso').length;
+    const cerrado  = tareas.filter(t => t.estado === 'Cerrado').length;
+
+    document.getElementById('prevTotal').textContent    = total;
+    document.getElementById('prevNuevo').textContent    = nuevo;
+    document.getElementById('prevProgreso').textContent = progreso;
+    document.getElementById('prevCerrado').textContent  = cerrado;
+    document.getElementById('prevSub').textContent      = `${total} tarea${total!==1?'s':''}`;
+
+    // Gráfica por técnico
+    const tecMap = {};
+    tareas.forEach(t => { const k = t.tecnico||'Sin asignar'; tecMap[k] = (tecMap[k]||0)+1; });
+    const sorted = Object.entries(tecMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const labels = sorted.map(([k])=>k);
+    const data   = sorted.map(([,v])=>v);
+
+    if (_chartPrevTec) _chartPrevTec.destroy();
+    _chartPrevTec = new Chart(document.getElementById('chartPrevTec'), {
+      type: 'bar',
+      data: { labels, datasets:[{ label:'Tareas', data,
+        backgroundColor:'rgba(26,58,108,.7)', borderRadius:6, borderSkipped:false }] },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{ x:{grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:11}} },
+                 y:{grid:{display:false}, ticks:{font:{size:11}} } } }
+    });
+  } catch(e) { console.warn('preventivo stats:', e.message); }
 }
 
 // ── Datos informes ────────────────────────────────────────────────

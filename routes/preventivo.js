@@ -36,6 +36,7 @@ const fromTarea = r => ({
   nWorkflow: r.n_workflow, nLpu: r.n_lpu,
   comuna: r.comuna, recurrencia: r.recurrencia, notas: r.notas,
   semanaIso: r.semana_iso, fechaCreacion: r.fecha_creacion,
+  estadoCambiadoEn: r.estado_cambiado_en || r.fecha_creacion || null,
   criticidad: r.criticidad, categoriaSitio: r.categoria_sitio,
   direccion: r.direccion, ciudad: r.ciudad, idAcceso: r.id_acceso,
   empresaId: r.empresa_id || null,
@@ -51,6 +52,7 @@ const toTarea = e => ({
   n_workflow: e.nWorkflow, n_lpu: e.nLpu,
   comuna: e.comuna, recurrencia: e.recurrencia, notas: e.notas,
   semana_iso: e.semanaIso, fecha_creacion: e.fechaCreacion,
+  estado_cambiado_en: e.estadoCambiadoEn || null,
   criticidad: e.criticidad, categoria_sitio: e.categoriaSitio,
   direccion: e.direccion, ciudad: e.ciudad, id_acceso: e.idAcceso,
   empresa_id: e.empresaId || null,
@@ -251,6 +253,9 @@ router.put('/:id', async (req, res) => {
     if (!puedeTocar(tarea, req.user)) return res.status(403).json({ error: 'Sin acceso a esta tarea' });
     const patch = { ...req.body };
     delete patch.empresaId; // la empresa no se reasigna vía edición
+    if (patch.estado && patch.estado !== tarea.estado) {
+      patch.estadoCambiadoEn = new Date().toISOString();
+    }
     const result = await dbTareasUpdate(req.params.id, patch);
     if (result && result.error) return res.status(500).json({ error: result.error });
     res.json({ ok: true });
@@ -312,6 +317,14 @@ router.get('/plantilla', (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
+router.get('/informes-map', (req, res) => {
+  try {
+    const file = path.join(__dirname, '..', 'tareas_informes.json');
+    const mapa = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
+    res.json(mapa);
+  } catch { res.json({}); }
+});
+
 // Va después de las rutas literales /backup, /exportar, /plantilla
 // para que ":id" no las intercepte.
 router.get('/:id', async (req, res) => {
@@ -343,6 +356,16 @@ router.post('/importar', async (req, res) => {
         const valor = fila[label];
         entry[key] = valor instanceof Date ? valor.toISOString().slice(0, 10) : String(valor ?? '').trim();
       }
+      // Aliases: columnas con nombre distinto en distintas plantillas
+      if (!entry.sitio) {
+        const partes = [
+          fila['Cliente'], fila['Sitio'], fila['Dirección'], fila['Direccion'],
+          fila['Nombre Nodo / Hub / SW'], fila['Nombre Nodo'], fila['Hub']
+        ].map(v => String(v ?? '').trim()).filter(Boolean);
+        entry.sitio = partes.join(' - ');
+      }
+      if (!entry.tecnico) entry.tecnico = String(fila['Técnico asignado'] ?? fila['Nombre del Técnico'] ?? fila['Tecnico'] ?? fila['Técnico asignado al sitio'] ?? '').trim();
+      if (!entry.crqInc) entry.crqInc = String(fila['N° CRQ/INC'] ?? fila['CRQ/INC'] ?? fila['CRQ'] ?? fila['N° CRQ'] ?? fila['Nro CRQ'] ?? fila['Número CRQ'] ?? fila['N°CRQ'] ?? '').trim();
       entry.estado = entry.estado || 'Nuevo';
       entry.categoria = entry.categoria || 'CLMAPREV';
       entry.recurrencia = entry.recurrencia || 'Única vez';

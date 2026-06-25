@@ -3,11 +3,13 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { buildHtmlPreventivo } = require('./templates/preventivo-html');
+const CHROME_PATH = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
 const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
         ImageRun, AlignmentType, WidthType, BorderStyle, ShadingType,
-        VerticalAlign, Header } = require('docx');
+        VerticalAlign, Header, TextDirection } = require('docx');
 const authRoutes = require('./routes/auth');
 const gestionRoutes = require('./routes/gestion');
 const empresasRoutes = require('./routes/empresas');
@@ -200,11 +202,16 @@ const DOCS_DIR      = path.join(__dirname, 'informes');
 const PAPELERA_DIR  = path.join(__dirname, 'papelera');
 const DB_FILE       = path.join(__dirname, 'registro.json');
 const PAPELERA_FILE = path.join(__dirname, 'papelera.json');
+const TAREAS_INFORMES_FILE = path.join(__dirname, 'tareas_informes.json');
 
 if (!fs.existsSync(DOCS_DIR))     fs.mkdirSync(DOCS_DIR);
 if (!fs.existsSync(PAPELERA_DIR)) fs.mkdirSync(PAPELERA_DIR);
 if (!fs.existsSync(DB_FILE))      fs.writeFileSync(DB_FILE, '[]');
 if (!fs.existsSync(PAPELERA_FILE))fs.writeFileSync(PAPELERA_FILE, '[]');
+if (!fs.existsSync(TAREAS_INFORMES_FILE)) fs.writeFileSync(TAREAS_INFORMES_FILE, '{}');
+
+function loadTareasInformes() { try { return JSON.parse(fs.readFileSync(TAREAS_INFORMES_FILE,'utf8')); } catch { return {}; } }
+function saveTareasInformes(m) { fs.writeFileSync(TAREAS_INFORMES_FILE, JSON.stringify(m, null, 2)); }
 
 // ── Seguridad: sanitización de búsquedas ──────────────────────
 // El texto del buscador NUNCA se interpola en SQL — viaja como
@@ -819,6 +826,366 @@ async function buildDocx(d) {
   return Packer.toBuffer(doc);
 }
 
+// ── Build PDF Preventivo (Puppeteer + Chrome) ──────────────
+async function buildPdfPreventivo(d) {
+  const puppeteer = require('puppeteer-core');
+  const browser = await puppeteer.launch({
+    executablePath: CHROME_PATH,
+    args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'],
+    headless: 'new'
+  });
+  try {
+    const page = await browser.newPage();
+    const html = buildHtmlPreventivo(d);
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
+    const pdf = await page.pdf({
+      format: 'A4',
+      landscape: false,
+      printBackground: true,
+      margin: { top: '8mm', right: '8mm', bottom: '8mm', left: '8mm' }
+    });
+    return Buffer.from(pdf);
+  } finally {
+    await browser.close();
+  }
+}
+
+// ── Build DOCX Preventivo ──────────────────────────────────
+async function buildDocxPreventivo(d) {
+  const v = s => (s||'').toString().trim();
+
+  // Page: A4 Landscape
+  const PAGE_W = 16838;
+  const PAGE_H = 11906;
+  const MRG    = 680;
+  const TW_P   = PAGE_W - MRG * 2; // 15478 twips
+
+  const HDR_BLUE = '1A3A6C';
+  const BL_P     = 'C5D9F1';
+  const BL2_P    = 'DAEEF3';
+
+  const thinP = (c='000000') => ({ style: BorderStyle.SINGLE, size: 6, color: c });
+  const allP  = { top:thinP(), bottom:thinP(), left:thinP(), right:thinP(), insideH:thinP(), insideV:thinP() };
+
+  const mp = (text, opts={}) => new Paragraph({
+    alignment: opts.center ? AlignmentType.CENTER : AlignmentType.LEFT,
+    spacing: { before: 0, after: 0 },
+    children: [new TextRun({ text:text||'', bold:opts.bold||false, size:opts.sz||16, font:'Calibri', color:opts.color||'000000' })]
+  });
+
+  const lcp = (text, w, span=1) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, ...(span>1?{columnSpan:span}:{}),
+    borders:allP, shading:{fill:BL_P,type:ShadingType.CLEAR},
+    verticalAlign:VerticalAlign.CENTER, margins:{top:25,bottom:25,left:60,right:25},
+    children:[mp(text,{bold:true,sz:14})]
+  });
+  const vcp = (text, w, span=1, rowSpan=1) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, ...(span>1?{columnSpan:span}:{}), ...(rowSpan>1?{rowSpan}:{}),
+    borders:allP, verticalAlign:VerticalAlign.CENTER, margins:{top:25,bottom:25,left:60,right:25},
+    children:[mp(text||'',{sz:14,center:true})]
+  });
+  const hcp = (text, w, span=1, rowSpan=1) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, ...(span>1?{columnSpan:span}:{}), ...(rowSpan>1?{rowSpan}:{}),
+    borders:allP, shading:{fill:BL2_P,type:ShadingType.CLEAR},
+    verticalAlign:VerticalAlign.CENTER, margins:{top:15,bottom:15,left:15,right:15},
+    children:[new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:0},
+      children:[new TextRun({text:text||'',bold:true,size:12,font:'Calibri'})] })]
+  });
+  const hcpRot = (text, w, rowSpan=1) => new TableCell({
+    width:{size:w,type:WidthType.DXA}, ...(rowSpan>1?{rowSpan}:{}),
+    borders:allP, shading:{fill:BL2_P,type:ShadingType.CLEAR},
+    verticalAlign:VerticalAlign.CENTER,
+    textDirection:TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT,
+    margins:{top:15,bottom:15,left:10,right:10},
+    children:[new Paragraph({ spacing:{before:0,after:0},
+      children:[new TextRun({text:text||'',bold:true,size:11,font:'Calibri'})] })]
+  });
+
+  // ── LOGO HEADER ──────────────────────────────────────────
+  let headerTitle = [];
+  try {
+    let lp = path.join(__dirname,'logo.png'), lt = 'png';
+    if (!fs.existsSync(lp)) { lp = path.join(__dirname,'logo.jpeg'); lt = 'jpeg'; }
+    const ld = fs.readFileSync(lp);
+    const hBrd = (c=HDR_BLUE) => ({ style:BorderStyle.SINGLE, size:12, color:c });
+    const allH = { top:hBrd(), bottom:hBrd(), left:hBrd(), right:hBrd() };
+    const titleW = TW_P - 2000 - 200;
+    headerTitle = [new Table({
+      width:{size:TW_P,type:WidthType.DXA}, columnWidths:[2000, titleW, 200],
+      borders:{top:hBrd(),bottom:hBrd(),left:hBrd(),right:hBrd(),insideH:hBrd(),insideV:hBrd()},
+      rows:[
+        new TableRow({ height:{value:400}, children:[
+          new TableCell({ width:{size:2000,type:WidthType.DXA}, rowSpan:2, borders:allH,
+            verticalAlign:VerticalAlign.CENTER, margins:{top:20,bottom:20,left:40,right:40},
+            children:[new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:0},
+              children:[new ImageRun({data:ld,transformation:{width:110,height:60},type:lt})] })] }),
+          new TableCell({ width:{size:titleW,type:WidthType.DXA}, borders:allH,
+            shading:{fill:HDR_BLUE,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+            margins:{top:15,bottom:10,left:60,right:40},
+            children:[new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:0},
+              children:[new TextRun({text:'PROTOCOLO MANTENIMIENTO CLIMA PREVENTIVO EQUIPOS',bold:true,size:22,font:'Calibri',color:'FFFFFF'})] })] }),
+          new TableCell({ width:{size:200,type:WidthType.DXA}, rowSpan:2, borders:allH,
+            children:[mp('')] })
+        ]}),
+        new TableRow({ height:{value:280}, children:[
+          new TableCell({ width:{size:titleW,type:WidthType.DXA}, borders:allH,
+            shading:{fill:HDR_BLUE,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+            margins:{top:10,bottom:15,left:60,right:40},
+            children:[new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:0},
+              children:[
+                new TextRun({text:'VENTANA - SPLIT - MOCHILA - PRESICIÓN - "CORE"',size:18,font:'Calibri',color:'FFFFFF'}),
+                ...(d.trackerId ? [new TextRun({text:`  |  N° INFORME: ${d.trackerId}`,size:18,font:'Calibri',color:'FFD700',bold:true})] : [])
+              ] })] })
+        ]})
+      ]
+    }), new Paragraph({spacing:{before:0,after:100},children:[]})];
+  } catch(e) {
+    headerTitle = [new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:100},
+      children:[new TextRun({text:'PROTOCOLO MANTENIMIENTO CLIMA PREVENTIVO EQUIPOS',bold:true,size:20,font:'Calibri'})] })];
+  }
+
+  // ── DATOS GENERALES ────────────────────────────────────────
+  const dW = [Math.round(TW_P*0.30), Math.round(TW_P*0.20), Math.round(TW_P*0.24), 0];
+  dW[3] = TW_P - dW[0] - dW[1] - dW[2];
+  const datosTable = new Table({
+    width:{size:TW_P,type:WidthType.DXA}, columnWidths:[dW[0],dW[1],dW[2],dW[3]],
+    rows:[
+      new TableRow({ height:{value:280}, children:[
+        new TableCell({ width:{size:dW[0],type:WidthType.DXA}, borders:allP,
+          shading:{fill:BL_P,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+          margins:{top:25,bottom:25,left:60,right:25},
+          children:[mp('DATOS GENERALES NODO',{bold:true,sz:15})] }),
+        new TableCell({ width:{size:dW[1],type:WidthType.DXA}, borders:allP,
+          shading:{fill:BL2_P,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+          margins:{top:25,bottom:25,left:40,right:25},
+          children:[mp(`CRITICIDAD: ${v(d.criticidad)}`,{bold:true,sz:13})] }),
+        new TableCell({ width:{size:dW[2],type:WidthType.DXA}, borders:allP,
+          shading:{fill:BL2_P,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+          margins:{top:25,bottom:25,left:40,right:25},
+          children:[mp(`CATEGORÍA: ${v(d.categoria)}`,{bold:true,sz:13})] }),
+        new TableCell({ width:{size:dW[3],type:WidthType.DXA}, borders:allP,
+          shading:{fill:BL2_P,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+          margins:{top:25,bottom:25,left:40,right:25},
+          children:[mp(`SALA: ${v(d.sala)}`,{bold:true,sz:13})] })
+      ]}),
+      new TableRow({ height:{value:250}, children:[
+        lcp('NOMBRE: NODO/HUB/SW', dW[0]),
+        new TableCell({ width:{size:dW[1]+dW[2]+dW[3],type:WidthType.DXA}, columnSpan:3, borders:allP,
+          verticalAlign:VerticalAlign.CENTER, margins:{top:20,bottom:20,left:60,right:25},
+          children:[mp(v(d.nombreNodo),{sz:14})] })
+      ]}),
+      new TableRow({ height:{value:250}, children:[
+        lcp('DIRECCIÓN', dW[0]),
+        new TableCell({ width:{size:dW[1]+dW[2]+dW[3],type:WidthType.DXA}, columnSpan:3, borders:allP,
+          verticalAlign:VerticalAlign.CENTER, margins:{top:20,bottom:20,left:60,right:25},
+          children:[mp(v(d.direccion),{sz:14})] })
+      ]}),
+      new TableRow({ height:{value:250}, children:[
+        lcp('CIUDAD', dW[0]),
+        new TableCell({ width:{size:dW[1]+dW[2]+dW[3],type:WidthType.DXA}, columnSpan:3, borders:allP,
+          verticalAlign:VerticalAlign.CENTER, margins:{top:20,bottom:20,left:60,right:25},
+          children:[mp(v(d.ciudad),{sz:14})] })
+      ]}),
+      new TableRow({ height:{value:250}, children:[
+        lcp('NOMBRE EMPRESA INTEGRADORA', dW[0]),
+        new TableCell({ width:{size:dW[1]+dW[2]+dW[3],type:WidthType.DXA}, columnSpan:3, borders:allP,
+          verticalAlign:VerticalAlign.CENTER, margins:{top:20,bottom:20,left:60,right:25},
+          children:[mp(v(d.empresa),{sz:14})] })
+      ]}),
+      new TableRow({ height:{value:250}, children:[
+        lcp('NOMBRE EJECUTANTE', dW[0]),
+        new TableCell({ width:{size:dW[1]+dW[2]+dW[3],type:WidthType.DXA}, columnSpan:3, borders:allP,
+          verticalAlign:VerticalAlign.CENTER, margins:{top:20,bottom:20,left:60,right:25},
+          children:[mp(v(d.ejecutante),{sz:14})] })
+      ]}),
+      new TableRow({ height:{value:250}, children:[
+        lcp('N° CRQ/INC:', dW[0]), vcp(v(d.crq), dW[1]),
+        lcp('ID DE ACCESO', dW[2]), vcp(v(d.idAcceso), dW[3])
+      ]}),
+      new TableRow({ height:{value:250}, children:[
+        lcp('FECHA DE EJECUCIÓN', dW[0]),
+        vcp(`${v(d.fecha)}  ${v(d.hora)}`, dW[1]),
+        lcp('Tarea OfficeTrack N°:', dW[2]),
+        vcp(v(d.tareaOfficetrack), dW[3])
+      ]})
+    ]
+  });
+
+  // ── LECTURAS ELECTRICAS table ──────────────────────────────
+  // 19 cols:  Nº | DATOS | CAP | MOTOR | Vtipo | VR | VS | VT | IR | IS | IT | VERIF | LS | RC | LF | LB | LE | AG | OBS
+  const CW = [450, 1900, 680, 950, 600, 580, 580, 580, 580, 580, 580, 700, 570, 570, 570, 570, 570, 570, 3148];
+  // Verify: 450+1900+680+950+600+580*6+700+570*6+3148 = 450+1900+680+950+600+3480+700+3420+3148 = 15328 — adjust last col
+  // Actually: 450+1900+680+950 = 3980, +600=4580, +580*6=8060, +700=8760, +570*6=12180, +3148=15328
+  // Need 15478, diff=150, add to last col
+  CW[18] = CW[18] + (TW_P - CW.reduce((a,b)=>a+b,0));
+
+  const hdrRow1 = new TableRow({ height:{value:1680}, children:[
+    hcp('Nº\nEQUIPO', CW[0], 1, 2),
+    hcp('DATOS', CW[1], 1, 2),
+    hcp('CAP.\n(BTU/HRS)', CW[2], 1, 2),
+    hcp('MOTOR', CW[3], 1, 2),
+    hcp('LECTURAS ELECTRICAS', CW[4]+CW[5]+CW[6]+CW[7]+CW[8]+CW[9]+CW[10], 7, 1),
+    hcp('VERIFICACIÓN\nESTADO', CW[11], 1, 2),
+    hcpRot('LIMPIEZA DE SERPENTINES', CW[12], 2),
+    hcpRot('REAPRETE CONEXIONES', CW[13], 2),
+    hcpRot('LIMPIEZA, CAMBIO DE FILTRO', CW[14], 2),
+    hcpRot('LIMPIEZA BANDEJA CONDENSADO', CW[15], 2),
+    hcpRot('LIMPIEZA DE EVAPORADOR', CW[16], 2),
+    hcpRot('ASEO GENERAL EXT. E INT.', CW[17], 2),
+    hcp('OBSERVACIONES', CW[18], 1, 2)
+  ]});
+
+  const hdrRow2 = new TableRow({ height:{value:280}, children:[
+    hcp('V\n(380/220)', CW[4]), hcp('V\n(R.)',CW[5]), hcp('V\n(S.)',CW[6]), hcp('V\n(T.)',CW[7]),
+    hcp('I\n(R.)',CW[8]), hcp('I\n(S.)',CW[9]), hcp('I\n(T.)',CW[10])
+  ]});
+
+  const dc = (txt, col) => new TableCell({
+    width:{size:CW[col],type:WidthType.DXA}, borders:allP,
+    verticalAlign:VerticalAlign.CENTER, margins:{top:12,bottom:12,left:12,right:12},
+    children:[mp(v(txt),{sz:12,center:true})]
+  });
+
+  const dataRows = [];
+  for (const eq of (d.equipos||[])) {
+    const filas = eq.filas || [];
+    const nf = Math.max(filas.length, 1);
+    const datosChildren = [
+      new Paragraph({ spacing:{before:0,after:35}, children:[new TextRun({text:`MARCA: ${v(eq.marca)}`,bold:true,size:12,font:'Calibri'})] }),
+      new Paragraph({ spacing:{before:0,after:35}, children:[new TextRun({text:`MODELO: ${v(eq.modelo)}`,size:12,font:'Calibri'})] }),
+      new Paragraph({ spacing:{before:0,after:0},  children:[new TextRun({text:`NºSERIE: ${v(eq.serie)}`,size:12,font:'Calibri'})] })
+    ];
+    for (let fi = 0; fi < nf; fi++) {
+      const f = filas[fi] || {};
+      const cells = [];
+      if (fi === 0) {
+        cells.push(new TableCell({ width:{size:CW[0],type:WidthType.DXA}, rowSpan:nf, borders:allP,
+          shading:{fill:BL2_P,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+          margins:{top:15,bottom:15,left:10,right:10},
+          children:[new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:0},
+            children:[new TextRun({text:String(eq.numero||fi+1),bold:true,size:14,font:'Calibri'})] })] }));
+        cells.push(new TableCell({ width:{size:CW[1],type:WidthType.DXA}, rowSpan:nf, borders:allP,
+          verticalAlign:VerticalAlign.CENTER, margins:{top:25,bottom:25,left:50,right:25},
+          children:datosChildren }));
+        cells.push(new TableCell({ width:{size:CW[2],type:WidthType.DXA}, rowSpan:nf, borders:allP,
+          verticalAlign:VerticalAlign.CENTER, margins:{top:15,bottom:15,left:15,right:15},
+          children:[mp(v(eq.capBtu),{sz:12,center:true})] }));
+      }
+      cells.push(new TableCell({ width:{size:CW[3],type:WidthType.DXA}, borders:allP,
+        shading:{fill:BL_P,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+        margins:{top:15,bottom:15,left:30,right:15},
+        children:[mp(v(f.motor),{bold:true,sz:11})] }));
+      cells.push(dc(f.voltajeTipo,4), dc(f.vR,5), dc(f.vS,6), dc(f.vT,7));
+      cells.push(dc(f.iR,8), dc(f.iS,9), dc(f.iT,10));
+      cells.push(dc(f.verificacion,11), dc(f.limpSerpentines,12), dc(f.reapreteConex,13));
+      cells.push(dc(f.limpFiltro,14), dc(f.limpBandeja,15), dc(f.limpEvaporador,16), dc(f.aseoGeneral,17));
+      cells.push(new TableCell({ width:{size:CW[18],type:WidthType.DXA}, borders:allP,
+        verticalAlign:VerticalAlign.CENTER, margins:{top:15,bottom:15,left:40,right:15},
+        children:[mp(v(f.observaciones),{sz:11})] }));
+      dataRows.push(new TableRow({ height:{value:260}, children:cells }));
+    }
+  }
+
+  const lecturasTable = new Table({
+    width:{size:TW_P,type:WidthType.DXA}, columnWidths:CW,
+    rows:[hdrRow1, hdrRow2, ...dataRows]
+  });
+
+  // ── RESUMEN LECTURAS ───────────────────────────────────────
+  const MAX_EQ = 14;
+  const wLbl = Math.round(TW_P * 0.22);
+  const wEq  = Math.floor((TW_P - wLbl) / MAX_EQ);
+  const wEqLast = TW_P - wLbl - wEq * (MAX_EQ - 1);
+  const resLst = d.resumenLecturas || [];
+  const getR = (n, f) => { const r = resLst.find(r=>String(r.numero)===String(n)); return r ? v(r[f]) : ''; };
+  const nums = Array.from({length:MAX_EQ},(_,i)=>i+1);
+  const mkResRow = (lbl, field) => new TableRow({ height:{value:270}, children:[
+    lcp(lbl, wLbl),
+    ...nums.map((n,i) => new TableCell({
+      width:{size:i===MAX_EQ-1?wEqLast:wEq,type:WidthType.DXA}, borders:allP,
+      verticalAlign:VerticalAlign.CENTER, margins:{top:12,bottom:12,left:10,right:10},
+      children:[mp(getR(n,field),{sz:12,center:true})]
+    }))
+  ]});
+
+  const resumenTable = new Table({
+    width:{size:TW_P,type:WidthType.DXA},
+    columnWidths:[wLbl,...nums.map((_,i)=>i===MAX_EQ-1?wEqLast:wEq)],
+    rows:[
+      new TableRow({ height:{value:260}, children:[
+        lcp('', wLbl),
+        ...nums.map((n,i) => hcp(`N°${n}`, i===MAX_EQ-1?wEqLast:wEq))
+      ]}),
+      mkResRow('FLUJO DE AIRE','flujoAire'),
+      mkResRow('TEMPERATURA INYECCIÓN','tempIny'),
+      mkResRow('TEMPERATURA RETORNO','tempRet'),
+      mkResRow('TIPO DE REFRIGERANTE','refrigerante')
+    ]
+  });
+
+  // ── OBSERVACIONES ──────────────────────────────────────────
+  const obsTable = new Table({
+    width:{size:TW_P,type:WidthType.DXA}, columnWidths:[TW_P],
+    rows:[
+      new TableRow({ height:{value:240}, children:[new TableCell({
+        width:{size:TW_P,type:WidthType.DXA}, borders:allP,
+        shading:{fill:'D9D9D9',type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
+        margins:{top:25,bottom:25,left:80,right:25},
+        children:[mp('OBSERVACIONES',{bold:true,sz:16})]
+      })] }),
+      new TableRow({ height:{value:1100}, children:[new TableCell({
+        width:{size:TW_P,type:WidthType.DXA}, borders:allP,
+        margins:{top:50,bottom:50,left:80,right:50},
+        children:[mp(v(d.observacionesGenerales),{sz:14})]
+      })] })
+    ]
+  });
+
+  // ── PHOTO GROUPS ──────────────────────────────────────────
+  const photoContent = [];
+  for (const grupo of (d.fotosGrupos||[])) {
+    if (!grupo.fotos || !grupo.fotos.some(Boolean)) continue;
+    photoContent.push(new Paragraph({ spacing:{before:200,after:80},
+      children:[new TextRun({text:v(grupo.titulo),bold:true,size:18,font:'Calibri'})] }));
+    for (let r = 0; r < grupo.fotos.length; r += 2) {
+      const mkPCell = (pd) => {
+        if (pd) {
+          const b64 = pd.replace(/^data:image\/\w+;base64,/,'');
+          const buf = Buffer.from(b64,'base64');
+          const ext = pd.startsWith('data:image/png')?'png':'jpeg';
+          return new TableCell({ width:{size:Math.floor(TW_P/2),type:WidthType.DXA}, borders:allP,
+            verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:50,right:50},
+            children:[new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:0},
+              children:[new ImageRun({data:buf,transformation:{width:250,height:188},type:ext})] })] });
+        }
+        return new TableCell({ width:{size:Math.floor(TW_P/2),type:WidthType.DXA}, borders:allP, children:[mp('')] });
+      };
+      photoContent.push(new Table({
+        width:{size:TW_P,type:WidthType.DXA}, columnWidths:[Math.floor(TW_P/2),TW_P-Math.floor(TW_P/2)],
+        rows:[new TableRow({ height:{value:2900}, children:[mkPCell(grupo.fotos[r]), mkPCell(grupo.fotos[r+1])] })]
+      }));
+      photoContent.push(new Paragraph({spacing:{before:0,after:60},children:[]}));
+    }
+  }
+
+  // ── DOCUMENT ──────────────────────────────────────────────
+  const spacer = () => new Paragraph({spacing:{before:0,after:80},children:[]});
+  const doc = new Document({
+    sections:[{
+      properties:{ page:{ size:{width:PAGE_W,height:PAGE_H}, margin:{top:MRG,right:MRG,bottom:MRG,left:MRG} } },
+      children:[
+        ...headerTitle,
+        datosTable, spacer(),
+        lecturasTable, spacer(),
+        resumenTable, spacer(),
+        obsTable, spacer(),
+        ...photoContent
+      ]
+    }]
+  });
+  return Packer.toBuffer(doc);
+}
+
 // ── Routes ────────────────────────────────────────────────
 app.get('/ping', (req,res) => res.json({ok:true}));
 
@@ -872,6 +1239,12 @@ app.post('/generar', authMiddleware, async (req,res) => {
       filename: fname
     };
     await dbClimaInsert(entry);
+
+    if (d.tareaId) {
+      const mapa = loadTareasInformes();
+      mapa[d.tareaId] = { informeId: entry.id, filename: fname };
+      saveTareasInformes(mapa);
+    }
 
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
@@ -1110,6 +1483,142 @@ async function dbPapeleraWomClear() {
   } else {
     savePapeleraWomLocal([]);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PREVENTIVO INFORMES
+// ═══════════════════════════════════════════════════════════════
+const DOCS_DIR_PREV     = path.join(__dirname, 'informes_prev');
+const PAPELERA_DIR_PREV = path.join(__dirname, 'papelera_prev');
+const DB_FILE_PREV      = path.join(__dirname, 'registro_prev.json');
+const PAPELERA_FILE_PREV = path.join(__dirname, 'papelera_prev.json');
+
+if (!fs.existsSync(DOCS_DIR_PREV))      fs.mkdirSync(DOCS_DIR_PREV);
+if (!fs.existsSync(PAPELERA_DIR_PREV))  fs.mkdirSync(PAPELERA_DIR_PREV);
+if (!fs.existsSync(DB_FILE_PREV))       fs.writeFileSync(DB_FILE_PREV, '[]');
+if (!fs.existsSync(PAPELERA_FILE_PREV)) fs.writeFileSync(PAPELERA_FILE_PREV, '[]');
+
+function loadDBPrevLocal()        { try { return JSON.parse(fs.readFileSync(DB_FILE_PREV,'utf8')); }        catch { return []; } }
+function saveDBPrevLocal(d)       { fs.writeFileSync(DB_FILE_PREV, JSON.stringify(d, null, 2)); }
+function loadPapaleraPrevLocal()  { try { return JSON.parse(fs.readFileSync(PAPELERA_FILE_PREV,'utf8')); }  catch { return []; } }
+function savePapaleraPrevLocal(d) { fs.writeFileSync(PAPELERA_FILE_PREV, JSON.stringify(d, null, 2)); }
+
+const fromPrev = r => ({
+  id: r.id, fechaCreacion: r.fecha_creacion,
+  trackerId: r.tracker_id,
+  nombreNodo: r.nombre_nodo, ejecutante: r.ejecutante,
+  fecha: r.fecha, tareaOfficetrack: r.tarea_officetrack,
+  equipoCount: r.equipo_count, tareaId: r.tarea_id, filename: r.filename
+});
+const toPrev = e => ({
+  id: e.id, fecha_creacion: e.fechaCreacion,
+  tracker_id: e.trackerId,
+  nombre_nodo: e.nombreNodo, ejecutante: e.ejecutante,
+  fecha: e.fecha, tarea_officetrack: e.tareaOfficetrack,
+  equipo_count: e.equipoCount, tarea_id: e.tareaId, filename: e.filename
+});
+
+async function dbPrevList(q) {
+  if (supabase) {
+    let query = supabase.from('informes_prev')
+      .select('*').order('fecha_creacion', { ascending: false });
+    if (q) {
+      const like = `%${escapeLike(q)}%`;
+      query = query.or(`nombre_nodo.ilike.${like},ejecutante.ilike.${like}`);
+    }
+    const { data, error } = await query;
+    if (!error) return (data||[]).map(fromPrev);
+    console.error('dbPrevList:', error.message);
+  }
+  const db = loadDBPrevLocal();
+  if (!q) return db;
+  const ql = q.toLowerCase();
+  return db.filter(r => ['nombreNodo','ejecutante','tareaOfficetrack']
+    .some(k => (r[k]||'').toLowerCase().includes(ql)));
+}
+async function dbPrevInsert(entry) {
+  if (supabase) {
+    const { error } = await supabase.from('informes_prev').insert(toPrev(entry));
+    if (error) console.error('dbPrevInsert:', error.message);
+  } else {
+    const db = loadDBPrevLocal(); db.unshift(entry); saveDBPrevLocal(db);
+  }
+}
+async function dbPrevFind(id) {
+  if (supabase) {
+    const { data, error } = await supabase.from('informes_prev')
+      .select('*').eq('id', id).single();
+    if (!error && data) return fromPrev(data);
+  }
+  return loadDBPrevLocal().find(r => r.id === id) || null;
+}
+async function dbPrevFindBySecId(secId) {
+  if (supabase) {
+    const { data, error } = await supabase.from('informes_prev')
+      .select('*').eq('tarea_officetrack', secId).single();
+    if (!error && data) return fromPrev(data);
+  }
+  return loadDBPrevLocal().find(r => r.tareaOfficetrack === secId) || null;
+}
+async function dbPrevDelete(id) {
+  if (supabase) {
+    const { error } = await supabase.from('informes_prev').delete().eq('id', id);
+    if (error) console.error('dbPrevDelete:', error.message);
+  } else {
+    saveDBPrevLocal(loadDBPrevLocal().filter(r => r.id !== id));
+  }
+}
+async function dbPapaleraPrevInsert(entry) {
+  if (supabase) {
+    const { error } = await supabase.from('papelera_prev')
+      .insert({ ...toPrev(entry), deleted_at: entry.deletedAt });
+    if (error) console.error('dbPapaleraPrevInsert:', error.message);
+  } else {
+    const p = loadPapaleraPrevLocal(); p.unshift(entry); savePapaleraPrevLocal(p);
+  }
+}
+
+// ── Sitios Preventivos (Excel lookup) ─────────────────────────
+const SITIOS_XLSX   = path.join(__dirname, 'sitios_preventivos.xlsx');
+const TRACKER_FILE  = path.join(__dirname, 'tracker_prev.json');
+
+if (!fs.existsSync(TRACKER_FILE)) fs.writeFileSync(TRACKER_FILE, JSON.stringify({last:0}));
+
+function loadSitiosPrev() {
+  try {
+    const XLSX = require('xlsx');
+    const wb   = XLSX.readFile(SITIOS_XLSX);
+    const ws   = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+    return rows.slice(1)
+      .filter(r => r[1])
+      .map(r => ({
+        nombre:     (r[1]||'').toString().trim(),
+        ciudad:     (r[3]||'').toString().trim(),
+        direccion:  [(r[4]||'').toString().trim(), (r[5]||'').toString().trim()].filter(Boolean).join(' ').trim(),
+        criticidad: (r[15]||'').toString().trim(),
+        categoria:  (r[16]||'').toString().trim(),
+        codigo:     (r[13]||'').toString().trim()
+      }))
+      .filter(s => s.nombre);
+  } catch(e) {
+    console.error('loadSitiosPrev:', e.message);
+    return [];
+  }
+}
+let sitiosPrevData = loadSitiosPrev();
+
+function nextTrackerId() {
+  let counter = 0;
+  try { counter = JSON.parse(fs.readFileSync(TRACKER_FILE,'utf8')).last || 0; } catch{}
+  counter++;
+  fs.writeFileSync(TRACKER_FILE, JSON.stringify({last:counter}));
+  return String(counter).padStart(3,'0');
+}
+function peekTrackerId() {
+  let counter = 0;
+  try { counter = JSON.parse(fs.readFileSync(TRACKER_FILE,'utf8')).last || 0; } catch{}
+  return String(counter + 1).padStart(3,'0');
 }
 
 const RSO_SITES = {
@@ -1681,6 +2190,152 @@ app.delete('/registro-wom/:id', authMiddleware, async (req, res) => {
   } catch(e) {}
   await dbWomDelete(entry.id);
   await dbPapeleraWomInsert({ ...entry, deletedAt: new Date().toISOString() });
+  res.json({ok:true});
+});
+
+// ── Sitios / Tracker API ────────────────────────────────────────
+app.get('/api/sitios-preventivos', authMiddleware, (_req, res) => {
+  res.json(sitiosPrevData);
+});
+app.post('/api/sitios-preventivos/reload', authMiddleware, (_req, res) => {
+  sitiosPrevData = loadSitiosPrev();
+  res.json({ ok: true, count: sitiosPrevData.length });
+});
+app.post('/api/sitios-preventivos/upload', authMiddleware, (req, res) => {
+  try {
+    const { dataBase64 } = req.body;
+    if (!dataBase64) return res.status(400).json({ error: 'dataBase64 requerido' });
+    const buf = Buffer.from(dataBase64, 'base64');
+    fs.writeFileSync(SITIOS_XLSX, buf);
+    sitiosPrevData = loadSitiosPrev();
+    res.json({ ok: true, count: sitiosPrevData.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/preview-tracker', authMiddleware, (_req, res) => {
+  res.json({ next: peekTrackerId() });
+});
+
+// ── Preventivo Informe routes ───────────────────────────────────
+app.post('/generar-preventivo', authMiddleware, async (req, res) => {
+  try {
+    const d = req.body;
+    const trackerId = nextTrackerId();
+    d.trackerId = trackerId;
+    // QR para el PDF
+    try {
+      const QRCode = require('qrcode');
+      const verUrl = `${req.protocol}://${req.get('host')}/verificar-informe?id=${encodeURIComponent(d.tareaOfficetrack||'')}`;
+      d.qrDataUrl = await QRCode.toDataURL(verUrl, { width: 80, margin: 1, color: { dark: '#0F172A', light: '#ffffff' } });
+    } catch(e) { d.qrDataUrl = null; }
+    const buffer = await buildPdfPreventivo(d);
+
+    // Nombre: SITIO_CRQ_SALA.pdf
+    const sitio = (d.nombreNodo||'SITIO').replace(/[^a-zA-Z0-9\-]/g,'_').replace(/_+/g,'_').slice(0,35);
+    const crq   = (d.crq||trackerId).replace(/[^a-zA-Z0-9\-]/g,'_').slice(0,20);
+    const sala  = (d.sala||'').replace(/[^a-zA-Z0-9]/g,'_').slice(0,6);
+    const fname = `${sitio}_${crq}_${sala}.pdf`;
+
+    fs.writeFileSync(path.join(DOCS_DIR_PREV, fname), buffer);
+    await storageUpload(buffer, `prev/${fname}`);
+
+    const entry = {
+      id: Date.now().toString(),
+      fechaCreacion: new Date().toISOString(),
+      trackerId,
+      nombreNodo: d.nombreNodo, ejecutante: d.ejecutante,
+      fecha: d.fecha, tareaOfficetrack: d.tareaOfficetrack,
+      equipoCount: (d.equipos||[]).length,
+      tareaId: d.tareaId||null, filename: fname
+    };
+    await dbPrevInsert(entry);
+
+    if (d.tareaId) {
+      const mapFile = path.join(__dirname, 'tareas_informes.json');
+      let map = {};
+      try { map = JSON.parse(fs.readFileSync(mapFile,'utf8')); } catch{}
+      map[d.tareaId] = { informeId: entry.id, filename: fname, tipo: 'prev' };
+      fs.writeFileSync(mapFile, JSON.stringify(map, null, 2));
+    }
+
+    res.setHeader('Content-Type','application/pdf');
+    res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
+    res.setHeader('Access-Control-Expose-Headers','Content-Disposition');
+    res.send(buffer);
+  } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
+});
+
+// ── Verificación pública de informe preventivo (sin auth) ─────
+app.get('/verificar-informe', async (req, res) => {
+  const id = (req.query.id||'').trim();
+  if (!id) return res.status(400).send('<h2>ID no proporcionado</h2>');
+  const entry = await dbPrevFindBySecId(id);
+  const found = !!entry;
+  const color = found ? '#059669' : '#DC2626';
+  const icon  = found ? '✅' : '❌';
+  const title = found ? 'Informe Verificado' : 'ID No Encontrado';
+  const body  = found ? `
+    <div class="row"><span class="lbl">Sitio</span><span>${entry.nombreNodo||'—'}</span></div>
+    <div class="row"><span class="lbl">Técnico</span><span>${entry.ejecutante||'—'}</span></div>
+    <div class="row"><span class="lbl">Fecha</span><span>${entry.fecha||'—'}</span></div>
+    <div class="row"><span class="lbl">Equipos</span><span>${entry.equipoCount||'—'}</span></div>
+    <div class="row"><span class="lbl">Generado</span><span>${entry.fechaCreacion ? new Date(entry.fechaCreacion).toLocaleString('es-CL') : '—'}</span></div>
+  ` : `<p style="color:#64748B;font-size:.9rem">El ID de seguridad <strong>${id}</strong> no corresponde a ningún informe registrado.</p>`;
+
+  res.send(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${title} – ICETEL</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#F0F4F9;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .card{background:#fff;border-radius:24px;padding:2.5rem 2rem;max-width:420px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.1)}
+    .icon{font-size:3rem;margin-bottom:.75rem}
+    h1{font-size:1.25rem;font-weight:800;color:${color};margin-bottom:.5rem}
+    .sec-id{font-family:monospace;font-size:.85rem;background:#F8FAFC;border:1px solid rgba(0,0,0,.08);border-radius:8px;padding:.4rem .8rem;display:inline-block;margin-bottom:1.25rem;color:#475569;letter-spacing:.04em}
+    .rows{text-align:left;border-top:1px solid #F1F5F9;padding-top:1rem;display:flex;flex-direction:column;gap:.6rem}
+    .row{display:flex;justify-content:space-between;gap:.5rem;font-size:.875rem}
+    .lbl{color:#94A3B8;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+    .footer{margin-top:1.5rem;font-size:.72rem;color:#CBD5E1}
+  </style></head><body>
+  <div class="card">
+    <div class="icon">${icon}</div>
+    <h1>${title}</h1>
+    <div class="sec-id">${id}</div>
+    <div class="rows">${body}</div>
+    <div class="footer">ICETEL · Sistema de Informes de Mantenimiento Clima</div>
+  </div>
+  </body></html>`);
+});
+
+app.get('/registro-prev', authMiddleware, async (req, res) => {
+  const q = sanitizeSearch(req.query.q);
+  res.json(await dbPrevList(q));
+});
+
+app.get('/descargar-prev/:id', authMiddleware, async (req, res) => {
+  const entry = await dbPrevFind(req.params.id);
+  if (!entry) return res.status(404).json({error:'No encontrado'});
+  let buffer = await storageDownload(`prev/${entry.filename}`);
+  if (!buffer) {
+    const fpath = path.join(DOCS_DIR_PREV, entry.filename);
+    if (!fs.existsSync(fpath)) return res.status(404).json({error:'Archivo no encontrado'});
+    buffer = fs.readFileSync(fpath);
+  }
+  const isPdf = entry.filename.endsWith('.pdf');
+  res.setHeader('Content-Type', isPdf ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition',`attachment; filename="${entry.filename}"`);
+  res.send(buffer);
+});
+
+app.delete('/registro-prev/:id', authMiddleware, async (req, res) => {
+  const entry = await dbPrevFind(req.params.id);
+  if (!entry) return res.status(404).json({error:'No encontrado'});
+  await storageMove(`prev/${entry.filename}`, `prev/papelera/${entry.filename}`);
+  try {
+    const fp = path.join(DOCS_DIR_PREV, entry.filename);
+    if (fs.existsSync(fp)) fs.renameSync(fp, path.join(PAPELERA_DIR_PREV, entry.filename));
+  } catch(e) {}
+  await dbPrevDelete(entry.id);
+  await dbPapaleraPrevInsert({ ...entry, deletedAt: new Date().toISOString() });
   res.json({ok:true});
 });
 
