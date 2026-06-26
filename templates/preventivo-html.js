@@ -114,8 +114,8 @@ body{ font-family: Calibri, Arial, sans-serif; font-size: 7pt; color: #000; }
 .th-rot{ writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: 5pt; height: 44px; }
 .eq-num{ background: #daeef3; font-weight: 700; width: 3%; }
 .eq-datos{ text-align: left; padding: 1px 2px; width: 12%; font-size: 5pt; vertical-align: middle; }
-.dato-lbl{ font-weight:700; white-space:nowrap; padding:1px 2px; font-size:4.8pt; }
-.dato-val{ padding:1px 2px; font-size:4.8pt; }
+.dato-lbl{ font-weight:700; white-space:nowrap; padding:1px 2px; font-size:3.8pt; }
+.dato-val{ padding:1px 2px; font-size:3.8pt; }
 .eq-cap{ width: 5%; font-size: 5pt; }
 .motor-lbl{ background: #eef2ff; font-weight: 700; text-align: left; padding: 1px 2px; font-size: 5pt; white-space: nowrap; width: 11%; }
 .obs-cell{ text-align: left; padding: 1px 4px; font-size: 5.5pt; width: 21%; }

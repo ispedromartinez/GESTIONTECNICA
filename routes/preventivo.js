@@ -134,6 +134,52 @@ function semanaIsoDeFecha(fechaStr) {
   return `${jueves.getFullYear()}-W${String(semana).padStart(2, '0')}`;
 }
 
+// ── Recurrencia: genera tareas repetidas a 12 meses ─────────────
+// Meses entre ocurrencias por frecuencia. La cantidad en 12 meses
+// es 12/intervalo: Anual=1, Semestral=2, Cuatrimestral=3,
+// Trimestral=4, Bimestral=6, Mensual=12.
+const RECURRENCIA_INTERVALOS = {
+  Anual: 12, Semestral: 6, Cuatrimestral: 4, Trimestral: 3, Bimestral: 2, Mensual: 1
+};
+function addMonths(iso, n) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + n);
+  if (d.getDate() < day) d.setDate(0); // si el mes destino es más corto, fin de mes
+  return d.toISOString().slice(0, 10);
+}
+function addDays(iso, n) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+function diasEntre(aIso, bIso) {
+  if (!aIso || !bIso) return 0;
+  return Math.round((new Date(bIso + 'T00:00:00') - new Date(aIso + 'T00:00:00')) / 86400000);
+}
+// Devuelve la serie de tareas (incluida la primera) según la recurrencia.
+// Si no es recurrente o falta fecha de inicio, devuelve solo la tarea base.
+function expandirRecurrencia(base) {
+  const intervalo = RECURRENCIA_INTERVALOS[base.recurrencia];
+  if (!intervalo || !base.fechaInicio) return [base];
+  const dur = diasEntre(base.fechaInicio, base.fechaVencimiento);
+  const serie = [];
+  for (let m = 0, i = 0; m < 12; m += intervalo, i++) {
+    const ini = addMonths(base.fechaInicio, m);
+    serie.push({
+      ...base,
+      id: (Date.now() + i).toString(),
+      fechaInicio: ini,
+      fechaVencimiento: base.fechaVencimiento ? addDays(ini, dur) : '',
+      semanaIso: semanaIsoDeFecha(ini),
+      fechaCreacion: new Date().toISOString()
+    });
+  }
+  return serie;
+}
+
 // ── Export a Excel con estilo ───────────────────────────────────
 const XL_AZUL  = 'FF0073EA';   // cabecera
 const XL_ZEBRA = 'FFEAF3FF';   // filas pares
@@ -241,6 +287,12 @@ router.post('/', async (req, res) => {
       empresaId: req.user.empresa_id || null,
       destacada: false, fechaCreacion: new Date().toISOString()
     };
+    // Recurrencia: si aplica, genera la serie de tareas repetidas (12 meses).
+    const serie = expandirRecurrencia(entry);
+    if (serie.length > 1) {
+      await dbTareasInsertMany(serie);
+      return res.json({ ...serie[0], generadas: serie.length });
+    }
     await dbTareasInsert(entry);
     res.json(entry);
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
