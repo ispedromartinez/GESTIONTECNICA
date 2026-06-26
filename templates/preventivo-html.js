@@ -164,9 +164,9 @@ body{ font-family: Calibri, Arial, sans-serif; font-size: 7pt; color: #000; }
     <td class="dg-badge" style="width:20%">CATEGORÍA: ${esc(v(d.categoria))}</td>
     <td class="dg-badge" style="width:14%">SALA: ${esc(v(d.sala))}</td>
   </tr>
-  <tr><td class="dg-lbl">NOMBRE: NODO/HUB/SW</td><td colspan="4" class="dg-val">${esc(v(d.nombreNodo))}</td></tr>
+  <tr><td class="dg-lbl">NOMBRE SITIO</td><td colspan="4" class="dg-val">${esc(v(d.nombreNodo))}</td></tr>
   <tr><td class="dg-lbl">DIRECCIÓN</td><td colspan="4" class="dg-val">${esc(v(d.direccion))}</td></tr>
-  <tr><td class="dg-lbl">CIUDAD</td><td colspan="4" class="dg-val">${esc(v(d.ciudad))}</td></tr>
+  <tr><td class="dg-lbl">COMUNA</td><td colspan="4" class="dg-val">${esc(v(d.comuna || d.ciudad))}</td></tr>
   <tr><td class="dg-lbl">EMPRESA INTEGRADORA</td><td colspan="4" class="dg-val">${esc(v(d.empresa))}</td></tr>
   <tr><td class="dg-lbl">NOMBRE EJECUTANTE</td><td colspan="4" class="dg-val">${esc(v(d.ejecutante))}</td></tr>
   <tr>

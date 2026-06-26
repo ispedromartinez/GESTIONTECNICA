@@ -70,7 +70,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 @media(max-width:900px){.col-tiempo{display:none;}}
 /* mobile: ocultar columnas de baja prioridad, mantener Técnico/Sitio/Estado/Informe */
 @media(max-width:640px){
-  .col-sala,.col-desc,.col-fecha-i,.col-fecha-v{display:none;}
+  .col-sala,.col-crq,.col-desc,.col-fecha-i,.col-fecha-v{display:none;}
   .table-wrap{border-radius:12px;}
   .btn-gen-informe,.btn-dl-informe{padding:5px 12px;font-size:12px;}
 }
@@ -254,7 +254,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
     <thead>
       <tr>
         <th style="width:36px"><input type="checkbox" id="checkTodos"></th>
-        <th>Técnico</th><th>Sitio</th><th class="col-sala">Sala</th><th class="col-desc">Descripción</th>
+        <th>Técnico</th><th>Sitio</th><th class="col-sala">Sala</th><th class="col-crq">N° CRQ / INC</th><th class="col-desc">Descripción</th>
         <th class="col-fecha-i">Fecha inicio</th><th class="col-fecha-v">Fecha venc.</th><th>Estado</th>
         <th class="col-tiempo">Tiempo en estado actual</th>
       </tr>
@@ -496,8 +496,10 @@ function seleccionarSitioPreventivo(nombre){
   const sitio = SITIOS_PREVENTIVO.find(s => s.nombre === nombre);
   document.getElementById('fNombreCliente').value = nombre;
   document.getElementById('fNombreClienteInput').value = nombre;
+  document.getElementById('fSitio').value = nombre;                          // Sitio = nombre de la planilla
   document.getElementById('fDireccion').value = sitio ? sitio.calle : '';
   document.getElementById('fCiudad').value = sitio ? sitio.ciudad : '';
+  document.getElementById('fComuna').value = sitio ? sitio.ciudad : '';       // Comuna desde la planilla
   document.getElementById('fCriticidad').value = sitio ? sitio.criticidad : '';
   document.getElementById('fCategoriaSitio').value = sitio ? sitio.categoria : '';
   document.getElementById('sitioDD').style.display = 'none';
@@ -578,6 +580,7 @@ function renderTabla(){
       <td>${t.tecnico||''}</td>
       <td>${t.sitio||''}</td>
       <td class="col-sala">${t.sala||''}</td>
+      <td class="col-crq">${t.crqInc||''}</td>
       <td class="col-desc">${t.descripcion||''}</td>
       <td class="col-fecha-i">${t.fechaInicio||''}</td>
       <td class="col-fecha-v">${t.fechaVencimiento||''}</td>

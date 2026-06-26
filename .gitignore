@@ -11,6 +11,11 @@ informes_wom/
 registro_wom.json
 papelera_wom.json
 tareas_preventivo.json
+informes_prev/
+registro_prev.json
+papelera_prev.json
+tareas_informes.json
+tracker_prev.json
 server.log
 server_err.log
 .claude/

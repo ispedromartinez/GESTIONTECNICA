@@ -319,9 +319,9 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
       </div>
       <div class="g2">
         <div class="field full">
-          <label>Nombre Nodo / Hub / SW</label>
+          <label>Nombre Sitio</label>
           <div class="field-locked-wrap">
-            <input id="nombreNodo" placeholder="Nombre del nodo / hub / SW" list="sitiosList">
+            <input id="nombreNodo" placeholder="SITIO / nodo / hub / SW" list="sitiosList">
             <datalist id="sitiosList"></datalist>
           </div>
         </div>
@@ -332,9 +332,9 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
           </div>
         </div>
         <div class="field">
-          <label>Ciudad</label>
+          <label>Comuna</label>
           <div class="field-locked-wrap">
-            <input id="ciudad" placeholder="Ciudad">
+            <input id="ciudad" placeholder="Comuna">
           </div>
         </div>
         <div class="field">
@@ -502,7 +502,8 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
 // ── Auth fetch interceptor ──────────────────────────────────
 const _origFetch = window.fetch;
 window.fetch = (url, opts={}) => {
-  const token = localStorage.getItem('token');
+  // El token puede estar en localStorage ("recordarme") o en sessionStorage.
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (token) { opts.headers = { ...(opts.headers||{}), 'Authorization': 'Bearer '+token }; }
   return _origFetch(url, opts);
 };
@@ -564,6 +565,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('tareaId').value = tareaId;
     cargarDatosTarea(tareaId);
   }
+  aplicarBloqueoPorRol(); // técnico: dirección, CRQ y técnico quedan solo lectura
   document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
   document.getElementById('hora').value = new Date().toTimeString().slice(0,5);
   addEquipo();
@@ -630,14 +632,17 @@ async function cargarDatosTarea(id) {
     if (!res.ok) return;
     const t = await res.json();
     console.log('[tarea]', JSON.stringify({ sitio: t.sitio, tecnico: t.tecnico, crqInc: t.crqInc, ciudad: t.ciudad, direccion: t.direccion }));
-    const nodoVal = t.sitio || t.nombreCliente || '';
-    if (nodoVal)           setField('nombreNodo',        nodoVal);
-    if (t.tecnico)         setField('ejecutante',        t.tecnico);
+    // Nombre Nodo/Hub/SW = nombre del cliente (SITIO), nombre limpio que
+    // permite el match contra la planilla SITIOS.xlsx para traer la dirección.
+    const nodoVal = t.nombreCliente || t.sitio || '';
+    if (nodoVal) { setField('nombreNodo', nodoVal); lockField('nombreNodo'); }
+    const tecnicoVal = t.tecnico || t.nombreEmpleado || '';
+    if (tecnicoVal)        setField('ejecutante',        tecnicoVal);
     if (t.crqInc)          setField('crq',               t.crqInc);
     if (t.fechaInicio)     setField('fecha',             t.fechaInicio);
     if (t.sala)            setSelectField('sala',         t.sala);
-    const ciudadVal = t.ciudad || t.comuna || '';
-    if (ciudadVal)         setField('ciudad',            ciudadVal);
+    const comunaVal = t.comuna || t.ciudad || '';
+    if (comunaVal)         setField('ciudad',            comunaVal);
     if (t.direccion)       setField('direccion',         t.direccion);
     if (t.descripcion)     setField('observaciones',     t.descripcion);
     // tareaOfficetrack es ID de seguridad — no sobreescribir
@@ -660,6 +665,37 @@ async function cargarDatosTarea(id) {
 function setField(id, val) {
   const el = document.getElementById(id);
   if (el && val) el.value = val;
+}
+// Bloquea un campo (solo lectura) cuando el dato viene de la tarea asignada:
+// el técnico no puede modificarlo. Reusa el estilo de candado existente.
+const LOCK_SVG = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+function lockField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.readOnly = true;
+  el.setAttribute('tabindex', '-1');
+  el.removeAttribute('list'); // sin desplegable editable
+  const wrap = el.closest('.field-locked-wrap');
+  if (wrap && !wrap.querySelector('.lock-icon')) {
+    const span = document.createElement('span');
+    span.className = 'lock-icon';
+    span.innerHTML = LOCK_SVG;
+    wrap.appendChild(span);
+  }
+}
+// Rol del usuario logueado (desde el 'usuario' guardado al iniciar sesión).
+function rolUsuario() {
+  try {
+    const raw = localStorage.getItem('usuario') || sessionStorage.getItem('usuario');
+    return raw ? (JSON.parse(raw).rol || '') : '';
+  } catch { return ''; }
+}
+// El técnico no puede modificar Dirección, N° CRQ/INC ni Técnico:
+// esos campos solo los edita supervisor o admin. Se siguen autocompletando.
+function aplicarBloqueoPorRol() {
+  if (rolUsuario() === 'tecnico') {
+    ['direccion', 'crq', 'ejecutante'].forEach(lockField);
+  }
 }
 function setSelectField(id, val) {
   const el = document.getElementById(id);
@@ -1130,7 +1166,7 @@ async function generarInforme() {
   const status  = document.getElementById('statusMsg');
 
   const data = {
-    nombreNodo: g('nombreNodo'), direccion: g('direccion'), ciudad: g('ciudad'),
+    nombreNodo: g('nombreNodo'), direccion: g('direccion'), ciudad: g('ciudad'), comuna: g('ciudad'),
     empresa: g('empresa'), ejecutante: g('ejecutante'),
     fecha: g('fecha'), hora: g('hora'), crq: g('crq'), idAcceso: g('idAcceso'),
     criticidad: g('criticidad'), categoria: g('categoria'), sala: g('sala'),

@@ -356,14 +356,15 @@ router.post('/importar', async (req, res) => {
         const valor = fila[label];
         entry[key] = valor instanceof Date ? valor.toISOString().slice(0, 10) : String(valor ?? '').trim();
       }
-      // Aliases: columnas con nombre distinto en distintas plantillas
-      if (!entry.sitio) {
-        const partes = [
-          fila['Cliente'], fila['Sitio'], fila['Dirección'], fila['Direccion'],
-          fila['Nombre Nodo / Hub / SW'], fila['Nombre Nodo'], fila['Hub']
-        ].map(v => String(v ?? '').trim()).filter(Boolean);
-        entry.sitio = partes.join(' - ');
-      }
+      // Nombre del sitio: el encabezado varía según la planilla.
+      // En la carga masiva Officetrack la columna se llama "SITIOS" (plural);
+      // en otras puede ser "Sitio", "Cliente", "Nombre Nodo / Hub / SW", etc.
+      const nombreSitio = [
+        fila['SITIOS'], fila['Sitios'], fila['SITIO'], fila['Sitio'], fila['Cliente'],
+        fila['Nombre Nodo / Hub / SW'], fila['Nombre Nodo'], fila['Hub']
+      ].map(v => String(v ?? '').trim()).find(Boolean) || '';
+      if (!entry.sitio)         entry.sitio = nombreSitio || entry.nombreCliente || '';
+      if (!entry.nombreCliente) entry.nombreCliente = nombreSitio || entry.sitio || '';
       if (!entry.tecnico) entry.tecnico = String(fila['Técnico asignado'] ?? fila['Nombre del Técnico'] ?? fila['Tecnico'] ?? fila['Técnico asignado al sitio'] ?? '').trim();
       if (!entry.crqInc) entry.crqInc = String(fila['N° CRQ/INC'] ?? fila['CRQ/INC'] ?? fila['CRQ'] ?? fila['N° CRQ'] ?? fila['Nro CRQ'] ?? fila['Número CRQ'] ?? fila['N°CRQ'] ?? '').trim();
       entry.estado = entry.estado || 'Nuevo';

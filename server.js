@@ -36,7 +36,17 @@ if (supabase) {
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '80mb' }));
-app.use(express.static(__dirname));
+// No cachear los HTML: el navegador siempre carga la última versión
+// (evita ver pantallas viejas tras un cambio). El resto de assets sí se cachea.
+app.use(express.static(__dirname, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // ── Auth routes (públicas: /auth/login, /auth/register-superadmin)
 app.use('/auth', authRoutes);
@@ -969,7 +979,7 @@ async function buildDocxPreventivo(d) {
           children:[mp(`SALA: ${v(d.sala)}`,{bold:true,sz:13})] })
       ]}),
       new TableRow({ height:{value:250}, children:[
-        lcp('NOMBRE: NODO/HUB/SW', dW[0]),
+        lcp('NOMBRE SITIO', dW[0]),
         new TableCell({ width:{size:dW[1]+dW[2]+dW[3],type:WidthType.DXA}, columnSpan:3, borders:allP,
           verticalAlign:VerticalAlign.CENTER, margins:{top:20,bottom:20,left:60,right:25},
           children:[mp(v(d.nombreNodo),{sz:14})] })
@@ -981,10 +991,10 @@ async function buildDocxPreventivo(d) {
           children:[mp(v(d.direccion),{sz:14})] })
       ]}),
       new TableRow({ height:{value:250}, children:[
-        lcp('CIUDAD', dW[0]),
+        lcp('COMUNA', dW[0]),
         new TableCell({ width:{size:dW[1]+dW[2]+dW[3],type:WidthType.DXA}, columnSpan:3, borders:allP,
           verticalAlign:VerticalAlign.CENTER, margins:{top:20,bottom:20,left:60,right:25},
-          children:[mp(v(d.ciudad),{sz:14})] })
+          children:[mp(v(d.comuna || d.ciudad),{sz:14})] })
       ]}),
       new TableRow({ height:{value:250}, children:[
         lcp('NOMBRE EMPRESA INTEGRADORA', dW[0]),
@@ -1579,7 +1589,11 @@ async function dbPapaleraPrevInsert(entry) {
 }
 
 // ── Sitios Preventivos (Excel lookup) ─────────────────────────
-const SITIOS_XLSX   = path.join(__dirname, 'sitios_preventivos.xlsx');
+// Acepta el nombre histórico o la planilla real "SITIOS.xlsx" del usuario.
+const SITIOS_XLSX   = [
+  path.join(__dirname, 'sitios_preventivos.xlsx'),
+  path.join(__dirname, 'SITIOS.xlsx')
+].find(p => fs.existsSync(p)) || path.join(__dirname, 'SITIOS.xlsx');
 const TRACKER_FILE  = path.join(__dirname, 'tracker_prev.json');
 
 if (!fs.existsSync(TRACKER_FILE)) fs.writeFileSync(TRACKER_FILE, JSON.stringify({last:0}));
@@ -1588,17 +1602,35 @@ function loadSitiosPrev() {
   try {
     const XLSX = require('xlsx');
     const wb   = XLSX.readFile(SITIOS_XLSX);
-    const ws   = wb.Sheets[wb.SheetNames[0]];
+    // Preferir una hoja llamada "Sitios"; si no, la primera.
+    const sheetName = wb.SheetNames.find(n => /sitio/i.test(n)) || wb.SheetNames[0];
+    const ws   = wb.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+    if (!rows.length) return [];
+    // Detectar columnas por encabezado: tolera distintos formatos de planilla
+    // (ej. "SITIOS.xlsx" con solo Centrales + Dirección).
+    const headers = (rows[0]||[]).map(h => (h||'').toString().trim().toLowerCase());
+    const col      = (...keys) => headers.findIndex(h => keys.some(k => h.includes(k)));
+    const colExact = (...keys) => headers.findIndex(h => keys.includes(h));
+    let iNombre = col('sitio','central','nodo','hub','nombre');
+    let iDir    = col('direcc');
+    const iCasa   = col('casa');                       // "Número de casa" se anexa a la dirección
+    const iComuna = col('comuna','ciudad');
+    const iCrit   = col('criticidad');
+    let iCat      = colExact('categoría','categoria'); // exacto: evita "Categorías" (plural)
+    if (iCat < 0) iCat = col('categor');
+    const iCod    = col('punto de inter','código','codigo');
+    if (iNombre < 0) iNombre = 0;
+    if (iDir    < 0) iDir = 1;
     return rows.slice(1)
-      .filter(r => r[1])
       .map(r => ({
-        nombre:     (r[1]||'').toString().trim(),
-        ciudad:     (r[3]||'').toString().trim(),
-        direccion:  [(r[4]||'').toString().trim(), (r[5]||'').toString().trim()].filter(Boolean).join(' ').trim(),
-        criticidad: (r[15]||'').toString().trim(),
-        categoria:  (r[16]||'').toString().trim(),
-        codigo:     (r[13]||'').toString().trim()
+        nombre:     (r[iNombre]||'').toString().trim(),
+        direccion:  [(r[iDir]||'').toString().trim(), iCasa >= 0 ? (r[iCasa]||'').toString().trim() : '']
+                      .filter(Boolean).join(' ').trim(),
+        ciudad:     iComuna >= 0 ? (r[iComuna]||'').toString().trim() : '',
+        criticidad: iCrit   >= 0 ? (r[iCrit]||'').toString().trim()   : '',
+        categoria:  iCat    >= 0 ? (r[iCat]||'').toString().trim()    : '',
+        codigo:     iCod    >= 0 ? (r[iCod]||'').toString().trim()    : ''
       }))
       .filter(s => s.nombre);
   } catch(e) {
