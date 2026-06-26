@@ -410,6 +410,12 @@ window.fetch = (url, opts = {}) => {
   if (!headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + TOKEN());
   return _origFetch(url, { ...opts, headers });
 };
+// Rol del usuario, leído del payload del JWT.
+function ROL() {
+  try { return JSON.parse(atob(TOKEN().split('.')[1] || '')).rol || ''; }
+  catch { return ''; }
+}
+const ES_TECNICO = ROL() === 'tecnico';
 // Descarga autenticada (reemplaza la navegación directa, que no puede mandar el token).
 async function descargarAuth(url, fallbackName) {
   const r = await fetch(url);
@@ -495,11 +501,23 @@ function semanaIsoDeFecha(fechaStr){
 function actualizarSemanaIso(){
   document.getElementById('fSemanaIso').value = semanaIsoDeFecha(document.getElementById('fFechaInicio').value);
 }
-function poblarTecnicos(){
+// Lista de técnicos asignables: se carga de los usuarios reales de la empresa
+// (GET /auth/personal). TECHNICIANS queda solo como fallback si la API falla.
+let TECNICOS = TECHNICIANS.slice();
+async function poblarTecnicos(){
+  try {
+    const r = await fetch('/auth/personal');
+    if (r.ok) {
+      const personal = await r.json();
+      const tecs = (Array.isArray(personal) ? personal : [])
+        .filter(u => u.rol === 'tecnico').map(u => u.nombre).filter(Boolean);
+      if (tecs.length) TECNICOS = tecs;
+    }
+  } catch {}
   const filtro = document.getElementById('filtroTecnico');
-  filtro.innerHTML = '<option>Todos</option>' + TECHNICIANS.map(t=>`<option>${t}</option>`).join('');
+  if (filtro) filtro.innerHTML = '<option>Todos</option>' + TECNICOS.map(t=>`<option>${t}</option>`).join('');
   const fTecnico = document.getElementById('fTecnico');
-  fTecnico.innerHTML = TECHNICIANS.map(t=>`<option>${t}</option>`).join('');
+  if (fTecnico) fTecnico.innerHTML = TECNICOS.map(t=>`<option>${t}</option>`).join('');
 }
 function seleccionarSitioPreventivo(nombre){
   const sitio = SITIOS_PREVENTIVO.find(s => s.nombre === nombre);
@@ -661,7 +679,12 @@ function abrirModal(tarea){
   document.getElementById('fTareaNumero').value = tarea ? (tarea.tareaNumero || '') : '';
   document.getElementById('fCategoria').value = tarea ? (tarea.categoria || 'CLMAPREV') : 'CLMAPREV';
   document.getElementById('fDescripcion').value = tarea ? tarea.descripcion : '';
-  document.getElementById('fTecnico').value = tarea ? tarea.tecnico : TECHNICIANS[0];
+  const selTec = document.getElementById('fTecnico');
+  // Si se edita una tarea cuyo técnico ya no está en la lista, lo añadimos para no perderlo.
+  if (tarea && tarea.tecnico && !TECNICOS.includes(tarea.tecnico)) {
+    selTec.insertAdjacentHTML('afterbegin', `<option>${tarea.tecnico}</option>`);
+  }
+  selTec.value = tarea ? tarea.tecnico : (TECNICOS[0] || '');
   document.getElementById('fFechaInicio').value = tarea ? tarea.fechaInicio : isoFecha(semanaActual);
   document.getElementById('fFechaVencimiento').value = tarea ? tarea.fechaVencimiento : '';
   document.getElementById('fEstado').value = tarea ? tarea.estado : 'Nuevo';
@@ -900,6 +923,22 @@ document.getElementById('btnConfirmarImportar').addEventListener('click', async 
     importarShowState('error', err.message);
   }
 });
+
+// Los técnicos solo consultan: ocultar acciones de supervisor (agregar/editar/borrar/herramientas).
+if (ES_TECNICO) {
+  ['btnAgregar','btnEditar','btnBorrarSeleccion'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const dd = document.getElementById('btnHerramientas')?.closest('.dropdown');
+  if (dd) dd.style.display = 'none';
+  // El filtro por técnico no aplica: el técnico solo ve sus propias tareas.
+  const ft = document.getElementById('filtroTecnico');
+  if (ft) {
+    ft.style.display = 'none';
+    if (ft.nextElementSibling) ft.nextElementSibling.style.display = 'none';
+  }
+}
 
 poblarTecnicos();
 poblarSelectorSemanas();

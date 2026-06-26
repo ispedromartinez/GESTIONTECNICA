@@ -470,6 +470,16 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
       <div class="card">
         <div class="card-header">
+          <span class="ch-bar" style="background:var(--orange);"></span>
+          <span class="ch-title">Mis tareas pendientes</span>
+        </div>
+        <div class="card-body" id="tareasResumenBody">
+          <p style="font-size:13px;color:var(--muted);">Cargando…</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
           <span class="ch-bar" style="background:var(--blue);"></span>
           <span class="ch-title">Informes recientes</span>
         </div>
@@ -480,15 +490,19 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
     </div>
   </div>
 
-  <!-- ═══ PÁGINA: TAREAS (placeholder) ═══ -->
+  <!-- ═══ PÁGINA: TAREAS ═══ -->
   <div class="page" id="page-tareas">
-    <div style="max-width:760px;margin:0 auto;">
-      <div style="text-align:center;padding:60px 20px;color:var(--muted);">
-        <div style="font-size:48px;margin-bottom:14px;opacity:.35;">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <div style="max-width:880px;margin:0 auto;">
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Mis tareas pendientes</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Todas las tareas asignadas a ti que siguen abiertas.</p>
+      <div class="card">
+        <div class="card-header">
+          <span class="ch-bar" style="background:var(--orange);"></span>
+          <span class="ch-title">Tareas pendientes</span>
         </div>
-        <p style="font-size:14px;font-weight:600;color:#94a3b8;">Tareas — próximamente</p>
-        <p style="font-size:13px;margin-top:6px;">Aquí verás las tareas asignadas por tu supervisor.</p>
+        <div class="card-body" id="tareasBody">
+          <p style="font-size:13px;color:var(--muted);">Cargando…</p>
+        </div>
       </div>
     </div>
   </div>
@@ -655,9 +669,37 @@ function cardHTML(d) {
   </a>`;
 }
 
+// ── Tareas pendientes asignadas al técnico (datos reales: /tareas) ──
+// El backend ya acota /tareas a las tareas del propio técnico; aquí solo
+// filtramos las que siguen abiertas (estado distinto de "Cerrado").
+async function loadTareas() {
+  const destinos = [document.getElementById('tareasResumenBody'), document.getElementById('tareasBody')].filter(Boolean);
+  try {
+    const r = await fetch('/tareas', { headers: authH });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const all = await r.json();
+    const pend = (Array.isArray(all) ? all : []).filter(t => (t.estado || 'Nuevo') !== 'Cerrado');
+    const html = pend.length
+      ? `<table class="h-table"><thead><tr><th>Sitio</th><th>Descripción</th><th>Inicio</th><th>Vence</th><th>Estado</th></tr></thead><tbody>${
+          pend.map(t => `<tr>
+            <td class="col-site">${t.sitio || '—'}</td>
+            <td>${t.descripcion || '—'}</td>
+            <td class="col-date">${(t.fechaInicio || '').slice(0, 10) || '—'}</td>
+            <td class="col-date">${(t.fechaVencimiento || '').slice(0, 10) || '—'}</td>
+            <td><span class="status-tag tag-ok">${t.estado || 'Nuevo'}</span></td>
+          </tr>`).join('')
+        }</tbody></table>`
+      : '<p style="font-size:13px;color:var(--muted)">No tienes tareas pendientes. 🎉</p>';
+    destinos.forEach(el => el.innerHTML = html);
+  } catch (err) {
+    destinos.forEach(el => el.innerHTML = '<p style="font-size:13px;color:var(--red)">Error cargando tareas: ' + err.message + '</p>');
+  }
+}
+
 showPage('informes');
 loadResumen();
 loadProyectos();
+loadTareas();
 </script>
 </body>
 </html>

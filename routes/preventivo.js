@@ -10,6 +10,8 @@ const path = require('path');
 const XLSXStyle = require('xlsx-js-style');
 const { createClient } = require('@supabase/supabase-js');
 const { authMiddleware } = require('../middleware/auth');
+const { requireNivel } = require('../middleware/roles');
+const localDB = require('../db/local');
 
 // Mismo criterio que db/gestion.js: Supabase solo si hay credenciales
 // y USE_LOCAL_DB no está en 'true'. Si no, almacenamiento en archivo local.
@@ -254,11 +256,31 @@ function puedeTocar(tarea, user) {
   if (user.rol === 'superadmin') return true;
   return !!tarea.empresaId && tarea.empresaId === user.empresa_id;
 }
+// Nombres (en minúscula) de los técnicos activos de una empresa — para validar asignaciones.
+async function tecnicosDeEmpresa(empresaId) {
+  let users = [];
+  if (supabase) {
+    let q = supabase.from('usuarios').select('nombre,rol,activo,empresa_id');
+    if (empresaId) q = q.eq('empresa_id', empresaId);
+    const { data } = await q;
+    users = data || [];
+  } else {
+    users = localDB.usuarios.list(empresaId);
+  }
+  return users
+    .filter(u => u.rol === 'tecnico' && u.activo)
+    .map(u => (u.nombre || '').trim().toLowerCase());
+}
 
 router.get('/', async (req, res) => {
   try {
     const { semana, tecnico, desde, hasta } = req.query;
     let rows = filtraEmpresa(await dbTareasList(), req.user);
+    // Un técnico solo ve las tareas asignadas a su propio nombre.
+    if (req.user.rol === 'tecnico') {
+      const yo = (req.user.nombre || '').trim().toLowerCase();
+      rows = rows.filter(r => (r.tecnico || '').trim().toLowerCase() === yo);
+    }
     if (semana) rows = rows.filter(r => enRangoSemana(r.fechaInicio, semana));
     if (desde) rows = rows.filter(r => r.fechaInicio && r.fechaInicio >= desde);
     if (hasta) rows = rows.filter(r => r.fechaInicio && r.fechaInicio <= hasta);
@@ -267,9 +289,17 @@ router.get('/', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireNivel(2), async (req, res) => {
   try {
     const d = req.body;
+    // El técnico asignado debe ser un técnico activo de la empresa (superadmin exento).
+    if (req.user.rol !== 'superadmin') {
+      const tec = (d.tecnico || '').trim().toLowerCase();
+      const validos = await tecnicosDeEmpresa(req.user.empresa_id);
+      if (!tec || !validos.includes(tec)) {
+        return res.status(400).json({ error: 'Debes asignar la tarea a un técnico de tu empresa.' });
+      }
+    }
     const entry = {
       id: Date.now().toString(),
       descripcion: d.descripcion || '', tecnico: d.tecnico || '',
@@ -298,7 +328,7 @@ router.post('/', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireNivel(2), async (req, res) => {
   try {
     const tarea = await dbTareasFind(req.params.id);
     if (!tarea) return res.status(404).json({ error: 'Tarea no encontrada' });
@@ -314,7 +344,7 @@ router.put('/:id', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireNivel(2), async (req, res) => {
   try {
     const tarea = await dbTareasFind(req.params.id);
     if (!tarea) return res.status(404).json({ error: 'Tarea no encontrada' });
@@ -388,7 +418,7 @@ router.get('/:id', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
-router.post('/importar', async (req, res) => {
+router.post('/importar', requireNivel(2), async (req, res) => {
   try {
     const { dataBase64, primeraFilaEncabezados } = req.body;
     if (!dataBase64) return res.status(400).json({ error: 'Falta el archivo' });
