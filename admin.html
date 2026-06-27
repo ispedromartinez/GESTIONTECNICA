@@ -104,6 +104,16 @@ tr:hover td{background:#FAFBFC;}
 .modal{background:#fff;border-radius:16px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:26px 24px;max-height:90vh;overflow-y:auto;}
 .modal h3{font-size:17px;font-weight:800;margin-bottom:5px;}
 .modal-sub{font-size:13px;color:#676879;margin-bottom:20px;}
+.modal-head{display:flex;align-items:center;gap:13px;margin-bottom:20px;}
+.modal-head .modal-sub{margin-bottom:0;}
+.modal-head h3{margin-bottom:2px;}
+.modal-ico{flex:none;width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(135deg,#0073EA,#784BD1);color:#fff;box-shadow:0 4px 12px rgba(0,115,234,.3);}
+.field-row{display:flex;gap:12px;}
+.field-row .field{flex:1;min-width:0;}
+.ctx-box{display:flex;align-items:center;gap:11px;background:#F6F7FB;border:1px solid #E6E9EF;border-radius:10px;padding:11px 13px;margin-bottom:18px;}
+.ctx-box .ctx-ico{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;background:#fff;border:1px solid #E6E9EF;}
+.ctx-box .ctx-name{font-weight:700;font-size:13px;color:#323338;}
+.ctx-box .ctx-rut{font-size:12px;color:#676879;}
 .field{margin-bottom:14px;}
 .field label{font-size:11px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;}
 .field input,.field select,.field textarea{width:100%;border:1.5px solid #E6E9EF;border-radius:8px;padding:10px 13px;font-size:14px;color:#323338;font-family:inherit;background:#fff;outline:none;transition:.15s;}
@@ -312,8 +322,9 @@ async function verEmpresa(id){
       <td style="text-align:right"><button class="btn btn-sm btn-ghost" onclick="reenviarInvitacion('${u.id}')">Reenviar invitación</button></td></tr>`).join('')}
     </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Sin usuarios.</div>`;
   const puedeEditarProy = ['superadmin','admin_empresa'].includes(ME.rol);
-  const projRows = proyectos.length ? `<table><thead><tr><th>Proyecto</th><th>Estado</th><th>Inicio</th><th>Creado</th>${puedeEditarProy?'<th></th>':''}</tr></thead><tbody>
-    ${proyectos.map(p=>`<tr><td><b>${esc(p.nombre)}</b>${p.slug?` <span class="muted">/${esc(p.slug)}</span>`:''}</td>
+  const projRows = proyectos.length ? `<table><thead><tr><th>Proyecto</th><th>Código</th><th>Estado</th><th>Inicio</th><th>Creado</th>${puedeEditarProy?'<th></th>':''}</tr></thead><tbody>
+    ${proyectos.map(p=>`<tr><td><b>${esc(p.nombre)}</b></td>
+      <td class="muted" style="white-space:nowrap">${esc(codProyecto(emp.rut_empresa, p.slug))}</td>
       <td><span class="pill pill-${p.estado||'activo'}">${esc(p.estado||'activo')}</span></td>
       <td class="muted">${p.fecha_inicio||'—'}</td><td class="muted">${(p.creado_en||'').slice(0,10)}</td>
       ${puedeEditarProy?`<td style="text-align:right"><button class="btn btn-sm btn-ghost" onclick="modalEditarProyecto('${p.id}','${emp.id}')">Editar</button></td>`:''}</tr>`).join('')}
@@ -355,19 +366,25 @@ async function reenviarInvitacion(uid){
 VIEWS.proyectos = async () => {
   let empresas=[]; let selEmp = '';
   if(ME.rol==='superadmin'){ empresas = await api('/auth/empresas'); }
+  else { try{ empresas = await api('/api/empresas'); }catch{} } // admin_empresa: su empresa (con RUT)
+  const rutMap = {}; empresas.forEach(e=>{ rutMap[e.id]=e.rut_empresa; });
   const url = (ME.rol==='superadmin' && selEmp) ? '/api/gestion/proyectos?empresa_id='+selEmp : '/api/gestion/proyectos';
   const list = await api(url);
-  const empFilter = ME.rol==='superadmin'
+  const esSuper = ME.rol==='superadmin';
+  const puedeEditar = ['superadmin','admin_empresa'].includes(ME.rol);
+  const empFilter = esSuper
     ? `<select class="filter" id="fEmp" onchange="filterProyectos()"><option value="">Todas las empresas</option>${empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('')}</select>` : '';
   window._empresas = empresas;
   $('content').innerHTML = sectionTable({
     name:'Proyectos', sub:list.length+' proyectos',
     tools: empFilter,
     addBtn:`<button class="btn btn-blue" onclick="modalProyecto()">+ Nuevo proyecto</button>`,
-    head:['Proyecto', ...(ME.rol==='superadmin'?['Empresa']:[]),'Estado','Inicio'],
-    rows: list.map(p=>`<tr><td><b>${esc(p.nombre)}</b>${p.slug?` <span class="muted">/${esc(p.slug)}</span>`:''}</td>
-      ${ME.rol==='superadmin'?`<td class="muted">${esc(p.empresa_nombre||'—')}</td>`:''}
-      <td><span class="pill pill-${p.estado}">${p.estado}</span></td><td class="muted">${p.fecha_inicio||'—'}</td></tr>`),
+    head:['Proyecto','Código', ...(esSuper?['Empresa']:[]),'Estado','Inicio', ...(puedeEditar?['']:[])],
+    rows: list.map(p=>`<tr><td><b>${esc(p.nombre)}</b></td>
+      <td class="muted" style="white-space:nowrap">${esc(codProyecto(p.empresa_rut||rutMap[p.empresa_id], p.slug))}</td>
+      ${esSuper?`<td class="muted">${esc(p.empresa_nombre||'—')}</td>`:''}
+      <td><span class="pill pill-${p.estado}">${p.estado}</span></td><td class="muted">${p.fecha_inicio||'—'}</td>
+      ${puedeEditar?`<td style="text-align:right"><button class="btn btn-sm btn-ghost" onclick="modalEditarProyecto('${p.id}','${p.empresa_id}')">Editar</button></td>`:''}</tr>`),
     emptyIcon:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>', emptyMsg:'No hay proyectos todavía.'
   });
 };
@@ -400,7 +417,7 @@ VIEWS.usuarios = async () => {
     ${ME.rol==='superadmin'?'<option value="admin_empresa">Administradores</option>':''}</select>`;
   $('content').innerHTML = `<div class="section">
     <div class="sec-head"><div><div class="sec-name">Usuarios</div><div class="sec-sub" id="uCount"></div></div>
-      <div class="sec-tools">${filtro}<button class="btn btn-green" onclick="modalUsuario()">+ Crear acceso</button></div></div>
+      <div class="sec-tools">${filtro}<button class="btn btn-ghost" onclick="modalImportUsuarios()">📥 Carga masiva</button><button class="btn btn-green" onclick="modalUsuario()">+ Crear acceso</button></div></div>
     <div id="uBody"></div></div>`;
   renderUsuarios();
 };
@@ -413,7 +430,8 @@ function renderUsuarios(){
   $('uBody').innerHTML = list.length? `<table><thead><tr>
       <th>Nombre</th><th>Email</th><th>RUT</th><th>Empresa</th><th>Rol</th>${admin?'<th></th>':''}</tr></thead><tbody>
     ${list.map(u=>`<tr><td><b>${esc(u.nombre)}</b></td><td class="muted">${esc(u.email)}</td>
-      <td class="muted">${esc(u.rut||'—')}</td><td class="muted">${esc(u.empresa_nombre||'—')}</td>
+      <td class="muted">${esc(u.rut||'—')}</td>
+      <td class="muted">${esc(u.empresa_nombre||'—')}${u.empresa_rut?`<div style="font-size:11px;color:#A0A3B1">RUT ${esc(u.empresa_rut)}</div>`:''}</td>
       <td><span class="pill pill-${u.rol}">${ROL_LABEL[u.rol]||u.rol}</span></td>
       ${admin?`<td style="text-align:right;white-space:nowrap">
         <button class="btn btn-sm btn-ghost" onclick="editarUsuario('${u.id}')">Editar</button>
@@ -513,7 +531,7 @@ VIEWS.tecnicos = async () => {
   const proyectos = await api('/api/gestion/mis-proyectos');
   $('content').innerHTML = `<div class="section">
     <div class="sec-head"><div><div class="sec-name">Técnicos de mis proyectos</div><div class="sec-sub">Elige un proyecto</div></div>
-      <div class="sec-tools"><select class="filter" id="tProy" onchange="loadTecnicos()">
+      <div class="sec-tools"><button class="btn btn-ghost" onclick="modalImportUsuarios()">📥 Carga masiva</button><select class="filter" id="tProy" onchange="loadTecnicos()">
         <option value="">— Selecciona proyecto —</option>
         ${proyectos.map(p=>`<option value="${p.proyecto_id||p.id}">${esc(p.proyecto_nombre||p.nombre)}</option>`).join('')}
       </select></div></div>
@@ -648,6 +666,13 @@ async function guardarPerfil(){
 }
 
 // ── Helper de tabla genérica ──
+// Código identificador de un proyecto: RUT de la empresa + slug del proyecto.
+// Ej: "77466910-8 / tigo". Único porque el slug es único dentro de cada empresa.
+function codProyecto(rut, slug){
+  const r = (rut||'').trim(), s = (slug||'').trim();
+  if(!r && !s) return '—';
+  return r && s ? `${r} / ${s}` : (r || s);
+}
 function sectionTable({name,sub,tools='',addBtn='',head,rows,emptyIcon,emptyMsg}){
   return `<div class="section">
     <div class="sec-head"><div><div class="sec-name">${name}</div><div class="sec-sub">${sub||''}</div></div>
@@ -667,7 +692,7 @@ $('modalBg').addEventListener('click',e=>{ if(e.target===$('modalBg')) closeModa
 function modalEmpresa(){
   openModal(`<h3>Nueva empresa</h3><p class="modal-sub">Crea un nuevo cliente en la plataforma.</p>
     <div class="field"><label>Nombre</label><input id="mNombre" placeholder="ICETEL SpA"></div>
-    <div class="field"><label>RUT empresa</label><input id="mRut" placeholder="76.086.428-5"><div class="hint">Opcional · se valida con dígito verificador.</div></div>
+    <div class="field"><label>RUT empresa</label><input id="mRut" placeholder="76.086.428-5"><div class="hint">Obligatorio · identificador único de la empresa, se valida con dígito verificador.</div></div>
     <div class="field"><label>Identificador (slug)</label><input id="mSlug" placeholder="icetel"><div class="hint">Opcional · se genera del nombre si lo dejas vacío.</div></div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -677,6 +702,7 @@ function modalEmpresa(){
 async function crearEmpresa(btn){
   const nombre=$('mNombre').value.trim(), slug=$('mSlug').value.trim().toLowerCase(), rut_empresa=$('mRut').value.trim();
   if(!nombre) return showErr('El nombre es requerido');
+  if(!rut_empresa) return showErr('El RUT de empresa es obligatorio (identificador único)');
   btn.disabled=true;
   try{ await api('/api/empresas',{method:'POST',body:JSON.stringify({nombre,slug:slug||undefined,rut_empresa:rut_empresa||undefined})});
     closeModal(); toast('Empresa creada','ok'); go('empresas');
@@ -707,13 +733,25 @@ async function guardarEmpresa(id,btn){
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 // Nuevo usuario con empresa preseleccionada (desde el detalle de empresa)
-function modalUsuarioEmpresa(empId, empNombre){
-  openModal(`<h3>Nuevo usuario</h3><p class="modal-sub">Se creará en <b>${esc(empNombre)}</b>.</p>
+async function modalUsuarioEmpresa(empId, empNombre){
+  let areas=[];
+  try{ areas = await api('/auth/areas?empresa_id='+encodeURIComponent(empId)); }catch{}
+  const areaOpts = `<option value="">— Sin área —</option>`+
+    (areas||[]).map(a=>`<option value="${esc(a.id)}">${esc(a.nombre)}</option>`).join('');
+  openModal(`<div class="modal-head"><div class="modal-ico">👤</div>
+      <div><h3>Nuevo usuario</h3><p class="modal-sub">Se creará en <b>${esc(empNombre)}</b>.</p></div></div>
     <div class="field"><label>Nombre completo</label><input id="nuNombre" placeholder="Juan Pérez"></div>
+    <div class="field-row">
+      <div class="field"><label>RUT</label><input id="nuRut" placeholder="12.345.678-9"></div>
+      <div class="field"><label>Cargo</label><input id="nuCargo" placeholder="Técnico de terreno"></div>
+    </div>
     <div class="field"><label>Email</label><input id="nuEmail" type="email" placeholder="correo@dominio.com"></div>
     <div class="field"><label>Contraseña temporal</label><input id="nuPass" type="password" placeholder="Mínimo 6 caracteres"></div>
-    <div class="field"><label>Rol</label><select id="nuRol">
-      ${ME.rol==='superadmin'?'<option value="admin_empresa">Administrador</option>':''}<option value="supervisor">Supervisor</option><option value="tecnico" selected>Técnico</option></select></div>
+    <div class="field-row">
+      <div class="field"><label>Rol</label><select id="nuRol">
+        ${ME.rol==='superadmin'?'<option value="admin_empresa">Administrador</option>':''}<option value="supervisor">Supervisor</option><option value="tecnico" selected>Técnico</option></select></div>
+      <div class="field"><label>Área</label><select id="nuArea">${areaOpts}</select></div>
+    </div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="crearUsuarioEmpresa('${empId}',this)">Crear usuario</button></div>`);
@@ -721,27 +759,31 @@ function modalUsuarioEmpresa(empId, empNombre){
 }
 async function crearUsuarioEmpresa(empId,btn){
   const nombre=$('nuNombre').value.trim(), email=$('nuEmail').value.trim(), password=$('nuPass').value, rol=$('nuRol').value;
-  if(!nombre||!email||!password) return showErr('Todos los campos son requeridos');
+  const rut=$('nuRut').value.trim(), cargo=$('nuCargo').value.trim(), area_id=$('nuArea').value||null;
+  if(!nombre||!email||!password) return showErr('Nombre, email y contraseña son requeridos');
   if(password.length<6) return showErr('La contraseña debe tener 6+ caracteres');
   btn.disabled=true;
-  try{ await api('/api/usuarios',{method:'POST',body:JSON.stringify({nombre,email,password,rol,empresa_id:empId})});
+  try{ await api('/api/usuarios',{method:'POST',body:JSON.stringify({nombre,email,password,rol,empresa_id:empId,rut:rut||null,cargo:cargo||null,area_id})});
     closeModal(); toast('Usuario creado','ok'); verEmpresa(empId);
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 
 async function modalProyecto(empresaId, empresaNombre){
-  let empOpts='';
+  let empOpts='', ctx='';
   if(empresaId){
-    // Empresa fija (abierto desde el detalle de una empresa)
-    empOpts=`<div class="field"><label>Empresa</label>
-      <input value="${esc(empresaNombre||'')}" disabled style="background:#F6F7FB">
-      <input type="hidden" id="mEmp" value="${esc(empresaId)}"></div>`;
+    // Empresa fija (abierto desde el detalle de una empresa): mostrar RUT como identificador
+    let emp=null; try{ emp = await api('/api/empresas/'+empresaId); }catch{}
+    ctx = `<div class="ctx-box"><div class="ctx-ico">🏢</div><div>
+      <div class="ctx-name">${esc(empresaNombre||emp?.nombre||'')}</div>
+      <div class="ctx-rut">RUT ${esc(emp?.rut_empresa||'sin registrar')}</div></div></div>`;
+    empOpts = `<input type="hidden" id="mEmp" value="${esc(empresaId)}">`;
   } else if(ME.rol==='superadmin'){
     const emps = window._empresas?.length?window._empresas:await api('/auth/empresas');
-    empOpts=`<div class="field"><label>Empresa</label><select id="mEmp">${emps.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('')}</select></div>`;
+    empOpts=`<div class="field"><label>Empresa</label><select id="mEmp">${emps.map(e=>`<option value="${e.id}">${esc(e.nombre)}${e.rut_empresa?' — '+esc(e.rut_empresa):''}</option>`).join('')}</select></div>`;
   }
-  openModal(`<h3>Nuevo proyecto</h3><p class="modal-sub">Quedará ligado a su empresa.</p>
-    ${empOpts}
+  openModal(`<div class="modal-head"><div class="modal-ico">📁</div>
+      <div><h3>Nuevo proyecto</h3><p class="modal-sub">Quedará ligado a su empresa.</p></div></div>
+    ${ctx}${empOpts}
     <div class="field"><label>Nombre</label><input id="mPNombre" placeholder="Mantención Clima TIGO"></div>
     <div class="field"><label>Identificador (slug)</label><input id="mPSlug" placeholder="tigo-clima"></div>
     <div class="field"><label>Estado</label><select id="mPEstado">
@@ -767,8 +809,14 @@ async function crearProyecto(btn, empresaId){
 
 async function modalEditarProyecto(pid, empresaId){
   const p = await api('/api/gestion/proyectos/'+pid);
+  let emp=null; try{ emp = await api('/api/empresas/'+(p.empresa_id||empresaId)); }catch{}
+  const ctx = emp ? `<div class="ctx-box"><div class="ctx-ico">🏢</div><div>
+      <div class="ctx-name">${esc(emp.nombre)}</div>
+      <div class="ctx-rut">RUT ${esc(emp.rut_empresa||'sin registrar')}</div></div></div>` : '';
   const estados = ['activo','planificado','pausado','finalizado','cancelado'];
-  openModal(`<h3>Editar proyecto</h3><p class="modal-sub">Actualiza la información del proyecto.</p>
+  openModal(`<div class="modal-head"><div class="modal-ico">📁</div>
+      <div><h3>Editar proyecto</h3><p class="modal-sub">Actualiza la información del proyecto.</p></div></div>
+    ${ctx}
     <div class="field"><label>Nombre</label><input id="ePNombre" value="${esc(p.nombre||'')}"></div>
     <div class="field"><label>Identificador (slug)</label><input id="ePSlug" value="${esc(p.slug||'')}"></div>
     <div class="field"><label>Estado</label><select id="ePEstado">
@@ -790,14 +838,26 @@ async function guardarProyecto(pid, empresaId, btn){
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 
-function modalUsuario(){
+async function modalUsuario(){
   const roles = ME.rol==='supervisor' ? [['tecnico','Técnico']]
     : [['supervisor','Supervisor'],['tecnico','Técnico']];
-  openModal(`<h3>Crear acceso</h3><p class="modal-sub">Se genera una cuenta para tu empresa.</p>
+  let areas=[];
+  try{ areas = await api('/auth/areas'); }catch{}
+  const areaOpts = `<option value="">— Sin área —</option>`+
+    (areas||[]).map(a=>`<option value="${esc(a.id)}">${esc(a.nombre)}</option>`).join('');
+  openModal(`<div class="modal-head"><div class="modal-ico">👤</div>
+      <div><h3>Crear acceso</h3><p class="modal-sub">Se genera una cuenta para tu empresa.</p></div></div>
     <div class="field"><label>Nombre completo</label><input id="mUNombre" placeholder="Juan Pérez"></div>
+    <div class="field-row">
+      <div class="field"><label>RUT</label><input id="mURut" placeholder="12.345.678-9"></div>
+      <div class="field"><label>Cargo</label><input id="mUCargo" placeholder="Técnico de terreno"></div>
+    </div>
     <div class="field"><label>Email</label><input id="mUEmail" type="email" placeholder="correo@dominio.com"></div>
     <div class="field"><label>Contraseña temporal</label><input id="mUPass" type="password" placeholder="Mínimo 6 caracteres"></div>
-    <div class="field"><label>Rol</label><select id="mURol">${roles.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
+    <div class="field-row">
+      <div class="field"><label>Rol</label><select id="mURol">${roles.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
+      <div class="field"><label>Área</label><select id="mUArea">${areaOpts}</select></div>
+    </div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="crearUsuario(this)">Crear cuenta</button></div>`);
@@ -805,11 +865,60 @@ function modalUsuario(){
 }
 async function crearUsuario(btn){
   const nombre=$('mUNombre').value.trim(), email=$('mUEmail').value.trim(), password=$('mUPass').value, rol=$('mURol').value;
-  if(!nombre||!email||!password) return showErr('Todos los campos son requeridos');
+  const rut=$('mURut').value.trim(), cargo=$('mUCargo').value.trim(), area_id=$('mUArea').value||null;
+  if(!nombre||!email||!password) return showErr('Nombre, email y contraseña son requeridos');
   if(password.length<6) return showErr('La contraseña debe tener 6+ caracteres');
   btn.disabled=true;
-  try{ await api('/auth/crear-usuario',{method:'POST',body:JSON.stringify({nombre,email,password,rol})});
+  try{ await api('/auth/crear-usuario',{method:'POST',body:JSON.stringify({nombre,email,password,rol,rut:rut||null,cargo:cargo||null,area_id})});
     closeModal(); toast('Usuario creado','ok'); go('usuarios');
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+
+// ── Carga masiva de usuarios (supervisor / admin_empresa) ──
+function modalImportUsuarios(){
+  openModal(`<div class="modal-head"><div class="modal-ico">📥</div>
+      <div><h3>Carga masiva de usuarios</h3><p class="modal-sub">Crea varios usuarios a la vez desde un Excel.</p></div></div>
+    <div class="field"><label>1 · Plantilla</label>
+      <button class="btn btn-sm btn-ghost" type="button" onclick="descargarPlantillaUsuarios(this)">⬇ Descargar plantilla .xlsx</button>
+      <div class="hint">Columnas: Nombre, Apellido, RUT, Email, Empresa, RUT Empresa, Cargo, Supervisor, RUT Supervisor. El supervisor se vincula por su RUT.</div></div>
+    <div class="field"><label>2 · Archivo completado</label>
+      <input id="impFile" type="file" accept=".xlsx,.xls"></div>
+    <div id="impResult"></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cerrar</button>
+      <button class="btn-confirm" onclick="importarUsuarios(this)">Importar</button></div>`);
+}
+async function descargarPlantillaUsuarios(btn){
+  btn.disabled=true;
+  try{
+    const r = await fetch('/api/usuarios/plantilla',{ headers: aH() });
+    if(!r.ok) throw new Error('No se pudo descargar la plantilla');
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='plantilla-usuarios.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  }catch(e){ showErr(e.message); } finally{ btn.disabled=false; }
+}
+async function importarUsuarios(btn){
+  const file = $('impFile').files[0];
+  if(!file) return showErr('Selecciona el archivo .xlsx completado');
+  btn.disabled=true;
+  try{
+    const dataBase64 = await new Promise((res,rej)=>{
+      const fr=new FileReader();
+      fr.onload=()=>res(String(fr.result).split(',')[1]);
+      fr.onerror=()=>rej(new Error('No se pudo leer el archivo'));
+      fr.readAsDataURL(file);
+    });
+    const r = await api('/api/usuarios/importar',{method:'POST',body:JSON.stringify({dataBase64})});
+    const okRows = r.creados.map(c=>`<tr><td>${c.fila}</td><td>${esc(c.nombre)}</td><td class="muted">${esc(c.email)}</td><td><span class="pill pill-${c.rol}">${ROL_LABEL[c.rol]||c.rol}</span></td><td class="muted">${esc(c.password_temporal)}</td></tr>`).join('');
+    const errRows = r.errores.map(e=>`<tr><td>${e.fila}</td><td>${esc(e.nombre)}</td><td colspan="3" style="color:#E2445C">${esc(e.error)}</td></tr>`).join('');
+    $('impResult').innerHTML = `<div class="hint" style="margin:12px 0 6px">✅ Creados: <b>${r.creados.length}</b> · ❌ Con error: <b>${r.errores.length}</b></div>
+      ${(okRows||errRows)?`<div style="max-height:240px;overflow:auto;border:1px solid #E6E9EF;border-radius:8px">
+        <table style="margin:0"><thead><tr><th>Fila</th><th>Nombre</th><th>Email / Detalle</th><th>Rol</th><th>Clave temp.</th></tr></thead>
+        <tbody>${okRows}${errRows}</tbody></table></div><div class="hint" style="margin-top:6px">Entrega a cada usuario su email y clave temporal; deberá cambiarla al ingresar.</div>`:''}`;
+    if(r.creados.length){ toast(`${r.creados.length} usuario(s) creado(s)`,'ok'); window._usuarios=null; }
+    btn.disabled=false;
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 async function editarUsuario(id){

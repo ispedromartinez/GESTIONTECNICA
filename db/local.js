@@ -107,6 +107,8 @@ db.exec(`
 
 // ── Migraciones idempotentes (ADD COLUMN lanza error si ya existe) ──
 try { db.exec("ALTER TABLE empresas ADD COLUMN rut_empresa TEXT"); } catch {}
+// Vínculo técnico → supervisor (carga masiva de usuarios)
+try { db.exec("ALTER TABLE usuarios ADD COLUMN supervisor_id TEXT"); } catch {}
 
 function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -129,10 +131,10 @@ const local = {
     insert(u) {
       const id = uuid();
       db.prepare(`
-        INSERT INTO usuarios (id, empresa_id, nombre, email, password_hash, rol, activo)
-        VALUES (?, ?, ?, ?, ?, ?, 1)
-      `).run(id, u.empresa_id || null, u.nombre, u.email, u.password_hash, u.rol);
-      return db.prepare('SELECT id, nombre, email, rol, empresa_id FROM usuarios WHERE id = ?').get(id);
+        INSERT INTO usuarios (id, empresa_id, nombre, email, password_hash, rol, supervisor_id, activo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+      `).run(id, u.empresa_id || null, u.nombre, u.email, u.password_hash, u.rol, u.supervisor_id || null);
+      return db.prepare('SELECT id, nombre, email, rol, empresa_id, supervisor_id FROM usuarios WHERE id = ?').get(id);
     },
     delete(id) {
       db.prepare('DELETE FROM usuarios WHERE id = ?').run(id);
@@ -154,7 +156,7 @@ const local = {
     // Lista enriquecida con RUT (perfil) y nombre de empresa — para el panel admin
     listDetalle(empresa_id) {
       const base = `SELECT u.id, u.nombre, u.email, u.rol, u.activo, u.empresa_id,
-                           p.rut, e.nombre AS empresa_nombre
+                           p.rut, e.nombre AS empresa_nombre, e.rut_empresa AS empresa_rut
                     FROM usuarios u
                     LEFT JOIN perfiles p ON p.usuario_id = u.id
                     LEFT JOIN empresas e ON e.id = u.empresa_id`;

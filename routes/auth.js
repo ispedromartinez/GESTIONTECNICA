@@ -3,6 +3,8 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { authMiddleware, JWT_SECRET } = require('../middleware/auth');
 const { requireRol } = require('../middleware/roles');
+const { validarRut, normalizarRut } = require('../utils/rut');
+const gestionDB = require('../db/gestion');
 
 const router = express.Router();
 
@@ -109,12 +111,13 @@ const db = {
   async listUsuarios(empresa_id) {
     if (supabaseClient) {
       let q = supabaseClient.from('usuarios')
-        .select('id,nombre,email,rol,activo,empresa_id,perfiles(rut),empresas(nombre)');
+        .select('id,nombre,email,rol,activo,empresa_id,perfiles(rut),empresas(nombre,rut_empresa)');
       if (empresa_id) q = q.eq('empresa_id', empresa_id);
       const { data } = await q;
       return (data || []).map(u => ({
         id:u.id, nombre:u.nombre, email:u.email, rol:u.rol, activo:u.activo, empresa_id:u.empresa_id,
-        rut: u.perfiles?.rut || null, empresa_nombre: u.empresas?.nombre || null
+        rut: u.perfiles?.rut || null, empresa_nombre: u.empresas?.nombre || null,
+        empresa_rut: u.empresas?.rut_empresa || null
       }));
     }
     return localDB.usuarios.listDetalle(empresa_id);
@@ -254,7 +257,7 @@ router.post('/crear-empresa', authMiddleware, requireRol('superadmin'), async (r
 router.post('/crear-usuario', authMiddleware, async (req, res) => {
   try {
     const { rol: rolCreador, empresa_id: empresaCreador } = req.user;
-    const { nombre, email, password, rol, empresa_id } = req.body;
+    const { nombre, email, password, rol, empresa_id, rut, cargo, area_id } = req.body;
 
     if (!nombre || !email || !password || !rol)
       return res.status(400).json({ error: 'nombre, email, password y rol son requeridos' });
@@ -276,15 +279,41 @@ router.post('/crear-usuario', authMiddleware, async (req, res) => {
       return res.status(403).json({ error: 'Sin permisos para crear usuarios' });
     }
 
+    const empresaFinal = rol === 'superadmin' ? null : (empresa_id || empresaCreador);
+
+    // RUT (opcional): valida dígito verificador y unicidad ANTES de crear
+    let rutNorm = null;
+    if (rut) {
+      if (!validarRut(rut))
+        return res.status(400).json({ error: 'RUT inválido (dígito verificador incorrecto)' });
+      rutNorm = normalizarRut(rut);
+      if (await gestionDB.perfilByRut(rutNorm))
+        return res.status(409).json({ error: 'Ese RUT ya está registrado' });
+    }
+
+    // Área (opcional): debe pertenecer a la empresa del usuario
+    if (area_id) {
+      const area = await gestionDB.areaById(area_id);
+      if (!area || area.empresa_id !== empresaFinal)
+        return res.status(400).json({ error: 'El área no pertenece a esta empresa' });
+    }
+
     const password_hash = await bcrypt.hash(password, 12);
     const usuario = await db.insertUsuario({
       nombre,
       email: email.toLowerCase().trim(),
       password_hash,
       rol,
-      empresa_id: rol === 'superadmin' ? null : (empresa_id || empresaCreador),
+      empresa_id: empresaFinal,
       activo: true
     });
+
+    // Perfil (RUT / cargo) y asignación de área, ya con el id del usuario
+    if (rutNorm || cargo)
+      await gestionDB.perfilUpsert({ usuario_id: usuario.id, rut: rutNorm, nombre, cargo: cargo || null });
+    if (area_id)
+      await gestionDB.usuarioAreaUpsert(usuario.id, area_id, req.user.usuario_id);
+
     res.json({ ok: true, usuario });
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -282,7 +282,7 @@ const db = {
   async usuarioInsert(u) {
     if (supa) {
       const { data, error } = await supa.from('usuarios').insert(u)
-        .select('id,nombre,email,rol,empresa_id,activo').single();
+        .select('id,nombre,email,rol,empresa_id,supervisor_id,activo').single();
       if (error) throw new Error(error.message);
       return data;
     }
@@ -297,6 +297,33 @@ const db = {
       return data;
     }
     return local.usuarios.update(id, fields);
+  },
+
+  // ── ÁREAS ───────────────────────────────────────────────────
+  async areaById(id) {
+    if (supa) {
+      const { data } = await supa.from('areas').select('*').eq('id', id).single();
+      return data || null;
+    }
+    return local.areas.findById(id) || null;
+  },
+
+  async areasByEmpresa(empresa_id) {
+    if (supa) {
+      const { data } = await supa.from('areas').select('*').eq('empresa_id', empresa_id).eq('activa', true);
+      return data || [];
+    }
+    return local.areas.listByEmpresa(empresa_id);
+  },
+
+  async usuarioAreaUpsert(usuario_id, area_id, asignado_por) {
+    if (supa) {
+      const { error } = await supa.from('usuario_areas')
+        .upsert({ usuario_id, area_id, asignado_por }, { onConflict: 'usuario_id,area_id' });
+      if (error) throw new Error(error.message);
+      return;
+    }
+    return local.usuario_areas.upsert(usuario_id, area_id, asignado_por);
   },
 
   get usandoSupabase() { return !!supa; }
