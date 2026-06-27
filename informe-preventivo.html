@@ -565,7 +565,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('tareaId').value = tareaId;
     cargarDatosTarea(tareaId);
   }
-  aplicarBloqueoPorRol(); // técnico: dirección, CRQ y técnico quedan solo lectura
+  aplicarBloqueoPorRol(); // técnico: CRQ y técnico quedan solo lectura
   document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
   document.getElementById('hora').value = new Date().toTimeString().slice(0,5);
   addEquipo();
@@ -690,11 +690,11 @@ function rolUsuario() {
     return raw ? (JSON.parse(raw).rol || '') : '';
   } catch { return ''; }
 }
-// El técnico no puede modificar Dirección, N° CRQ/INC ni Técnico:
+// El técnico no puede modificar N° CRQ/INC ni Técnico:
 // esos campos solo los edita supervisor o admin. Se siguen autocompletando.
 function aplicarBloqueoPorRol() {
   if (rolUsuario() === 'tecnico') {
-    ['direccion', 'crq', 'ejecutante'].forEach(lockField);
+    ['crq', 'ejecutante'].forEach(lockField);
   }
 }
 function setSelectField(id, val) {

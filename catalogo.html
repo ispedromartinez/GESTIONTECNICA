@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catálogo de sitios – GestiónTécnica</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Poppins',sans-serif;background:#F0F2F8;color:#323338;min-height:100vh;}
+
+header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.h-left{display:flex;align-items:center;gap:12px;}
+.h-back{color:rgba(255,255,255,.5);font-size:12px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.18);padding:5px 12px;border-radius:7px;transition:.15s;}
+.h-back:hover{background:rgba(255,255,255,.1);color:#fff;}
+.h-name{font-size:15px;font-weight:700;color:#fff;}
+
+.main{max-width:980px;margin:0 auto;padding:24px 16px 60px;}
+.card{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.07);border:1px solid #E6E9EF;overflow:hidden;}
+.toolbar{padding:16px 20px;border-bottom:1px solid #F0F1F5;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.search{flex:1;min-width:200px;position:relative;}
+.search input{width:100%;border:1.5px solid #E6E9EF;border-radius:9px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;background:#F6F7FB;transition:.15s;}
+.search input:focus{border-color:#0073EA;background:#fff;}
+.count{font-size:12px;color:#676879;font-weight:500;white-space:nowrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn-primary{background:#0073EA;color:#fff;}
+.btn-primary:hover{opacity:.88;}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;}
+.btn-ghost{background:#fff;border:1.5px solid #E6E9EF;color:#676879;}
+
+.tbl-wrap{max-height:64vh;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{position:sticky;top:0;background:#F8F9FC;padding:10px 16px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid #E6E9EF;z-index:1;}
+tbody td{padding:9px 16px;border-bottom:1px solid #F6F7FB;color:#323338;}
+tbody tr:hover{background:#FAFBFF;}
+.td-sitio{font-weight:600;}
+.td-dir{color:#676879;font-size:12px;}
+.chk{width:16px;height:16px;cursor:pointer;accent-color:#0073EA;}
+.empty{padding:40px;text-align:center;color:#9ba1b0;font-size:13px;}
+
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(28,31,59,.55);z-index:300;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:440px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-head{padding:18px 22px;border-bottom:1px solid #F0F1F5;font-size:15px;font-weight:700;}
+.modal-body{padding:12px 22px;overflow-y:auto;}
+.modal-foot{padding:14px 22px;border-top:1px solid #F0F1F5;display:flex;justify-content:flex-end;gap:10px;}
+.proj-opt{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer;}
+.proj-opt:hover{background:#F6F7FB;}
+.proj-opt .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.proj-opt .nm{font-size:13px;font-weight:600;}
+.proj-opt .meta{font-size:11px;color:#9ba1b0;margin-left:auto;}
+
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#323338;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<script>
+(function(){
+  const t = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (!t) { window.location.replace('/login'); throw ''; }
+})();
+const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
+const NIVEL = { superadmin:4, admin_empresa:3, supervisor:2, tecnico:1 };
+</script>
+
+<header>
+  <div class="h-left">
+    <a href="/dashboard" class="h-back">← Inicio</a>
+    <span class="h-name">Catálogo de sitios</span>
+  </div>
+</header>
+
+<div class="main">
+  <div class="card">
+    <div class="toolbar">
+      <div class="search"><input id="q" type="text" placeholder="Buscar por sitio, comuna o dirección…" oninput="render()"></div>
+      <span class="count" id="count">0 sitios</span>
+      <button class="btn btn-primary" id="btnAsignar" onclick="abrirModal()" disabled style="display:none">Asignar a proyectos</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:34px"><input type="checkbox" class="chk" id="chkAll" onchange="toggleAll(this)"></th>
+          <th>Sitio</th><th>Comuna</th><th>Dirección</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" style="display:none">No hay sitios que coincidan.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de proyectos -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-head">Asignar <span id="modalN">0</span> sitio(s) a:</div>
+    <div class="modal-body" id="modalProyectos"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmar" onclick="confirmarAsignacion()">Asignar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let SITIOS = [];        // catálogo completo
+let PROYECTOS = [];     // proyectos del usuario
+let seleccion = new Set(); // índices seleccionados (sobre SITIOS)
+let puedeAsignar = false;
+
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.className='show'; clearTimeout(el._t); el._t=setTimeout(()=>el.className='',2600); }
+
+async function init(){
+  try{
+    const me = await fetch('/auth/me', { headers: authH() });
+    if(!me.ok){ window.location.replace('/login'); return; }
+    const { usuario } = await me.json();
+    puedeAsignar = (NIVEL[usuario.rol]||0) >= 3;
+    if(puedeAsignar) document.getElementById('btnAsignar').style.display='inline-flex';
+
+    const [sR, pR] = await Promise.all([
+      fetch('/api/sitios-preventivos', { headers: authH() }),
+      fetch('/api/proyectos', { headers: authH() })
+    ]);
+    SITIOS = sR.ok ? await sR.json() : [];
+    PROYECTOS = pR.ok ? await pR.json() : [];
+    render();
+  }catch(e){ toast('Error: '+e.message); }
+}
+
+function filtrados(){
+  const q = (document.getElementById('q').value||'').trim().toLowerCase();
+  return SITIOS
+    .map((s,i)=>({s,i}))
+    .filter(({s})=> !q || (s.nombre+' '+(s.ciudad||'')+' '+(s.direccion||'')).toLowerCase().includes(q));
+}
+
+function render(){
+  const rows = filtrados();
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = rows.map(({s,i})=>`
+    <tr>
+      <td><input type="checkbox" class="chk" data-i="${i}" ${seleccion.has(i)?'checked':''} onchange="toggleOne(this)"></td>
+      <td class="td-sitio">${esc(s.nombre)}</td>
+      <td>${esc(s.ciudad||'—')}</td>
+      <td class="td-dir">${esc(s.direccion||'—')}</td>
+    </tr>`).join('');
+  document.getElementById('empty').style.display = rows.length?'none':'block';
+  document.getElementById('count').textContent =
+    seleccion.size ? `${seleccion.size} seleccionados · ${rows.length} sitios` : `${rows.length} sitios`;
+  document.getElementById('btnAsignar').disabled = !(puedeAsignar && seleccion.size);
+  const all = rows.length && rows.every(({i})=>seleccion.has(i));
+  document.getElementById('chkAll').checked = !!all;
+}
+
+function toggleOne(cb){ const i=+cb.dataset.i; cb.checked?seleccion.add(i):seleccion.delete(i); render(); }
+function toggleAll(cb){ filtrados().forEach(({i})=> cb.checked?seleccion.add(i):seleccion.delete(i)); render(); }
+
+function abrirModal(){
+  if(!seleccion.size) return;
+  document.getElementById('modalN').textContent = seleccion.size;
+  if(!PROYECTOS.length){
+    document.getElementById('modalProyectos').innerHTML = '<div class="empty">No tienes proyectos disponibles.</div>';
+  } else {
+    document.getElementById('modalProyectos').innerHTML = PROYECTOS.map(p=>`
+      <label class="proj-opt">
+        <input type="checkbox" class="chk" value="${esc(p.slug)}">
+        <span class="dot" style="background:${esc(p.color||'#9ba1b0')}"></span>
+        <span class="nm">${esc(p.nombre)}</span>
+        <span class="meta">${p.totalSitios||0} sitios</span>
+      </label>`).join('');
+  }
+  document.getElementById('modal').classList.add('show');
+}
+function cerrarModal(){ document.getElementById('modal').classList.remove('show'); }
+
+async function confirmarAsignacion(){
+  const slugs = [...document.querySelectorAll('#modalProyectos input:checked')].map(c=>c.value);
+  if(!slugs.length){ toast('Elige al menos un proyecto'); return; }
+  const sitios = [...seleccion].map(i=>{ const s=SITIOS[i]; return { nombre:s.nombre, direccion:s.direccion||'', comuna:s.ciudad||'' }; });
+  const btn = document.getElementById('btnConfirmar'); btn.disabled=true;
+  try{
+    const r = await fetch('/api/proyectos/sitios/asignar', {
+      method:'POST', headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify({ sitios, slugs })
+    });
+    const d = await r.json();
+    if(!r.ok){ toast(d.error||'Error al asignar'); return; }
+    const n = (d.asignados||[]).length;
+    toast(`${sitios.length} sitio(s) asignados a ${n} proyecto(s)` + ((d.omitidos&&d.omitidos.length)?` · ${d.omitidos.length} omitidos`:''));
+    seleccion.clear(); cerrarModal();
+    const pR = await fetch('/api/proyectos', { headers: authH() }); // refresca contadores
+    if(pR.ok) PROYECTOS = await pR.json();
+    render();
+  }catch(e){ toast('Error: '+e.message); }
+  finally{ btn.disabled=false; }
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+init();
+</script>
+</body>
+</html>

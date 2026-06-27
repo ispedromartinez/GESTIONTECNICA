@@ -72,6 +72,7 @@ app.get('/panel', (req, res) => res.sendFile(path.join(__dirname, 'panel_tecnico
 app.get('/preventivo', (req, res) => res.sendFile(path.join(__dirname, 'preventivo.html'))); // mantenimiento preventivo
 app.get('/perfil', (req, res) => res.sendFile(path.join(__dirname, 'perfil.html'))); // perfil del usuario
 app.get('/nuevo-proyecto', (req, res) => res.sendFile(path.join(__dirname, 'nuevo_proyecto.html')));
+app.get('/catalogo', (req, res) => res.sendFile(path.join(__dirname, 'catalogo.html'))); // catálogo de sitios
 app.get('/proyecto/:slug', (req, res) => res.sendFile(path.join(__dirname, 'proyecto.html')));
 
 // ── Proyectos personalizados ──────────────────────────────────
@@ -157,6 +158,73 @@ app.delete('/api/proyectos/:slug', authMiddleware, requireRol('superadmin'), (re
   if (idx===-1) return res.status(404).json({ error: 'No encontrado' });
   ps.splice(idx,1); saveProyectos(ps);
   res.json({ ok:true });
+});
+
+// ── Asignación de sitios del catálogo a proyectos ────────────────
+// Los sitios se guardan como tupla [nombre, direccion, comuna] (la 3.ª pos
+// es opcional y compatible con los datos antiguos [nombre, direccion]).
+function normSitio(s) {
+  if (Array.isArray(s)) return [String(s[0]||'').trim(), String(s[1]||'').trim(), String(s[2]||'').trim()];
+  return [String(s.nombre||'').trim(), String(s.direccion||'').trim(), String(s.comuna||s.ciudad||'').trim()];
+}
+function claveSitio(t) { return (t[0]+'|'+t[1]).toLowerCase(); }
+// Mergea sitios nuevos en el proyecto evitando duplicados (por nombre+dirección).
+function mergeSitios(proyecto, sitios) {
+  proyecto.sitios = proyecto.sitios || [];
+  const vistos = new Set(proyecto.sitios.map(s => claveSitio(normSitio(s))));
+  for (const raw of (sitios||[])) {
+    const t = normSitio(raw);
+    if (!t[0]) continue;                       // sin nombre, se ignora
+    const k = claveSitio(t);
+    if (vistos.has(k)) continue;
+    vistos.add(k);
+    proyecto.sitios.push(t);
+  }
+  return proyecto.sitios.length;
+}
+// El usuario solo puede tocar proyectos de su empresa (superadmin, todas).
+function puedeEditarProyecto(user, proyecto) {
+  return user.rol === 'superadmin' || proyecto.empresa_id === user.empresa_id;
+}
+
+// Asignar sitios a UN proyecto
+app.post('/api/proyectos/:slug/sitios', authMiddleware, requireNivel(3), (req, res) => {
+  const ps = loadProyectos();
+  const p = ps.find(x => x.slug === req.params.slug);
+  if (!p) return res.status(404).json({ error: 'Proyecto no encontrado' });
+  if (!puedeEditarProyecto(req.user, p)) return res.status(403).json({ error: 'Proyecto de otra empresa' });
+  const total = mergeSitios(p, req.body && req.body.sitios);
+  saveProyectos(ps);
+  res.json({ ok: true, totalSitios: total });
+});
+
+// Quitar un sitio de un proyecto (por nombre)
+app.delete('/api/proyectos/:slug/sitios', authMiddleware, requireNivel(3), (req, res) => {
+  const ps = loadProyectos();
+  const p = ps.find(x => x.slug === req.params.slug);
+  if (!p) return res.status(404).json({ error: 'Proyecto no encontrado' });
+  if (!puedeEditarProyecto(req.user, p)) return res.status(403).json({ error: 'Proyecto de otra empresa' });
+  const nombre = String((req.body && req.body.nombre) || '').trim().toLowerCase();
+  if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
+  p.sitios = (p.sitios || []).filter(s => normSitio(s)[0].toLowerCase() !== nombre);
+  saveProyectos(ps);
+  res.json({ ok: true, totalSitios: p.sitios.length });
+});
+
+// Asignación masiva: mismos sitios a varios proyectos
+app.post('/api/proyectos/sitios/asignar', authMiddleware, requireNivel(3), (req, res) => {
+  const { sitios, slugs } = req.body || {};
+  if (!Array.isArray(slugs) || !slugs.length) return res.status(400).json({ error: 'slugs requeridos' });
+  const ps = loadProyectos();
+  const asignados = [], omitidos = [];
+  for (const slug of slugs) {
+    const p = ps.find(x => x.slug === slug);
+    if (!p || !puedeEditarProyecto(req.user, p)) { omitidos.push(slug); continue; }
+    const total = mergeSitios(p, sitios);
+    asignados.push({ slug, totalSitios: total });
+  }
+  saveProyectos(ps);
+  res.json({ ok: true, asignados, omitidos });
 });
 
 // ── GET /api/dashboard – datos unificados por rol ─────────────

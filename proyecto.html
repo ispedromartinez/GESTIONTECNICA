@@ -131,7 +131,10 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
   <div class="section-card" id="secSitios" style="display:none">
     <div class="sec-head">
       <div class="sec-title"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>Sitios</div>
-      <span id="sitiosTotal" style="font-size:12px;color:#676879"></span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span id="sitiosTotal" style="font-size:12px;color:#676879"></span>
+        <button id="btnAddSitios" onclick="abrirModalSitios()" style="display:none;background:#EEF5FF;color:#0073EA;border:1px solid #cfe2ff;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">+ Añadir sitios del catálogo</button>
+      </div>
     </div>
     <div class="sec-body" style="padding:0;">
       <div style="max-height:260px;overflow-y:auto;">
@@ -139,10 +142,38 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
           <thead><tr style="background:#F8F9FC;">
             <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">#</th>
             <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Sitio</th>
+            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Comuna</th>
             <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Dirección</th>
           </tr></thead>
           <tbody id="tblSitios"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: añadir sitios del catálogo a este proyecto -->
+  <div id="modalSitios" style="display:none;position:fixed;inset:0;background:rgba(28,31,59,.55);z-index:300;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px;">
+      <div style="padding:18px 22px;border-bottom:1px solid #F0F1F5;font-size:15px;font-weight:700;">Añadir sitios del catálogo</div>
+      <div style="padding:12px 22px 0;"><input id="qSitios" type="text" placeholder="Buscar sitio, comuna o dirección…" oninput="renderCat()" style="width:100%;border:1.5px solid #E6E9EF;border-radius:9px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;background:#F6F7FB;"></div>
+      <div style="padding:8px 22px;overflow-y:auto;flex:1;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="background:#F8F9FC;">
+            <th style="width:34px;padding:8px;border-bottom:1px solid #E6E9EF;"><input type="checkbox" id="catAll" onchange="catToggleAll(this)" style="width:16px;height:16px;accent-color:#0073EA;cursor:pointer;"></th>
+            <th style="padding:8px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #E6E9EF;">Sitio</th>
+            <th style="padding:8px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #E6E9EF;">Comuna</th>
+            <th style="padding:8px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #E6E9EF;">Dirección</th>
+          </tr></thead>
+          <tbody id="catBody"></tbody>
+        </table>
+        <div id="catEmpty" style="display:none;padding:30px;text-align:center;color:#9ba1b0;">No hay sitios que coincidan.</div>
+      </div>
+      <div style="padding:14px 22px;border-top:1px solid #F0F1F5;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <span id="catCount" style="font-size:12px;color:#676879;">0 seleccionados</span>
+        <div style="display:flex;gap:10px;">
+          <button onclick="cerrarModalSitios()" style="background:#fff;border:1.5px solid #E6E9EF;color:#676879;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
+          <button id="catConfirmar" onclick="confirmarSitios()" style="background:#0073EA;color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Añadir</button>
+        </div>
       </div>
     </div>
   </div>
@@ -160,6 +191,9 @@ const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('tok
 const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
 
 let proyConfig = null;
+let miRol = '';
+const NIVEL = { superadmin:4, admin_empresa:3, supervisor:2, tecnico:1 };
+const puedeAsignar = () => (NIVEL[miRol]||0) >= 3;
 const slug = location.pathname.split('/').pop();
 
 function toast(msg) {
@@ -177,6 +211,7 @@ async function init() {
     if (!meR.ok) { window.location.replace('/login'); return; }
     if (!pR.ok) { toast('Proyecto no encontrado'); setTimeout(() => window.location.replace('/dashboard'), 1500); return; }
 
+    try { miRol = (await meR.json()).usuario.rol || ''; } catch {}
     proyConfig = await pR.json();
     renderProyecto(proyConfig);
   } catch(e) { toast('Error: ' + e.message); }
@@ -229,21 +264,88 @@ function renderProyecto(p) {
     document.getElementById('listTecs').innerHTML = p.tecnicos.map(t => `<span class="tag">${t}</span>`).join('');
   }
 
-  // Sitios
-  if (p.sitios?.length) {
+  // Sitios — visible si hay sitios o si el rol puede asignar (para ver el botón)
+  if (p.sitios?.length || puedeAsignar()) {
     document.getElementById('secSitios').style.display = 'block';
-    document.getElementById('sitiosTotal').textContent = p.sitios.length + ' sitios';
-    document.getElementById('tblSitios').innerHTML = p.sitios.map(([n,d],i) => `
-      <tr style="border-bottom:1px solid #F6F7FB;">
-        <td style="padding:9px 18px;color:#9ba1b0;font-size:12px;">${i+1}</td>
-        <td style="padding:9px 18px;font-weight:600;">${n}</td>
-        <td style="padding:9px 18px;color:#676879;font-size:12px;">${d||'—'}</td>
-      </tr>`).join('');
+    renderSitios(p.sitios || []);
+    if (puedeAsignar()) document.getElementById('btnAddSitios').style.display = 'inline-flex';
   }
 
   // CTA button
   const btn = document.getElementById('btnNuevoInf');
   btn.style.background = `linear-gradient(135deg, ${p.color || '#0073EA'}, ${p.color || '#0073EA'}bb)`;
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Normaliza tupla [nombre, direccion, comuna] (compatible con [nombre, direccion])
+function sitioTupla(s){ return Array.isArray(s) ? [s[0]||'', s[1]||'', s[2]||''] : [s.nombre||'', s.direccion||'', s.comuna||s.ciudad||'']; }
+
+function renderSitios(sitios){
+  document.getElementById('sitiosTotal').textContent = sitios.length + ' sitios';
+  const tb = document.getElementById('tblSitios');
+  if(!sitios.length){ tb.innerHTML = '<tr><td colspan="4" style="padding:18px;text-align:center;color:#9ba1b0;font-size:12px;">Sin sitios asignados todavía.</td></tr>'; return; }
+  tb.innerHTML = sitios.map((s,i)=>{ const [n,d,c]=sitioTupla(s); return `
+    <tr style="border-bottom:1px solid #F6F7FB;">
+      <td style="padding:9px 18px;color:#9ba1b0;font-size:12px;">${i+1}</td>
+      <td style="padding:9px 18px;font-weight:600;">${esc(n)}</td>
+      <td style="padding:9px 18px;color:#676879;font-size:12px;">${esc(c||'—')}</td>
+      <td style="padding:9px 18px;color:#676879;font-size:12px;">${esc(d||'—')}</td>
+    </tr>`; }).join('');
+}
+
+// ── Modal: añadir sitios del catálogo ────────────────────────────
+let CATALOGO = [];
+let catSel = new Set();
+
+async function abrirModalSitios(){
+  document.getElementById('modalSitios').style.display='flex';
+  if(!CATALOGO.length){
+    try{
+      const r = await fetch('/api/sitios-preventivos', { headers: authH() });
+      CATALOGO = r.ok ? await r.json() : [];
+    }catch{ CATALOGO=[]; }
+  }
+  catSel.clear();
+  document.getElementById('qSitios').value='';
+  renderCat();
+}
+function cerrarModalSitios(){ document.getElementById('modalSitios').style.display='none'; }
+
+function catFiltrados(){
+  const q=(document.getElementById('qSitios').value||'').trim().toLowerCase();
+  return CATALOGO.map((s,i)=>({s,i})).filter(({s})=> !q || (s.nombre+' '+(s.ciudad||'')+' '+(s.direccion||'')).toLowerCase().includes(q));
+}
+function renderCat(){
+  const rows=catFiltrados();
+  document.getElementById('catBody').innerHTML = rows.map(({s,i})=>`
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid #F6F7FB;"><input type="checkbox" data-i="${i}" ${catSel.has(i)?'checked':''} onchange="catToggle(this)" style="width:16px;height:16px;accent-color:#0073EA;cursor:pointer;"></td>
+      <td style="padding:8px;border-bottom:1px solid #F6F7FB;font-weight:600;">${esc(s.nombre)}</td>
+      <td style="padding:8px;border-bottom:1px solid #F6F7FB;color:#676879;">${esc(s.ciudad||'—')}</td>
+      <td style="padding:8px;border-bottom:1px solid #F6F7FB;color:#676879;font-size:12px;">${esc(s.direccion||'—')}</td>
+    </tr>`).join('');
+  document.getElementById('catEmpty').style.display = rows.length?'none':'block';
+  document.getElementById('catCount').textContent = catSel.size+' seleccionados';
+  document.getElementById('catAll').checked = rows.length && rows.every(({i})=>catSel.has(i));
+}
+function catToggle(cb){ const i=+cb.dataset.i; cb.checked?catSel.add(i):catSel.delete(i); renderCat(); }
+function catToggleAll(cb){ catFiltrados().forEach(({i})=> cb.checked?catSel.add(i):catSel.delete(i)); renderCat(); }
+
+async function confirmarSitios(){
+  if(!catSel.size){ toast('Selecciona al menos un sitio'); return; }
+  const sitios=[...catSel].map(i=>{ const s=CATALOGO[i]; return { nombre:s.nombre, direccion:s.direccion||'', comuna:s.ciudad||'' }; });
+  const btn=document.getElementById('catConfirmar'); btn.disabled=true;
+  try{
+    const r=await fetch(`/api/proyectos/${slug}/sitios`, { method:'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify({ sitios }) });
+    const d=await r.json();
+    if(!r.ok){ toast(d.error||'Error al añadir'); return; }
+    toast(`${sitios.length} sitio(s) añadidos`);
+    cerrarModalSitios();
+    const pR=await fetch(`/api/proyectos/${slug}`, { headers: authH() });
+    if(pR.ok){ proyConfig=await pR.json(); document.getElementById('infoSitios').textContent=proyConfig.sitios?.length||0; renderSitios(proyConfig.sitios||[]); }
+  }catch(e){ toast('Error: '+e.message); }
+  finally{ btn.disabled=false; }
 }
 
 function irAFormulario() {
