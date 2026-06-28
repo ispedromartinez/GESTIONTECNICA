@@ -106,6 +106,22 @@ const db = {
   },
 
   // ── ASIGNACIONES ────────────────────────────────────────────
+  // Mapa usuario↔proyecto de una empresa (null = todas, solo superadmin)
+  async asignacionesPorEmpresa(empresa_id) {
+    if (supa) {
+      let q = supa.from('asignaciones')
+        .select('usuario_id, rol_en_proyecto, proyectos!inner(id,nombre,tipo,empresa_id)');
+      if (empresa_id) q = q.eq('proyectos.empresa_id', empresa_id);
+      const { data } = await q;
+      return (data || []).map(r => ({
+        usuario_id: r.usuario_id, proyecto_id: r.proyectos?.id,
+        proyecto_nombre: r.proyectos?.nombre, proyecto_tipo: r.proyectos?.tipo,
+        rol_en_proyecto: r.rol_en_proyecto
+      }));
+    }
+    return local.asignaciones.listPorEmpresa(empresa_id);
+  },
+
   async asignacionExists(usuario_id, proyecto_id) {
     if (supa) {
       const { data } = await supa.from('asignaciones').select('id')
@@ -197,10 +213,10 @@ const db = {
   async misInformes(usuario_id) {
     if (supa) {
       const { data } = await supa.from('informes')
-        .select('*, proyectos(nombre)')
+        .select('*, proyectos(nombre,tipo)')
         .or(`tecnico_id.eq.${usuario_id},supervisor_id.eq.${usuario_id}`)
         .order('fecha_creacion', { ascending: false });
-      return (data || []).map(i => ({ ...i, proyecto_nombre: i.proyectos?.nombre }));
+      return (data || []).map(i => ({ ...i, proyecto_nombre: i.proyectos?.nombre, proyecto_tipo: i.proyectos?.tipo }));
     }
     return local.informes.listByUsuario(usuario_id);
   },
@@ -208,10 +224,10 @@ const db = {
   // Informes recientes (dashboard); empresa_id opcional para acotar
   async informesRecientes(limit = 5, empresa_id = null) {
     if (supa) {
-      let q = supa.from('informes').select('*, proyectos!inner(nombre,empresa_id)');
+      let q = supa.from('informes').select('*, proyectos!inner(nombre,tipo,empresa_id)');
       if (empresa_id) q = q.eq('proyectos.empresa_id', empresa_id);
       const { data } = await q.order('fecha_creacion', { ascending: false }).limit(limit);
-      return (data || []).map(i => ({ ...i, proyecto_nombre: i.proyectos?.nombre }));
+      return (data || []).map(i => ({ ...i, proyecto_nombre: i.proyectos?.nombre, proyecto_tipo: i.proyectos?.tipo }));
     }
     return local.informes.recientes(limit, empresa_id);
   },

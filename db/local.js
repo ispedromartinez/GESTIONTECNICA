@@ -109,6 +109,13 @@ db.exec(`
 try { db.exec("ALTER TABLE empresas ADD COLUMN rut_empresa TEXT"); } catch {}
 // Vínculo técnico → supervisor (carga masiva de usuarios)
 try { db.exec("ALTER TABLE usuarios ADD COLUMN supervisor_id TEXT"); } catch {}
+// Rama del proyecto: 'correctivo' | 'preventivo' (los informes heredan la rama de su proyecto)
+try { db.exec("ALTER TABLE proyectos ADD COLUMN tipo TEXT"); } catch {}
+// Categoría del proyecto: 'clima' | 'energia' | 'obras_civiles'
+try { db.exec("ALTER TABLE proyectos ADD COLUMN categoria TEXT"); } catch {}
+// Sitio al que va asignada la actividad y su LPU
+try { db.exec("ALTER TABLE informes ADD COLUMN sitio TEXT"); } catch {}
+try { db.exec("ALTER TABLE informes ADD COLUMN lpu TEXT"); } catch {}
 
 function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -263,10 +270,11 @@ const local = {
     insert(p) {
       const id = uuid();
       db.prepare(`
-        INSERT INTO proyectos (id, empresa_id, nombre, slug, estado, fecha_inicio, logo, template, color)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO proyectos (id, empresa_id, nombre, slug, estado, fecha_inicio, logo, template, color, tipo, categoria)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(id, p.empresa_id, p.nombre, p.slug || null, p.estado || 'activo',
-             p.fecha_inicio || null, p.logo || null, p.template || null, p.color || null);
+             p.fecha_inicio || null, p.logo || null, p.template || null, p.color || null,
+             p.tipo || null, p.categoria || null);
       return db.prepare('SELECT * FROM proyectos WHERE id = ?').get(id);
     },
     findById(id) {
@@ -291,7 +299,7 @@ const local = {
     },
     // Actualiza solo los campos provistos
     update(id, f) {
-      const cols = ['empresa_id','nombre','slug','estado','fecha_inicio','logo','template','color'];
+      const cols = ['empresa_id','nombre','slug','estado','fecha_inicio','logo','template','color','tipo','categoria'];
       const sets = [], vals = [];
       cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(f[k]); } });
       if (sets.length) { vals.push(id); db.prepare('UPDATE proyectos SET '+sets.join(', ')+' WHERE id = ?').run(...vals); }
@@ -349,6 +357,16 @@ const local = {
         WHERE a.usuario_id = ?
       `).all(usuario_id);
     },
+    // Todas las asignaciones de una empresa (mapa usuario↔proyecto del panel).
+    listPorEmpresa(empresa_id) {
+      const base = `
+        SELECT a.usuario_id, a.proyecto_id, a.rol_en_proyecto,
+               p.nombre AS proyecto_nombre, p.tipo AS proyecto_tipo
+        FROM asignaciones a JOIN proyectos p ON p.id = a.proyecto_id`;
+      return empresa_id
+        ? db.prepare(base + ' WHERE p.empresa_id = ?').all(empresa_id)
+        : db.prepare(base).all();
+    },
     remove(usuario_id, proyecto_id) {
       db.prepare('DELETE FROM asignaciones WHERE usuario_id = ? AND proyecto_id = ?')
         .run(usuario_id, proyecto_id);
@@ -360,10 +378,11 @@ const local = {
     insert(i) {
       const id = uuid();
       db.prepare(`
-        INSERT INTO informes (id, proyecto_id, tecnico_id, supervisor_id, titulo, contenido, estado)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO informes (id, proyecto_id, tecnico_id, supervisor_id, titulo, contenido, estado, sitio, lpu)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(id, i.proyecto_id, i.tecnico_id || null, i.supervisor_id || null,
-             i.titulo, i.contenido || null, i.estado || 'borrador');
+             i.titulo, i.contenido || null, i.estado || 'borrador',
+             i.sitio || null, i.lpu || null);
       return db.prepare('SELECT * FROM informes WHERE id = ?').get(id);
     },
     findById(id) {
@@ -378,7 +397,7 @@ const local = {
     // Informes donde el usuario es técnico O supervisor (para "Mis informes")
     listByUsuario(usuario_id) {
       return db.prepare(`
-        SELECT i.*, p.nombre AS proyecto_nombre
+        SELECT i.*, p.nombre AS proyecto_nombre, p.tipo AS proyecto_tipo
         FROM informes i JOIN proyectos p ON p.id = i.proyecto_id
         WHERE i.tecnico_id = ? OR i.supervisor_id = ?
         ORDER BY i.fecha_creacion DESC
@@ -388,14 +407,14 @@ const local = {
     recientes(limit = 5, empresa_id = null) {
       if (empresa_id) {
         return db.prepare(`
-          SELECT i.*, p.nombre AS proyecto_nombre
+          SELECT i.*, p.nombre AS proyecto_nombre, p.tipo AS proyecto_tipo
           FROM informes i JOIN proyectos p ON p.id = i.proyecto_id
           WHERE p.empresa_id = ?
           ORDER BY i.fecha_creacion DESC LIMIT ?
         `).all(empresa_id, limit);
       }
       return db.prepare(`
-        SELECT i.*, p.nombre AS proyecto_nombre
+        SELECT i.*, p.nombre AS proyecto_nombre, p.tipo AS proyecto_tipo
         FROM informes i JOIN proyectos p ON p.id = i.proyecto_id
         ORDER BY i.fecha_creacion DESC LIMIT ?
       `).all(limit);

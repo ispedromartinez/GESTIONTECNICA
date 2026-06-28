@@ -10,6 +10,11 @@ router.use(authMiddleware); // todas las rutas requieren sesión
 const ROLES_ADMIN = ['superadmin', 'admin_empresa'];
 const esAdmin = rol => ROLES_ADMIN.includes(rol);
 
+// Rama del proyecto: los informes heredan esta clasificación de su proyecto.
+const TIPOS_PROYECTO = ['correctivo', 'preventivo', 'temporal'];
+// Categoría / especialidad del proyecto.
+const CATEGORIAS_PROYECTO = ['clima', 'energia', 'obras_civiles'];
+
 // ── Helper: carga un proyecto y aplica la REGLA 1 ──────────────
 // Un usuario solo accede a proyectos de SU empresa (superadmin: todos).
 async function cargarProyecto(req, res, next) {
@@ -76,7 +81,7 @@ router.get('/resumen', async (req, res) => {
     const { rol, empresa_id, usuario_id } = req.user;
     if (rol === 'superadmin') {
       const [empresas, proyectos, recientes] = await Promise.all([
-        db.empresasList(), db.proyectosAll(), db.informesRecientes(5)
+        db.empresasList(), db.proyectosAll(), db.informesRecientes(12)
       ]);
       return res.json({
         empresas: empresas.length,
@@ -87,7 +92,7 @@ router.get('/resumen', async (req, res) => {
     }
     if (rol === 'admin_empresa') {
       const [proyectos, recientes] = await Promise.all([
-        db.proyectosByEmpresa(empresa_id), db.informesRecientes(5, empresa_id)
+        db.proyectosByEmpresa(empresa_id), db.informesRecientes(12, empresa_id)
       ]);
       return res.json({
         empresas: 1,
@@ -104,7 +109,7 @@ router.get('/resumen', async (req, res) => {
       proyectos_total: misProyectos.length,
       proyectos_activos: misProyectos.filter(p => p.estado === 'activo').length,
       informes_total: misInformes.length,
-      informes_recientes: misInformes.slice(0, 5)
+      informes_recientes: misInformes.slice(0, 12)
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -113,6 +118,26 @@ router.get('/resumen', async (req, res) => {
 router.get('/mis-proyectos', async (req, res) => {
   try {
     res.json(await db.misProyectos(req.user.usuario_id));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/gestion/asignaciones-mapa — mapa usuario↔proyecto de la empresa (admin)
+router.get('/asignaciones-mapa', requireRol(...ROLES_ADMIN), async (req, res) => {
+  try {
+    const empresa_id = req.user.rol === 'superadmin'
+      ? (req.query.empresa_id || null) : req.user.empresa_id;
+    res.json(await db.asignacionesPorEmpresa(empresa_id));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/gestion/usuarios/:id/proyectos — proyectos asignados a un usuario (admin)
+router.get('/usuarios/:id/proyectos', requireRol(...ROLES_ADMIN), async (req, res) => {
+  try {
+    const u = await db.usuarioById(req.params.id);
+    if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (req.user.rol !== 'superadmin' && u.empresa_id !== req.user.empresa_id)
+      return res.status(403).json({ error: 'Usuario fuera de tu empresa' });
+    res.json(await db.misProyectos(req.params.id));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -147,15 +172,19 @@ router.get('/proyectos/:id', cargarProyecto, (req, res) => res.json(req.proyecto
 // POST /api/gestion/proyectos — solo admin; empresa forzada a la suya
 router.post('/proyectos', requireRol(...ROLES_ADMIN), async (req, res) => {
   try {
-    const { nombre, slug, estado, fecha_inicio, logo, template, color } = req.body;
+    const { nombre, slug, estado, fecha_inicio, logo, template, color, tipo, categoria } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
+    if (tipo !== undefined && tipo !== null && !TIPOS_PROYECTO.includes(tipo))
+      return res.status(400).json({ error: 'tipo inválido' });
+    if (categoria !== undefined && categoria !== null && !CATEGORIAS_PROYECTO.includes(categoria))
+      return res.status(400).json({ error: 'categoría inválida' });
     const empresa_id = req.user.rol === 'superadmin'
       ? req.body.empresa_id
       : req.user.empresa_id;
     if (!empresa_id) return res.status(400).json({ error: 'empresa_id requerido' });
 
     const proyecto = await db.proyectoInsert({
-      empresa_id, nombre, slug, estado, fecha_inicio, logo, template, color
+      empresa_id, nombre, slug, estado, fecha_inicio, logo, template, color, tipo, categoria
     });
     res.json({ ok: true, proyecto });
   } catch (err) { res.status(400).json({ error: err.message }); }
@@ -165,12 +194,22 @@ router.post('/proyectos', requireRol(...ROLES_ADMIN), async (req, res) => {
 // Reasignar empresa (empresa_id) queda reservado a superadmin.
 router.put('/proyectos/:id', cargarProyecto, requireRol(...ROLES_ADMIN), async (req, res) => {
   try {
-    const { nombre, slug, estado, fecha_inicio, empresa_id } = req.body;
+    const { nombre, slug, estado, fecha_inicio, empresa_id, tipo, categoria } = req.body;
     const fields = {};
     if (nombre !== undefined) fields.nombre = nombre;
     if (slug !== undefined) fields.slug = slug || null;
     if (estado !== undefined) fields.estado = estado;
     if (fecha_inicio !== undefined) fields.fecha_inicio = fecha_inicio || null;
+    if (tipo !== undefined) {
+      if (tipo !== null && !TIPOS_PROYECTO.includes(tipo))
+        return res.status(400).json({ error: 'tipo inválido' });
+      fields.tipo = tipo || null;
+    }
+    if (categoria !== undefined) {
+      if (categoria !== null && !CATEGORIAS_PROYECTO.includes(categoria))
+        return res.status(400).json({ error: 'categoría inválida' });
+      fields.categoria = categoria || null;
+    }
     if (empresa_id !== undefined && req.user.rol === 'superadmin') fields.empresa_id = empresa_id;
     if (!Object.keys(fields).length) return res.status(400).json({ error: 'Nada para actualizar' });
     const proyecto = await db.proyectoUpdate(req.params.id, fields);
@@ -224,7 +263,7 @@ router.get('/proyectos/:id/informes', cargarProyecto, async (req, res) => {
 //          Y estar asignados a ese proyecto.
 router.post('/proyectos/:id/informes', cargarProyecto, async (req, res) => {
   try {
-    const { titulo, contenido, tecnico_id, supervisor_id, estado } = req.body;
+    const { titulo, contenido, tecnico_id, supervisor_id, estado, sitio, lpu } = req.body;
     if (!titulo) return res.status(400).json({ error: 'titulo requerido' });
 
     const personal = await db.personalDeProyecto(req.proyecto.id, req.proyecto.empresa_id);
@@ -236,7 +275,7 @@ router.post('/proyectos/:id/informes', cargarProyecto, async (req, res) => {
 
     const informe = await db.informeInsert({
       proyecto_id: req.proyecto.id, // REGLA 3: el informe queda atado al proyecto
-      tecnico_id, supervisor_id, titulo, contenido, estado
+      tecnico_id, supervisor_id, titulo, contenido, estado, sitio, lpu
     });
     res.json({ ok: true, informe });
   } catch (err) { res.status(400).json({ error: err.message }); }

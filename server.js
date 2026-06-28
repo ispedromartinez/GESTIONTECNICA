@@ -1369,6 +1369,25 @@ function loadSitiosPrev() {
 }
 let sitiosPrevData = loadSitiosPrev();
 
+// Persiste el catálogo de sitios al .xlsx (mismo formato que lee loadSitiosPrev).
+function saveSitiosPrev(arr) {
+  const XLSX = require('xlsx');
+  const header = ['Sitio', 'Dirección', 'Comuna', 'Criticidad', 'Categoría', 'Código'];
+  const aoa = [header, ...arr.map(s => [
+    s.nombre || '', s.direccion || '', s.ciudad || '',
+    s.criticidad || '', s.categoria || '', s.codigo || ''
+  ])];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sitios');
+  XLSX.writeFile(wb, SITIOS_XLSX);
+}
+
+// Clave de duplicado: mismo nombre + dirección + comuna (normalizados).
+const sitioKey = s => ['nombre', 'direccion', 'ciudad']
+  .map(k => (s[k] || '').toString().trim().toLowerCase().replace(/\s+/g, ' '))
+  .join('|');
+
 function nextTrackerId() {
   let counter = 0;
   try { counter = JSON.parse(fs.readFileSync(TRACKER_FILE,'utf8')).last || 0; } catch{}
@@ -1787,6 +1806,84 @@ app.post('/api/sitios-preventivos/upload', authMiddleware, (req, res) => {
     res.json({ ok: true, count: sitiosPrevData.length });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
+// Alta individual de un sitio. 409 si ya existe uno con la misma información.
+app.post('/api/sitios-preventivos', authMiddleware, requireNivel(3), (req, res) => {
+  try {
+    const b = req.body || {};
+    const nombre = (b.nombre || '').toString().trim();
+    if (!nombre) return res.status(400).json({ error: 'El nombre del sitio es obligatorio' });
+    const nuevo = {
+      nombre,
+      direccion: (b.direccion || '').toString().trim(),
+      ciudad: (b.ciudad || b.comuna || '').toString().trim(),
+      criticidad: (b.criticidad || '').toString().trim(),
+      categoria: (b.categoria || '').toString().trim(),
+      codigo: (b.codigo || '').toString().trim()
+    };
+    const existente = sitiosPrevData.find(s => sitioKey(s) === sitioKey(nuevo));
+    if (existente) return res.status(409).json({ error: 'Ya existe un sitio con la misma información', existente });
+    sitiosPrevData.push(nuevo);
+    saveSitiosPrev(sitiosPrevData);
+    res.json({ ok: true, sitio: nuevo, count: sitiosPrevData.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Carga masiva: AÑADE (no reemplaza). Inserta los no repetidos y devuelve
+// los duplicados (nuevo vs existente) para que el usuario elija cuál dejar.
+app.post('/api/sitios-preventivos/importar', authMiddleware, requireNivel(3), (req, res) => {
+  try {
+    const { dataBase64 } = req.body || {};
+    if (!dataBase64) return res.status(400).json({ error: 'dataBase64 requerido' });
+    const XLSX = require('xlsx');
+    const wb = XLSX.read(Buffer.from(dataBase64, 'base64'), { type: 'buffer' });
+    const sheetName = wb.SheetNames.find(n => /sitio/i.test(n)) || wb.SheetNames[0];
+    const filas = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+    const pick = (f, ...keys) => {
+      for (const k of Object.keys(f)) {
+        const lk = k.trim().toLowerCase();
+        if (keys.some(x => lk.includes(x))) { const v = String(f[k] ?? '').trim(); if (v) return v; }
+      }
+      return '';
+    };
+    const nuevos = filas.map(f => ({
+      nombre: pick(f, 'sitio', 'central', 'nodo', 'hub', 'nombre'),
+      direccion: pick(f, 'direcc'),
+      ciudad: pick(f, 'comuna', 'ciudad'),
+      criticidad: pick(f, 'criticidad'),
+      categoria: pick(f, 'categor'),
+      codigo: pick(f, 'código', 'codigo', 'punto de inter')
+    })).filter(s => s.nombre);
+
+    const agregados = [], duplicados = [];
+    const vistos = new Map(sitiosPrevData.map(s => [sitioKey(s), s]));
+    for (const s of nuevos) {
+      const k = sitioKey(s);
+      const prev = vistos.get(k);
+      if (prev) { duplicados.push({ nuevo: s, existente: prev }); }
+      else { vistos.set(k, s); sitiosPrevData.push(s); agregados.push(s); }
+    }
+    if (agregados.length) saveSitiosPrev(sitiosPrevData);
+    res.json({ ok: true, total: nuevos.length, agregados: agregados.length, duplicados, count: sitiosPrevData.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Resolver duplicados: reemplaza el sitio existente por la versión nueva elegida.
+app.post('/api/sitios-preventivos/resolver', authMiddleware, requireNivel(3), (req, res) => {
+  try {
+    const { decisiones } = req.body || {};
+    if (!Array.isArray(decisiones)) return res.status(400).json({ error: 'decisiones requerido' });
+    let reemplazados = 0;
+    for (const d of decisiones) {
+      if (d.accion !== 'reemplazar' || !d.nuevo) continue;
+      const k = sitioKey(d.nuevo);
+      const idx = sitiosPrevData.findIndex(s => sitioKey(s) === k);
+      if (idx >= 0) { sitiosPrevData[idx] = { ...sitiosPrevData[idx], ...d.nuevo }; reemplazados++; }
+    }
+    if (reemplazados) saveSitiosPrev(sitiosPrevData);
+    res.json({ ok: true, reemplazados, count: sitiosPrevData.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/preview-tracker', authMiddleware, (_req, res) => {
   res.json({ next: peekTrackerId() });
 });

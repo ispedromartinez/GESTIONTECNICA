@@ -199,12 +199,12 @@ router.post('/usuarios', adminEmpresa, async (req, res) => {
 const puedeImportarUsuarios = requireRol('superadmin', 'admin_empresa', 'supervisor');
 
 // Columnas de la plantilla, en orden.
-const USUARIOS_COLS = ['Nombre', 'Apellido', 'RUT', 'Email', 'Empresa', 'RUT Empresa', 'Cargo', 'Supervisor', 'RUT Supervisor'];
+const USUARIOS_COLS = ['Nombre', 'Apellido', 'RUT', 'Email', 'Empresa', 'RUT Empresa', 'Cargo', 'Supervisor', 'RUT Supervisor', 'Proyecto'];
 
 // GET /api/usuarios/plantilla — descarga la plantilla .xlsx
 router.get('/usuarios/plantilla', puedeImportarUsuarios, (req, res) => {
   try {
-    const ejemplo = ['Juan', 'Pérez', '12.345.678-5', 'juan.perez@icetel.cl', 'ICETEL', '77.466.910-8', 'Técnico de terreno', 'Pedro Soto', '11.111.111-1'];
+    const ejemplo = ['Juan', 'Pérez', '12.345.678-5', 'juan.perez@icetel.cl', 'ICETEL', '77.466.910-8', 'Técnico de terreno', 'Pedro Soto', '11.111.111-1', 'Proyecto TIGO'];
     const ws = XLSX.utils.aoa_to_sheet([USUARIOS_COLS, ejemplo]);
     ws['!cols'] = USUARIOS_COLS.map(() => ({ wch: 20 }));
     // Encabezados en negrita
@@ -246,6 +246,7 @@ router.post('/usuarios/importar', puedeImportarUsuarios, async (req, res) => {
         nombre: f['Nombre'] || '', apellido: f['Apellido'] || '', rut: f['RUT'] || '',
         email: (f['Email'] || '').toLowerCase(), empresaNom: f['Empresa'] || '', rutEmpresa: f['RUT Empresa'] || '',
         cargo: f['Cargo'] || '', supNom: f['Supervisor'] || '', rutSup: f['RUT Supervisor'] || '',
+        proyectoNom: f['Proyecto'] || '',
         rol: /supervisor/i.test(f['Cargo'] || '') ? 'supervisor' : 'tecnico'
       };
     }).filter(r => r.nombre || r.apellido || r.rut || r.email);
@@ -255,6 +256,11 @@ router.post('/usuarios/importar', puedeImportarUsuarios, async (req, res) => {
 
     const creados = [], errores = [];
     const supRutMap = {}; // rutNorm del supervisor → usuario_id
+    const proyCache = {}; // empresa_id → [proyectos] (para resolver la columna "Proyecto")
+    const proyectosDe = async (empId) => {
+      if (!proyCache[empId]) proyCache[empId] = await db.proyectosByEmpresa(empId);
+      return proyCache[empId];
+    };
 
     for (const row of filas) {
       const nombreCompleto = [row.nombre, row.apellido].filter(Boolean).join(' ').trim();
@@ -309,6 +315,16 @@ router.post('/usuarios/importar', puedeImportarUsuarios, async (req, res) => {
           if (!supervisor_id) throw new Error('Supervisor no encontrado por su RUT en esta empresa');
         }
 
+        // Proyecto a asignar (opcional): se valida contra los proyectos de la empresa
+        let proyecto = null;
+        if (row.proyectoNom) {
+          const proys = await proyectosDe(empresa.id);
+          const objetivo = row.proyectoNom.toLowerCase();
+          proyecto = proys.find(p => (p.nombre || '').toLowerCase() === objetivo)
+                  || proys.find(p => (p.slug || '').toLowerCase() === objetivo);
+          if (!proyecto) throw new Error('Proyecto no encontrado en la empresa: ' + row.proyectoNom);
+        }
+
         // Contraseña temporal: el RUT sin puntos ni guión (o aleatoria si no hay RUT)
         const temporal = rutNorm ? rutNorm.replace(/[.\-]/g, '') : 'Tmp' + Math.random().toString(36).slice(2, 8);
         const password_hash = await bcrypt.hash(temporal, 12);
@@ -323,7 +339,13 @@ router.post('/usuarios/importar', puedeImportarUsuarios, async (req, res) => {
         });
         if (row.rol === 'supervisor' && rutNorm) supRutMap[rutNorm] = usuario.id;
 
-        creados.push({ fila: row.fila, nombre: nombreCompleto, email, rol: row.rol, password_temporal: temporal });
+        // Asignación al proyecto (la rama del proyecto define preventivo/correctivo)
+        if (proyecto) {
+          const rolEnProy = row.rol === 'supervisor' ? 'supervisor' : 'tecnico';
+          await db.asignacionUpsert(usuario.id, proyecto.id, rolEnProy);
+        }
+
+        creados.push({ fila: row.fila, nombre: nombreCompleto, email, rol: row.rol, password_temporal: temporal, proyecto: proyecto?.nombre || null });
       } catch (e) {
         const msg = /unique|duplicate/i.test(e.message) ? 'Email ya registrado' : e.message;
         errores.push({ fila: row.fila, nombre: nombreCompleto || '(sin nombre)', error: msg });

@@ -52,6 +52,18 @@ tbody tr:hover{background:#FAFBFF;}
 .proj-opt .nm{font-size:13px;font-weight:600;}
 .proj-opt .meta{font-size:11px;color:#9ba1b0;margin-left:auto;}
 
+.btn-green{background:#059669;color:#fff;}
+.fld{margin-bottom:12px;}
+.fld label{display:block;font-size:11px;font-weight:700;color:#676879;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.fld input{width:100%;border:1.5px solid #E6E9EF;border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit;outline:none;}
+.fld input:focus{border-color:#0073EA;}
+.hint{font-size:12px;color:#676879;line-height:1.5;}
+.dup{border:1px solid #E6E9EF;border-radius:10px;padding:10px 12px;margin-top:10px;}
+.dup-t{font-weight:700;font-size:13px;margin-bottom:8px;}
+.dup-cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.dup-opt{display:flex;gap:8px;align-items:flex-start;border:1.5px solid #E6E9EF;border-radius:8px;padding:9px 10px;cursor:pointer;font-size:13px;}
+.dup-opt:has(input:checked){border-color:#0073EA;background:#F4F9FF;}
+.dup-d{font-size:11px;color:#676879;margin-top:2px;}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#323338;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
@@ -80,6 +92,8 @@ const NIVEL = { superadmin:4, admin_empresa:3, supervisor:2, tecnico:1 };
     <div class="toolbar">
       <div class="search"><input id="q" type="text" placeholder="Buscar por sitio, comuna o dirección…" oninput="render()"></div>
       <span class="count" id="count">0 sitios</span>
+      <button class="btn btn-ghost" id="btnNuevoSitio" onclick="modalNuevoSitio()" style="display:none">＋ Nuevo sitio</button>
+      <button class="btn btn-ghost" id="btnCargaSitios" onclick="modalCargaSitios()" style="display:none">📥 Carga masiva</button>
       <button class="btn btn-primary" id="btnAsignar" onclick="abrirModal()" disabled style="display:none">Asignar a proyectos</button>
     </div>
     <div class="tbl-wrap">
@@ -107,6 +121,9 @@ const NIVEL = { superadmin:4, admin_empresa:3, supervisor:2, tecnico:1 };
   </div>
 </div>
 
+<!-- Modal genérico (nuevo sitio / carga masiva / duplicados) -->
+<div class="modal-bg" id="modal2"><div class="modal" id="modal2box"></div></div>
+
 <div id="toast"></div>
 
 <script>
@@ -123,7 +140,11 @@ async function init(){
     if(!me.ok){ window.location.replace('/login'); return; }
     const { usuario } = await me.json();
     puedeAsignar = (NIVEL[usuario.rol]||0) >= 3;
-    if(puedeAsignar) document.getElementById('btnAsignar').style.display='inline-flex';
+    if(puedeAsignar){
+      document.getElementById('btnAsignar').style.display='inline-flex';
+      document.getElementById('btnNuevoSitio').style.display='inline-flex';
+      document.getElementById('btnCargaSitios').style.display='inline-flex';
+    }
 
     const [sR, pR] = await Promise.all([
       fetch('/api/sitios-preventivos', { headers: authH() }),
@@ -204,6 +225,121 @@ async function confirmarAsignacion(){
 }
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── Modal genérico + altas de sitios ──────────────────────────────
+function openM2(html){ document.getElementById('modal2box').innerHTML = html; document.getElementById('modal2').classList.add('show'); }
+function closeM2(){ document.getElementById('modal2').classList.remove('show'); }
+function val(id){ const e=document.getElementById(id); return e?(e.value||'').trim():''; }
+function fileB64(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); }); }
+async function recargarSitios(){
+  const sR = await fetch('/api/sitios-preventivos',{ headers: authH() });
+  if(sR.ok){ SITIOS = await sR.json(); seleccion.clear(); render(); }
+}
+
+function modalNuevoSitio(){
+  openM2(`<div class="modal-head">Nuevo sitio</div>
+    <div class="modal-body">
+      <div class="fld"><label>Nombre del sitio *</label><input id="nsNombre" placeholder="DATACENTER NEXTREAM ..."></div>
+      <div class="fld"><label>Comuna</label><input id="nsComuna" placeholder="Santiago"></div>
+      <div class="fld"><label>Dirección</label><input id="nsDir" placeholder="Av. Ejemplo 123"></div>
+      <div class="fld"><label>Criticidad</label><input id="nsCrit"></div>
+      <div class="fld"><label>Categoría</label><input id="nsCat"></div>
+      <div class="fld"><label>Código</label><input id="nsCod"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeM2()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarSitio(this)">Agregar sitio</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('nsNombre').focus(),60);
+}
+async function guardarSitio(btn){
+  const nombre = val('nsNombre');
+  if(!nombre){ toast('El nombre del sitio es obligatorio'); return; }
+  const body = { nombre, ciudad:val('nsComuna'), direccion:val('nsDir'),
+    criticidad:val('nsCrit'), categoria:val('nsCat'), codigo:val('nsCod') };
+  btn.disabled=true;
+  try{
+    const r = await fetch('/api/sitios-preventivos',{ method:'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify(body) });
+    const d = await r.json();
+    if(r.status===409){ mostrarDuplicadoUnico(body, d.existente); return; }
+    if(!r.ok){ toast(d.error||'Error al guardar'); btn.disabled=false; return; }
+    toast('Sitio agregado'); closeM2(); await recargarSitios();
+  }catch(e){ toast('Error: '+e.message); btn.disabled=false; }
+}
+
+function modalCargaSitios(){
+  openM2(`<div class="modal-head">Carga masiva de sitios</div>
+    <div class="modal-body">
+      <p class="hint">Sube un Excel (.xlsx) con columnas <b>Sitio, Dirección, Comuna, Criticidad, Categoría, Código</b>. Se <b>añaden</b> a los existentes; los repetidos se mostrarán para que elijas cuál dejar.</p>
+      <input id="csFile" type="file" accept=".xlsx,.xls" style="margin-top:12px">
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeM2()">Cerrar</button>
+      <button class="btn btn-primary" onclick="importarSitios(this)">Importar</button>
+    </div>`);
+}
+async function importarSitios(btn){
+  const f = document.getElementById('csFile').files[0];
+  if(!f){ toast('Selecciona un archivo'); return; }
+  btn.disabled=true;
+  try{
+    const dataBase64 = await fileB64(f);
+    const r = await fetch('/api/sitios-preventivos/importar',{ method:'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify({ dataBase64 }) });
+    const d = await r.json();
+    if(!r.ok){ toast(d.error||'Error al importar'); btn.disabled=false; return; }
+    await recargarSitios();
+    if(d.duplicados && d.duplicados.length){ modalDuplicados(d); }
+    else { toast(`${d.agregados} sitio(s) agregado(s)`); closeM2(); }
+  }catch(e){ toast('Error: '+e.message); btn.disabled=false; }
+}
+
+function dupOpt(i, existente, nuevo){
+  return `<div class="dup-cmp">
+    <label class="dup-opt"><input type="radio" name="dup${i}" value="omitir" checked>
+      <div><b>Mantener actual</b><div class="dup-d">${esc(existente.ciudad||'—')} · ${esc(existente.direccion||'—')}</div></div></label>
+    <label class="dup-opt"><input type="radio" name="dup${i}" value="reemplazar">
+      <div><b>Usar el nuevo</b><div class="dup-d">${esc(nuevo.ciudad||'—')} · ${esc(nuevo.direccion||'—')}</div></div></label>
+  </div>`;
+}
+function modalDuplicados(d){
+  window._dups = d.duplicados;
+  const rows = d.duplicados.map((p,i)=>`<div class="dup"><div class="dup-t">${esc(p.nuevo.nombre)}</div>${dupOpt(i,p.existente,p.nuevo)}</div>`).join('');
+  openM2(`<div class="modal-head">${d.duplicados.length} sitio(s) repetido(s)</div>
+    <div class="modal-body">
+      <p class="hint"><b>${d.agregados}</b> sitio(s) nuevo(s) agregado(s). Los siguientes ya existían con la misma información. Elige cuál dejar:</p>
+      ${rows}
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeM2()">Dejar como está</button>
+      <button class="btn btn-primary" onclick="resolverDuplicados(this)">Aplicar elección</button>
+    </div>`);
+}
+function mostrarDuplicadoUnico(nuevo, existente){
+  window._dups = [{ nuevo, existente }];
+  openM2(`<div class="modal-head">Sitio repetido</div>
+    <div class="modal-body">
+      <p class="hint">Ya existe un sitio con la misma información (<b>${esc(nuevo.nombre)}</b>). Elige cuál dejar:</p>
+      <div class="dup">${dupOpt(0, existente, nuevo)}</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeM2()">Cancelar</button>
+      <button class="btn btn-primary" onclick="resolverDuplicados(this)">Aplicar</button>
+    </div>`);
+}
+async function resolverDuplicados(btn){
+  const decisiones = (window._dups||[]).map((p,i)=>({
+    nuevo: p.nuevo,
+    accion: (document.querySelector(`input[name="dup${i}"]:checked`)||{}).value || 'omitir'
+  }));
+  btn.disabled=true;
+  try{
+    const r = await fetch('/api/sitios-preventivos/resolver',{ method:'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify({ decisiones }) });
+    const d = await r.json();
+    if(!r.ok){ toast(d.error||'Error'); btn.disabled=false; return; }
+    toast(d.reemplazados ? `${d.reemplazados} sitio(s) reemplazado(s)` : 'Sin cambios');
+    closeM2(); await recargarSitios();
+  }catch(e){ toast('Error: '+e.message); btn.disabled=false; }
+}
 
 init();
 </script>
