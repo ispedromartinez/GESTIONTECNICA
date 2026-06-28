@@ -8,20 +8,10 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const XLSXStyle = require('xlsx-js-style');
-const { createClient } = require('@supabase/supabase-js');
 const { authMiddleware } = require('../middleware/auth');
 const { requireNivel } = require('../middleware/roles');
 const localDB = require('../db/local');
-
-// Mismo criterio que db/gestion.js: Supabase solo si hay credenciales
-// y USE_LOCAL_DB no está en 'true'. Si no, almacenamiento en archivo local.
-const supabase = (
-    process.env.SUPABASE_URL &&
-    process.env.SUPABASE_KEY &&
-    process.env.USE_LOCAL_DB !== 'true'
-  )
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
-  : null;
+const { supabase } = require('../db/supabase');
 
 const TABLE = 'tareas_preventivo';
 const TAREAS_FILE = path.join(__dirname, '..', 'tareas_preventivo.json');

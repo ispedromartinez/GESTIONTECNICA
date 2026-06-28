@@ -4,18 +4,7 @@
 // Las columnas son idénticas en ambos motores (snake_case), no hay mapeo.
 
 const local = require('./local');
-
-let supa = null;
-try {
-  if (
-    process.env.SUPABASE_URL &&
-    process.env.SUPABASE_KEY &&
-    process.env.USE_LOCAL_DB !== 'true'
-  ) {
-    const { createClient } = require('@supabase/supabase-js');
-    supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-  }
-} catch {}
+const { supabase: supa } = require('./supabase');
 
 const db = {
   // ── PERFILES ────────────────────────────────────────────────

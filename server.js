@@ -4,9 +4,10 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { buildHtmlPreventivo } = require('./templates/preventivo-html');
-const CHROME_PATH = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+// Ruta de Chrome configurable por entorno (en Linux/producción NO existe la ruta de Windows).
+// Define CHROME_PATH en .env; por defecto usa la ubicación típica de Chrome en Windows.
+const CHROME_PATH = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const nodemailer = require('nodemailer');
-const { createClient } = require('@supabase/supabase-js');
 const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
         ImageRun, AlignmentType, WidthType, BorderStyle, ShadingType,
         VerticalAlign, Header, TextDirection } = require('docx');
@@ -17,10 +18,10 @@ const preventivoRoutes = require('./routes/preventivo');
 const gestionDb = require('./db/gestion');
 const { authMiddleware } = require('./middleware/auth');
 const { requireRol, requireNivel } = require('./middleware/roles');
+const { rateLimit } = require('./middleware/rateLimit');
 
-const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_KEY)
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
-  : null;
+// Cliente Supabase compartido (respeta USE_LOCAL_DB, igual que el resto de la app)
+const { supabase } = require('./db/supabase');
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'documentos-word';
 
 if (supabase) {
@@ -29,6 +30,8 @@ if (supabase) {
       if (error) console.error('⚠️  Supabase conectado pero error de acceso:', error.message);
       else console.log('✅ Supabase conectado correctamente');
     });
+} else if (process.env.USE_LOCAL_DB === 'true') {
+  console.warn('🗄️  USE_LOCAL_DB=true → toda la app (informes incluidos) usa archivos locales / SQLite.');
 } else {
   console.warn('⚠️  Supabase NO configurado — falta SUPABASE_URL o SUPABASE_KEY. Usando archivos locales.');
 }
@@ -88,7 +91,8 @@ function uuidSimple() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[
 
 const CONTACTO_FILE = path.join(__dirname, 'contactos.json');
 function loadContactos() { try { return JSON.parse(fs.readFileSync(CONTACTO_FILE,'utf8')); } catch(e) { return []; } }
-app.post('/api/contacto', express.json(), (req, res) => {
+const contactoLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 5, message: 'Has enviado demasiados mensajes. Inténtalo más tarde.' });
+app.post('/api/contacto', contactoLimiter, express.json(), (req, res) => {
   const { nombre, empresa, email, tel, mensaje, fecha } = req.body || {};
   if (!nombre || !email) return res.status(400).json({ error: 'nombre y email requeridos' });
   const lista = loadContactos();
@@ -231,7 +235,10 @@ app.post('/api/proyectos/sitios/asignar', authMiddleware, requireNivel(3), (req,
 app.get('/api/dashboard', authMiddleware, async (req, res) => {
   try {
     const { nombre, rol } = req.user;
-    const [tigo, wom] = await Promise.all([dbClimaList(null), dbWomList(null)]);
+    const [tigoAll, womAll] = await Promise.all([dbClimaList(null), dbWomList(null)]);
+    // Aislamiento por empresa antes de cualquier otro recorte por rol
+    const tigo = filtrarInformesPorEmpresa(tigoAll, req.user);
+    const wom  = filtrarInformesPorEmpresa(womAll, req.user);
 
     const tigoNorm = tigo.map(r => ({
       id: r.id, proyecto: 'TIGO',
@@ -310,6 +317,27 @@ function escapeLike(s) {
   return s.replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 
+// ── Aislamiento multi-empresa para informes (clima/wom/prev) ───
+// superadmin ve todo; el resto SOLO los informes de su propia empresa.
+// Los informes antiguos sin empresa_id (legado) solo los ve superadmin.
+function filtrarInformesPorEmpresa(rows, user) {
+  if (!user || user.rol === 'superadmin') return rows;
+  return (rows || []).filter(r => r.empresaId && r.empresaId === user.empresa_id);
+}
+// ¿Este usuario puede acceder a un informe concreto (por id)?
+function puedeVerInforme(entry, user) {
+  if (!user) return false;
+  if (user.rol === 'superadmin') return true;
+  return !!entry.empresaId && entry.empresaId === user.empresa_id;
+}
+
+// Escapa texto antes de inyectarlo en HTML (evita XSS en páginas públicas)
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 // ── Local fallback helpers ─────────────────────────────────────
 function loadDBLocal()       { try { return JSON.parse(fs.readFileSync(DB_FILE,'utf8')); }       catch { return []; } }
 function saveDBLocal(d)      { fs.writeFileSync(DB_FILE, JSON.stringify(d, null, 2)); }
@@ -322,14 +350,16 @@ const fromClima = r => ({
   codInforme: r.cod_informe, nombreSitio: r.nombre_sitio,
   codigoSitio: r.codigo_sitio, tecnico: r.tecnico,
   supervisor: r.supervisor, numOT: r.num_ot,
-  photoCount: r.photo_count, filename: r.filename
+  photoCount: r.photo_count, filename: r.filename,
+  empresaId: r.empresa_id || null
 });
 const toClima = e => ({
   id: e.id, fecha: e.fecha, fecha_creacion: e.fechaCreacion,
   cod_informe: e.codInforme, nombre_sitio: e.nombreSitio,
   codigo_sitio: e.codigoSitio, tecnico: e.tecnico,
   supervisor: e.supervisor, num_ot: e.numOT,
-  photo_count: e.photoCount, filename: e.filename
+  photo_count: e.photoCount, filename: e.filename,
+  empresa_id: e.empresaId || null
 });
 
 // ── Supabase Storage helpers ───────────────────────────────────
@@ -904,6 +934,9 @@ async function buildDocx(d) {
 // ── Build PDF Preventivo (Puppeteer + Chrome) ──────────────
 async function buildPdfPreventivo(d) {
   const puppeteer = require('puppeteer-core');
+  if (!fs.existsSync(CHROME_PATH)) {
+    throw new Error(`No se encontró Chrome en "${CHROME_PATH}". Configura la variable CHROME_PATH en .env con la ruta del navegador.`);
+  }
   const browser = await puppeteer.launch({
     executablePath: CHROME_PATH,
     args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'],
@@ -928,14 +961,14 @@ async function buildPdfPreventivo(d) {
 // ── Routes ────────────────────────────────────────────────
 app.get('/ping', (req,res) => res.json({ok:true}));
 
-app.get('/ping-supabase', async (req, res) => {
+app.get('/ping-supabase', authMiddleware, requireRol('superadmin'), async (req, res) => {
   if (!supabase) return res.json({ ok: false, error: 'SUPABASE_URL o SUPABASE_KEY no configuradas' });
   const { error } = await supabase.from('informes_clima').select('id').limit(1);
   if (error) return res.json({ ok: false, error: error.message });
   res.json({ ok: true, bucket: SUPABASE_BUCKET });
 });
 
-app.get('/test-insert', async (req, res) => {
+app.get('/test-insert', authMiddleware, requireRol('superadmin'), async (req, res) => {
   if (!supabase) return res.json({ ok: false, error: 'Supabase no configurado' });
   const testId = 'test-' + Date.now();
   const { error: insertError } = await supabase.from('informes_clima').insert({
@@ -975,7 +1008,8 @@ app.post('/generar', authMiddleware, async (req,res) => {
       codigoSitio: d.codigoSitio, tecnico: d.tecnico,
       supervisor: d.supervisor, numOT: d.numOT,
       photoCount: (photos||[]).filter(Boolean).length,
-      filename: fname
+      filename: fname,
+      empresaId: req.user.empresa_id || null
     };
     await dbClimaInsert(entry);
 
@@ -994,12 +1028,13 @@ app.post('/generar', authMiddleware, async (req,res) => {
 
 app.get('/registro', authMiddleware, async (req,res) => {
   const q = sanitizeSearch(req.query.q);
-  res.json(await dbClimaList(q));
+  res.json(filtrarInformesPorEmpresa(await dbClimaList(q), req.user));
 });
 
 app.get('/descargar/:id', authMiddleware, async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   let buffer = await storageDownload(`clima/${entry.filename}`);
   if (!buffer) {
     const fpath = path.join(DOCS_DIR, entry.filename);
@@ -1014,6 +1049,7 @@ app.get('/descargar/:id', authMiddleware, async (req,res) => {
 app.post('/enviar/:id', authMiddleware, async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   let buffer = await storageDownload(`clima/${entry.filename}`);
   if (!buffer) {
     const fpath = path.join(DOCS_DIR, entry.filename);
@@ -1035,6 +1071,7 @@ app.post('/enviar/:id', authMiddleware, async (req,res) => {
 app.delete('/registro/:id', authMiddleware, async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   await storageMove(`clima/${entry.filename}`, `clima/papelera/${entry.filename}`);
   try {
     const srcPath = path.join(DOCS_DIR, entry.filename);
@@ -1048,13 +1085,14 @@ app.delete('/registro/:id', authMiddleware, async (req,res) => {
 // List papelera
 app.get('/papelera', authMiddleware, async (req,res) => {
   const q = sanitizeSearch(req.query.q);
-  res.json(await dbPapeleraList(q));
+  res.json(filtrarInformesPorEmpresa(await dbPapeleraList(q), req.user));
 });
 
 // Restore from papelera
 app.post('/papelera/restaurar/:id', authMiddleware, async (req,res) => {
   const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   await storageMove(`clima/papelera/${entry.filename}`, `clima/${entry.filename}`);
   try {
     const srcPath = path.join(PAPELERA_DIR, entry.filename);
@@ -1070,6 +1108,7 @@ app.post('/papelera/restaurar/:id', authMiddleware, async (req,res) => {
 app.delete('/papelera/:id', authMiddleware, async (req,res) => {
   const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   await storageRemove([`clima/papelera/${entry.filename}`]);
   try {
     const fpath = path.join(PAPELERA_DIR, entry.filename);
@@ -1079,16 +1118,17 @@ app.delete('/papelera/:id', authMiddleware, async (req,res) => {
   res.json({ok:true});
 });
 
-// Empty entire papelera
+// Empty papelera (solo lo de la propia empresa; superadmin vacía todo)
 app.delete('/papelera', authMiddleware, async (req,res) => {
-  const papelera = await dbPapeleraList(null);
+  const papelera = filtrarInformesPorEmpresa(await dbPapeleraList(null), req.user);
   if (papelera.length) {
     await storageRemove(papelera.map(e => `clima/papelera/${e.filename}`));
     papelera.forEach(e => {
       try { const f = path.join(PAPELERA_DIR, e.filename); if (fs.existsSync(f)) fs.unlinkSync(f); } catch(e2) {}
     });
   }
-  await dbPapeleraClear();
+  if (req.user.rol === 'superadmin') await dbPapeleraClear();
+  else for (const e of papelera) await dbPapeleraDelete(e.id);
   res.json({ok:true});
 });
 
@@ -1117,14 +1157,16 @@ const fromWom = r => ({
   ticket: r.ticket, codInterno: r.cod_interno,
   fechaInicio: r.fecha_inicio, instalacion: r.instalacion,
   tipoActividad: r.tipo_actividad, tecnicos: r.tecnicos,
-  photoCount: r.photo_count, filename: r.filename
+  photoCount: r.photo_count, filename: r.filename,
+  empresaId: r.empresa_id || null
 });
 const toWom = e => ({
   id: e.id, fecha_creacion: e.fechaCreacion,
   ticket: e.ticket, cod_interno: e.codInterno,
   fecha_inicio: e.fechaInicio, instalacion: e.instalacion,
   tipo_actividad: e.tipoActividad, tecnicos: e.tecnicos,
-  photo_count: e.photoCount, filename: e.filename
+  photo_count: e.photoCount, filename: e.filename,
+  empresa_id: e.empresaId || null
 });
 
 // ── Async DB – Informes WOM ────────────────────────────────────
@@ -1247,14 +1289,16 @@ const fromPrev = r => ({
   trackerId: r.tracker_id,
   nombreNodo: r.nombre_nodo, ejecutante: r.ejecutante,
   fecha: r.fecha, tareaOfficetrack: r.tarea_officetrack,
-  equipoCount: r.equipo_count, tareaId: r.tarea_id, filename: r.filename
+  equipoCount: r.equipo_count, tareaId: r.tarea_id, filename: r.filename,
+  empresaId: r.empresa_id || null
 });
 const toPrev = e => ({
   id: e.id, fecha_creacion: e.fechaCreacion,
   tracker_id: e.trackerId,
   nombre_nodo: e.nombreNodo, ejecutante: e.ejecutante,
   fecha: e.fecha, tarea_officetrack: e.tareaOfficetrack,
-  equipo_count: e.equipoCount, tarea_id: e.tareaId, filename: e.filename
+  equipo_count: e.equipoCount, tarea_id: e.tareaId, filename: e.filename,
+  empresa_id: e.empresaId || null
 });
 
 async function dbPrevList(q) {
@@ -1745,7 +1789,8 @@ app.post('/generar-wom', authMiddleware, async (req, res) => {
       tipoActividad: d.tipoActividad,
       tecnicos: (d.tecnicos||[]).filter(Boolean).join(', '),
       photoCount: (photos||[]).filter(Boolean).length,
-      filename: fname
+      filename: fname,
+      empresaId: req.user.empresa_id || null
     };
     await dbWomInsert(entry);
 
@@ -1758,12 +1803,13 @@ app.post('/generar-wom', authMiddleware, async (req, res) => {
 
 app.get('/registro-wom', authMiddleware, async (req, res) => {
   const q = sanitizeSearch(req.query.q);
-  res.json(await dbWomList(q));
+  res.json(filtrarInformesPorEmpresa(await dbWomList(q), req.user));
 });
 
 app.get('/descargar-wom/:id', authMiddleware, async (req, res) => {
   const entry = await dbWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   let buffer = await storageDownload(`wom/${entry.filename}`);
   if (!buffer) {
     const fpath = path.join(DOCS_DIR_WOM, entry.filename);
@@ -1778,6 +1824,7 @@ app.get('/descargar-wom/:id', authMiddleware, async (req, res) => {
 app.delete('/registro-wom/:id', authMiddleware, async (req, res) => {
   const entry = await dbWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   await storageMove(`wom/${entry.filename}`, `wom/papelera/${entry.filename}`);
   try {
     const fp = path.join(DOCS_DIR_WOM, entry.filename);
@@ -1918,7 +1965,8 @@ app.post('/generar-preventivo', authMiddleware, async (req, res) => {
       nombreNodo: d.nombreNodo, ejecutante: d.ejecutante,
       fecha: d.fecha, tareaOfficetrack: d.tareaOfficetrack,
       equipoCount: (d.equipos||[]).length,
-      tareaId: d.tareaId||null, filename: fname
+      tareaId: d.tareaId||null, filename: fname,
+      empresaId: req.user.empresa_id || null
     };
     await dbPrevInsert(entry);
 
@@ -1947,12 +1995,12 @@ app.get('/verificar-informe', async (req, res) => {
   const icon  = found ? '✅' : '❌';
   const title = found ? 'Informe Verificado' : 'ID No Encontrado';
   const body  = found ? `
-    <div class="row"><span class="lbl">Sitio</span><span>${entry.nombreNodo||'—'}</span></div>
-    <div class="row"><span class="lbl">Técnico</span><span>${entry.ejecutante||'—'}</span></div>
-    <div class="row"><span class="lbl">Fecha</span><span>${entry.fecha||'—'}</span></div>
-    <div class="row"><span class="lbl">Equipos</span><span>${entry.equipoCount||'—'}</span></div>
-    <div class="row"><span class="lbl">Generado</span><span>${entry.fechaCreacion ? new Date(entry.fechaCreacion).toLocaleString('es-CL') : '—'}</span></div>
-  ` : `<p style="color:#64748B;font-size:.9rem">El ID de seguridad <strong>${id}</strong> no corresponde a ningún informe registrado.</p>`;
+    <div class="row"><span class="lbl">Sitio</span><span>${escapeHtml(entry.nombreNodo||'—')}</span></div>
+    <div class="row"><span class="lbl">Técnico</span><span>${escapeHtml(entry.ejecutante||'—')}</span></div>
+    <div class="row"><span class="lbl">Fecha</span><span>${escapeHtml(entry.fecha||'—')}</span></div>
+    <div class="row"><span class="lbl">Equipos</span><span>${escapeHtml(entry.equipoCount||'—')}</span></div>
+    <div class="row"><span class="lbl">Generado</span><span>${escapeHtml(entry.fechaCreacion ? new Date(entry.fechaCreacion).toLocaleString('es-CL') : '—')}</span></div>
+  ` : `<p style="color:#64748B;font-size:.9rem">El ID de seguridad <strong>${escapeHtml(id)}</strong> no corresponde a ningún informe registrado.</p>`;
 
   res.send(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1972,7 +2020,7 @@ app.get('/verificar-informe', async (req, res) => {
   <div class="card">
     <div class="icon">${icon}</div>
     <h1>${title}</h1>
-    <div class="sec-id">${id}</div>
+    <div class="sec-id">${escapeHtml(id)}</div>
     <div class="rows">${body}</div>
     <div class="footer">ICETEL · Sistema de Informes de Mantenimiento Clima</div>
   </div>
@@ -1981,12 +2029,13 @@ app.get('/verificar-informe', async (req, res) => {
 
 app.get('/registro-prev', authMiddleware, async (req, res) => {
   const q = sanitizeSearch(req.query.q);
-  res.json(await dbPrevList(q));
+  res.json(filtrarInformesPorEmpresa(await dbPrevList(q), req.user));
 });
 
 app.get('/descargar-prev/:id', authMiddleware, async (req, res) => {
   const entry = await dbPrevFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   let buffer = await storageDownload(`prev/${entry.filename}`);
   if (!buffer) {
     const fpath = path.join(DOCS_DIR_PREV, entry.filename);
@@ -2002,6 +2051,7 @@ app.get('/descargar-prev/:id', authMiddleware, async (req, res) => {
 app.delete('/registro-prev/:id', authMiddleware, async (req, res) => {
   const entry = await dbPrevFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   await storageMove(`prev/${entry.filename}`, `prev/papelera/${entry.filename}`);
   try {
     const fp = path.join(DOCS_DIR_PREV, entry.filename);
@@ -2012,11 +2062,12 @@ app.delete('/registro-prev/:id', authMiddleware, async (req, res) => {
   res.json({ok:true});
 });
 
-app.get('/papelera-wom', authMiddleware, async (_req, res) => res.json(await dbPapeleraWomList()));
+app.get('/papelera-wom', authMiddleware, async (req, res) => res.json(filtrarInformesPorEmpresa(await dbPapeleraWomList(), req.user)));
 
 app.post('/papelera-wom/restaurar/:id', authMiddleware, async (req, res) => {
   const entry = await dbPapeleraWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   await storageMove(`wom/papelera/${entry.filename}`, `wom/${entry.filename}`);
   try {
     const fp = path.join(PAPELERA_DIR_WOM, entry.filename);
@@ -2031,6 +2082,7 @@ app.post('/papelera-wom/restaurar/:id', authMiddleware, async (req, res) => {
 app.delete('/papelera-wom/:id', authMiddleware, async (req, res) => {
   const entry = await dbPapeleraWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
   await storageRemove([`wom/papelera/${entry.filename}`]);
   try {
     const fp = path.join(PAPELERA_DIR_WOM, entry.filename);
@@ -2040,15 +2092,16 @@ app.delete('/papelera-wom/:id', authMiddleware, async (req, res) => {
   res.json({ok:true});
 });
 
-app.delete('/papelera-wom', authMiddleware, async (_req, res) => {
-  const papelera = await dbPapeleraWomList();
+app.delete('/papelera-wom', authMiddleware, async (req, res) => {
+  const papelera = filtrarInformesPorEmpresa(await dbPapeleraWomList(), req.user);
   if (papelera.length) {
     await storageRemove(papelera.map(e => `wom/papelera/${e.filename}`));
     papelera.forEach(e => {
       try { const fp = path.join(PAPELERA_DIR_WOM, e.filename); if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(e2) {}
     });
   }
-  await dbPapeleraWomClear();
+  if (req.user.rol === 'superadmin') await dbPapeleraWomClear();
+  else for (const e of papelera) await dbPapeleraWomDelete(e.id);
   res.json({ok:true});
 });
 

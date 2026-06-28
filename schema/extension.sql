@@ -87,3 +87,22 @@ ALTER TABLE perfiles     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proyectos    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asignaciones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE informes     ENABLE ROW LEVEL SECURITY;
+
+-- ================================================================
+-- AISLAMIENTO MULTI-EMPRESA EN LOS INFORMES HEREDADOS
+-- Las tablas informes_clima / informes_wom / informes_prev no tenían
+-- empresa_id, por lo que cualquier usuario veía informes de todas las
+-- empresas. Se agrega la columna (idempotente) y el backend la rellena
+-- al generar y filtra por ella al listar.
+-- ================================================================
+ALTER TABLE informes_clima ADD COLUMN IF NOT EXISTS empresa_id UUID REFERENCES empresas(id);
+ALTER TABLE informes_wom   ADD COLUMN IF NOT EXISTS empresa_id UUID REFERENCES empresas(id);
+ALTER TABLE informes_prev  ADD COLUMN IF NOT EXISTS empresa_id UUID REFERENCES empresas(id);
+-- (papeleras correspondientes)
+ALTER TABLE papelera_clima ADD COLUMN IF NOT EXISTS empresa_id UUID REFERENCES empresas(id);
+ALTER TABLE papelera_wom   ADD COLUMN IF NOT EXISTS empresa_id UUID REFERENCES empresas(id);
+ALTER TABLE papelera_prev  ADD COLUMN IF NOT EXISTS empresa_id UUID REFERENCES empresas(id);
+
+CREATE INDEX IF NOT EXISTS idx_informes_clima_empresa ON informes_clima(empresa_id);
+CREATE INDEX IF NOT EXISTS idx_informes_wom_empresa   ON informes_wom(empresa_id);
+CREATE INDEX IF NOT EXISTS idx_informes_prev_empresa  ON informes_prev(empresa_id);

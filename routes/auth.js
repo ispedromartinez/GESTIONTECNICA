@@ -3,26 +3,15 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { authMiddleware, JWT_SECRET } = require('../middleware/auth');
 const { requireRol } = require('../middleware/roles');
+const { rateLimit } = require('../middleware/rateLimit');
 const { validarRut, normalizarRut } = require('../utils/rut');
 const gestionDB = require('../db/gestion');
 
 const router = express.Router();
 
 // ── Fuente de datos: Supabase si está disponible y USE_LOCAL_DB != true ──
-let supabaseClient = null;
-try {
-  if (
-    process.env.SUPABASE_URL &&
-    process.env.SUPABASE_KEY &&
-    process.env.USE_LOCAL_DB !== 'true'
-  ) {
-    const { createClient } = require('@supabase/supabase-js');
-    supabaseClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-    console.log('🗄️  Auth: usando Supabase');
-  } else {
-    console.log('🗄️  Auth: usando SQLite local (auth.db)');
-  }
-} catch {}
+const { supabase: supabaseClient } = require('../db/supabase');
+console.log(supabaseClient ? '🗄️  Auth: usando Supabase' : '🗄️  Auth: usando SQLite local (auth.db)');
 
 const localDB = require('../db/local');
 
@@ -162,7 +151,9 @@ const db = {
 };
 
 // ── POST /auth/login ─────────────────────────────────────────
-router.post('/login', async (req, res) => {
+// Máx. 20 intentos cada 15 min por IP (anti fuerza bruta)
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Demasiados intentos de inicio de sesión. Espera unos minutos.' });
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password, empresa: empresaSlug } = req.body;
     if (!email || !password)

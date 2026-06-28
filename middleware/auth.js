@@ -1,5 +1,10 @@
 const jwt = require('jsonwebtoken');
 
+// En producción JWT_SECRET es obligatorio: sin él, cualquiera podría firmar tokens.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error('❌ JWT_SECRET no está definido. Es obligatorio en producción. Abortando.');
+  process.exit(1);
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-CAMBIAR-en-produccion';
 
 // Valida el Bearer token y adjunta req.user
