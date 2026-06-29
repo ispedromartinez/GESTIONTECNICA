@@ -421,7 +421,10 @@ tbody tr:hover{background:#F8FAFF;}
           <div class="bento-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
           <h1 id="welcomeMsg" style="font-size:26px;font-weight:800;font-family:var(--font-head);letter-spacing:-.02em;color:#fff;">Bienvenido</h1>
           <p class="bento-desc" style="max-width:36ch;">Selecciona un proyecto para crear o gestionar informes.</p>
-          <div class="bento-foot" style="display:flex;gap:28px;">
+          <!-- Información de la persona: solo supervisores/administradores -->
+          <div id="heroPersona" style="display:none;margin-top:4px;font-size:13px;line-height:1.5;color:rgba(255,255,255,.78);"></div>
+          <!-- Informes relacionados (KPIs): ocultos para técnicos -->
+          <div class="bento-foot" id="heroKpis" style="display:flex;gap:28px;">
             <div><div class="bento-kpi" id="heroMes">—</div><div class="bento-label">Informes este mes</div></div>
             <div><div class="bento-kpi" id="heroTotal">—</div><div class="bento-label">Total de informes</div></div>
           </div>
@@ -673,7 +676,7 @@ async function init() {
   try {
     const r = await fetch('/auth/me', { headers: authH() });
     if (!r.ok) { window.location.replace('/login'); return; }
-    const { usuario } = await r.json();
+    const { usuario, perfil = {}, areas = [] } = await r.json();
     const miRol = usuario.rol;
     MIROL = miRol;
 
@@ -683,6 +686,25 @@ async function init() {
     document.getElementById('welcomeMsg').textContent  = 'Bienvenido, ' + usuario.nombre.split(' ')[0];
     const rolLabel = { superadmin:'Superadmin', admin_empresa:'Administrador', supervisor:'Supervisor', tecnico:'Técnico' };
     document.getElementById('sbUserRol').textContent   = rolLabel[miRol] || miRol;
+
+    // ── Tarjeta hero según rol ──────────────────────────────────
+    // Supervisores/administradores: nombre completo, área y cargo +
+    // KPIs de informes relacionados. Técnicos: solo el nombre.
+    const esTecnico = miRol === 'tecnico';
+    if (esTecnico) {
+      document.getElementById('heroKpis').style.display = 'none';
+      document.getElementById('heroPersona').style.display = 'none';
+    } else {
+      const nombreCompleto = [usuario.nombre, perfil.apellidos].filter(Boolean).join(' ');
+      const areasTxt = (areas || []).map(a => a.nombre).filter(Boolean).join(', ');
+      const filas = [];
+      filas.push(`<div style="color:#fff;font-weight:600;">${esc(nombreCompleto)}</div>`);
+      if (perfil.cargo) filas.push(`<div><span style="opacity:.6;">Cargo:</span> ${esc(perfil.cargo)}</div>`);
+      if (areasTxt)     filas.push(`<div><span style="opacity:.6;">Área:</span> ${esc(areasTxt)}</div>`);
+      const persona = document.getElementById('heroPersona');
+      persona.innerHTML = filas.join('');
+      persona.style.display = 'block';
+    }
 
     if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
       document.getElementById('nav-personal').style.display = 'flex';

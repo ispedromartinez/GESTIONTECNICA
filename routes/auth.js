@@ -476,8 +476,30 @@ router.delete('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (
 });
 
 // ── GET /auth/me ──────────────────────────────────────────────
-router.get('/me', authMiddleware, (req, res) => {
-  res.json({ usuario: req.user });
+// Devuelve el usuario del token + datos de presentación (cargo y áreas).
+// El dashboard los usa para mostrar "información de la persona" a
+// supervisores/administradores; los técnicos solo ven su nombre.
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const u = req.user;
+    let cargo = null, apellidos = null, areas = [];
+
+    try {
+      const perfil = await gestionDB.perfilByUsuario(u.usuario_id);
+      if (perfil) { cargo = perfil.cargo || null; apellidos = perfil.apellidos || null; }
+    } catch { /* perfil opcional */ }
+
+    const ids = Array.isArray(u.areas_permitidas) ? u.areas_permitidas : [];
+    if (ids.length) {
+      const list = await Promise.all(ids.map(id => gestionDB.areaById(id).catch(() => null)));
+      areas = list.filter(Boolean).map(a => ({ id: a.id, nombre: a.nombre }));
+    }
+
+    res.json({ usuario: u, perfil: { cargo, apellidos }, areas });
+  } catch (err) {
+    // Ante cualquier fallo, no romper la sesión: devolver al menos el usuario.
+    res.json({ usuario: req.user, perfil: { cargo: null, apellidos: null }, areas: [] });
+  }
 });
 
 module.exports = router;
