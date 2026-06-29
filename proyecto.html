@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="/theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Poppins',sans-serif;background:#F0F2F8;color:#323338;min-height:100vh;}
+body{font-family:var(--font-body);background:#F0F2F8;color:#0F172A;min-height:100vh;}
 
 header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .h-left{display:flex;align-items:center;gap:12px;}
@@ -26,29 +26,29 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
 
 .main{max-width:800px;margin:0 auto;padding:28px 16px 60px;}
 
-.section-card{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.07);border:1px solid #E6E9EF;overflow:hidden;margin-bottom:18px;}
+.section-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-md);border:1px solid var(--border);overflow:hidden;margin-bottom:18px;}
 .sec-head{padding:18px 22px;border-bottom:1px solid #F0F1F5;display:flex;align-items:center;justify-content:space-between;}
-.sec-title{font-size:14px;font-weight:700;color:#323338;display:flex;align-items:center;gap:8px;}
+.sec-title{font-size:14px;font-weight:700;color:#0F172A;display:flex;align-items:center;gap:8px;}
 .sec-title .icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#0073EA;}
 .sec-title .icon svg{width:17px;height:17px;}
 .sec-body{padding:22px;}
 
 .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
 .info-item{background:#F8F9FC;border-radius:10px;padding:14px 16px;}
-.info-num{font-size:26px;font-weight:800;color:#323338;line-height:1;}
-.info-label{font-size:11px;color:#676879;margin-top:3px;}
+.info-num{font-size:26px;font-weight:800;color:#0F172A;line-height:1;}
+.info-label{font-size:11px;color:#64748B;margin-top:3px;}
 
 .btn-action{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;text-decoration:none;}
 .btn-action:hover{opacity:.85;}
 
 .list-tags{display:flex;flex-wrap:wrap;gap:8px;}
-.tag{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:#F0F2F8;color:#323338;}
+.tag{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:#F0F2F8;color:#0F172A;}
 
 .tpl-info{display:flex;align-items:center;gap:10px;padding:14px 16px;background:#F8F9FC;border-radius:10px;}
 .tpl-info .badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;}
 .badge-tigo{background:#EEF5FF;color:#0073EA;}
-.badge-wom{background:#F3F0FF;color:#6161FF;}
-.tpl-info p{font-size:12px;color:#676879;}
+.badge-wom{background:#F3F0FF;color:#784BD1;}
+.tpl-info p{font-size:12px;color:#64748B;}
 
 .btn-nuevo-inf{
   width:100%;padding:16px;border-radius:12px;border:none;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;
@@ -57,7 +57,7 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
 .btn-nuevo-inf:hover{opacity:.88;transform:translateY(-1px);}
 .btn-nuevo-inf:active{transform:none;}
 
-#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#323338;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#0F172A;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 @media(max-width:520px){.info-grid{grid-template-columns:1fr 1fr;}.h-name{font-size:13px;}}
@@ -132,7 +132,7 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
     <div class="sec-head">
       <div class="sec-title"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>Sitios</div>
       <div style="display:flex;align-items:center;gap:12px;">
-        <span id="sitiosTotal" style="font-size:12px;color:#676879"></span>
+        <span id="sitiosTotal" style="font-size:12px;color:#64748B"></span>
         <button id="btnAddSitios" onclick="abrirModalSitios()" style="display:none;background:#EEF5FF;color:#0073EA;border:1px solid #cfe2ff;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">+ Añadir sitios del catálogo</button>
       </div>
     </div>
@@ -140,10 +140,10 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
       <div style="max-height:260px;overflow-y:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead><tr style="background:#F8F9FC;">
-            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">#</th>
-            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Sitio</th>
-            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Comuna</th>
-            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Dirección</th>
+            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">#</th>
+            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Sitio</th>
+            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Comuna</th>
+            <th style="padding:9px 18px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;text-align:left;border-bottom:1px solid #F0F1F5;">Dirección</th>
           </tr></thead>
           <tbody id="tblSitios"></tbody>
         </table>
@@ -155,23 +155,23 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
   <div id="modalSitios" style="display:none;position:fixed;inset:0;background:rgba(28,31,59,.55);z-index:300;align-items:center;justify-content:center;padding:20px;">
     <div style="background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px;">
       <div style="padding:18px 22px;border-bottom:1px solid #F0F1F5;font-size:15px;font-weight:700;">Añadir sitios del catálogo</div>
-      <div style="padding:12px 22px 0;"><input id="qSitios" type="text" placeholder="Buscar sitio, comuna o dirección…" oninput="renderCat()" style="width:100%;border:1.5px solid #E6E9EF;border-radius:9px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;background:#F6F7FB;"></div>
+      <div style="padding:12px 22px 0;"><input id="qSitios" type="text" placeholder="Buscar sitio, comuna o dirección…" oninput="renderCat()" style="width:100%;border:1.5px solid #E2E8F0;border-radius:9px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;background:#F6F7FB;"></div>
       <div style="padding:8px 22px;overflow-y:auto;flex:1;">
         <table style="width:100%;border-collapse:collapse;">
           <thead><tr style="background:#F8F9FC;">
-            <th style="width:34px;padding:8px;border-bottom:1px solid #E6E9EF;"><input type="checkbox" id="catAll" onchange="catToggleAll(this)" style="width:16px;height:16px;accent-color:#0073EA;cursor:pointer;"></th>
-            <th style="padding:8px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #E6E9EF;">Sitio</th>
-            <th style="padding:8px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #E6E9EF;">Comuna</th>
-            <th style="padding:8px;font-size:10px;font-weight:700;color:#676879;text-transform:uppercase;text-align:left;border-bottom:1px solid #E6E9EF;">Dirección</th>
+            <th style="width:34px;padding:8px;border-bottom:1px solid #E2E8F0;"><input type="checkbox" id="catAll" onchange="catToggleAll(this)" style="width:16px;height:16px;accent-color:#0073EA;cursor:pointer;"></th>
+            <th style="padding:8px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;text-align:left;border-bottom:1px solid #E2E8F0;">Sitio</th>
+            <th style="padding:8px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;text-align:left;border-bottom:1px solid #E2E8F0;">Comuna</th>
+            <th style="padding:8px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;text-align:left;border-bottom:1px solid #E2E8F0;">Dirección</th>
           </tr></thead>
           <tbody id="catBody"></tbody>
         </table>
         <div id="catEmpty" style="display:none;padding:30px;text-align:center;color:#9ba1b0;">No hay sitios que coincidan.</div>
       </div>
       <div style="padding:14px 22px;border-top:1px solid #F0F1F5;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-        <span id="catCount" style="font-size:12px;color:#676879;">0 seleccionados</span>
+        <span id="catCount" style="font-size:12px;color:#64748B;">0 seleccionados</span>
         <div style="display:flex;gap:10px;">
-          <button onclick="cerrarModalSitios()" style="background:#fff;border:1.5px solid #E6E9EF;color:#676879;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
+          <button onclick="cerrarModalSitios()" style="background:#fff;border:1.5px solid #E2E8F0;color:#64748B;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
           <button id="catConfirmar" onclick="confirmarSitios()" style="background:#0073EA;color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Añadir</button>
         </div>
       </div>
@@ -289,8 +289,8 @@ function renderSitios(sitios){
     <tr style="border-bottom:1px solid #F6F7FB;">
       <td style="padding:9px 18px;color:#9ba1b0;font-size:12px;">${i+1}</td>
       <td style="padding:9px 18px;font-weight:600;">${esc(n)}</td>
-      <td style="padding:9px 18px;color:#676879;font-size:12px;">${esc(c||'—')}</td>
-      <td style="padding:9px 18px;color:#676879;font-size:12px;">${esc(d||'—')}</td>
+      <td style="padding:9px 18px;color:#64748B;font-size:12px;">${esc(c||'—')}</td>
+      <td style="padding:9px 18px;color:#64748B;font-size:12px;">${esc(d||'—')}</td>
     </tr>`; }).join('');
 }
 
@@ -322,8 +322,8 @@ function renderCat(){
     <tr>
       <td style="padding:8px;border-bottom:1px solid #F6F7FB;"><input type="checkbox" data-i="${i}" ${catSel.has(i)?'checked':''} onchange="catToggle(this)" style="width:16px;height:16px;accent-color:#0073EA;cursor:pointer;"></td>
       <td style="padding:8px;border-bottom:1px solid #F6F7FB;font-weight:600;">${esc(s.nombre)}</td>
-      <td style="padding:8px;border-bottom:1px solid #F6F7FB;color:#676879;">${esc(s.ciudad||'—')}</td>
-      <td style="padding:8px;border-bottom:1px solid #F6F7FB;color:#676879;font-size:12px;">${esc(s.direccion||'—')}</td>
+      <td style="padding:8px;border-bottom:1px solid #F6F7FB;color:#64748B;">${esc(s.ciudad||'—')}</td>
+      <td style="padding:8px;border-bottom:1px solid #F6F7FB;color:#64748B;font-size:12px;">${esc(s.direccion||'—')}</td>
     </tr>`).join('');
   document.getElementById('catEmpty').style.display = rows.length?'none':'block';
   document.getElementById('catCount').textContent = catSel.size+' seleccionados';

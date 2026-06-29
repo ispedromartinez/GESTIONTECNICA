@@ -10,7 +10,9 @@
 <link rel="stylesheet" href="/theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#EEF2F7;color:#0F172A;min-height:100vh;display:flex;}
+body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:100vh;display:flex;}
+/* Títulos en la fuente de encabezados del Design System (theme.css) */
+.topbar-title,.welcome-bar h1,.proj-name,.section-head-title,.stat-num,.chart-head{font-family:var(--font-head);}
 
 /* ═══════════════ SIDEBAR ═══════════════ */
 .sidebar{
@@ -25,7 +27,7 @@ body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#
   border-bottom:1px solid rgba(255,255,255,.07);
 }
 .sb-gt{
-  width:34px;height:34px;background:linear-gradient(135deg,#0073EA,#6161FF);
+  width:34px;height:34px;background:linear-gradient(135deg,#0073EA,#784BD1);
   border-radius:9px;display:flex;align-items:center;justify-content:center;
   font-size:13px;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-.5px;
 }
@@ -59,7 +61,7 @@ body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#
   display:flex;align-items:center;gap:9px;
 }
 .sb-avatar{
-  width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0073EA,#6161FF);
+  width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0073EA,#784BD1);
   display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;
 }
 .sb-user-info{flex:1;min-width:0;}
@@ -73,18 +75,19 @@ body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#
 .main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
 
 .topbar{
-  background:#fff;padding:13px 26px;
+  background:#fff;padding:14px 26px;
   display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid #E6E9EF;position:sticky;top:0;z-index:50;
+  border-bottom:1px solid #E2E8F0;position:sticky;top:0;z-index:50;
+  box-shadow:0 1px 3px rgba(15,23,42,.05);
 }
 .topbar-left{display:flex;align-items:center;gap:12px;}
-.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;border-radius:7px;color:#676879;font-size:18px;}
-.topbar-title{font-size:15px;font-weight:700;color:#323338;}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;border-radius:7px;color:#64748B;font-size:18px;}
+.topbar-title{font-size:15px;font-weight:700;color:#0F172A;}
 .topbar-right{display:flex;align-items:center;gap:10px;}
 .search-wrap{position:relative;display:flex;align-items:center;}
 .search-wrap input{
-  border:1.5px solid #E6E9EF;border-radius:8px;padding:7px 12px 7px 32px;
-  font-size:13px;color:#323338;font-family:inherit;width:190px;outline:none;
+  border:1.5px solid #E2E8F0;border-radius:8px;padding:7px 12px 7px 32px;
+  font-size:13px;color:#0F172A;font-family:inherit;width:190px;outline:none;
   background:#F6F7FB;transition:.15s;
 }
 .search-wrap input:focus{border-color:#0073EA;background:#fff;}
@@ -124,13 +127,15 @@ body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#
 }
 
 /* colored header strip → taller premium banner */
-.proj-top{width:100%;height:80px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;overflow:hidden;}
+.proj-top{width:100%;height:80px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;overflow:hidden;box-shadow:inset 0 -1px 0 rgba(0,0,0,.14);}
+/* capa de brillo + profundidad sobre el color sólido (sin tapar el logo, z-index:1) */
+.proj-top::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 90% at 50% -25%,rgba(255,255,255,.30),rgba(255,255,255,0) 62%),linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 48%,rgba(0,0,0,.12) 100%);}
 .proj-tigo .proj-top{background:#0073EA;}
-.proj-wom  .proj-top{background:#6161FF;}
+.proj-wom  .proj-top{background:#784BD1;}
 .proj-preventivo .proj-top{background:#059669;}
-.proj-card.proj-custom .proj-top{background:var(--proj-color,#323338);}
+.proj-card.proj-custom .proj-top{background:var(--proj-color,#0F172A);}
 
-.proj-card.proj-custom .proj-btn{background:var(--proj-color,#323338);color:#fff;}
+.proj-card.proj-custom .proj-btn{background:var(--proj-color,#0F172A);color:#fff;}
 
 .btn-new-proj{
   background:rgba(255,255,255,.06);border:1.5px dashed #CBD5E1;
@@ -147,7 +152,7 @@ body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#
 
 .proj-logo-img{max-height:50px;max-width:150px;object-fit:contain;filter:brightness(0) invert(1);position:relative;z-index:1;}
 .proj-divider{width:100%;padding:0 18px;margin:4px 0;display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;color:#9699A6;text-transform:uppercase;letter-spacing:.8px;}
-.proj-divider::before,.proj-divider::after{content:'';flex:1;height:1px;background:#E6E9EF;}
+.proj-divider::before,.proj-divider::after{content:'';flex:1;height:1px;background:#E2E8F0;}
 
 .proj-inner{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 22px 0;width:100%;}
 .proj-icon{height:64px;display:flex;align-items:center;justify-content:center;}
@@ -166,7 +171,7 @@ body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#
   letter-spacing:.02em;
 }
 .proj-tigo .proj-btn{background:#0073EA;color:#fff;box-shadow:0 3px 10px rgba(0,115,234,.3);}
-.proj-wom  .proj-btn{background:#6161FF;color:#fff;box-shadow:0 3px 10px rgba(97,97,255,.3);}
+.proj-wom  .proj-btn{background:#784BD1;color:#fff;box-shadow:0 3px 10px rgba(97,97,255,.3);}
 .proj-preventivo .proj-btn{background:#059669;color:#fff;box-shadow:0 3px 10px rgba(5,150,105,.3);}
 .proj-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.2);}
 .proj-btn:active{transform:scale(.97);}
@@ -174,87 +179,129 @@ body{font-family:'Plus Jakarta Sans','Poppins',system-ui,sans-serif;background:#
 /* ── VISTA: INFORMES ── */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
 .stat-card{
-  background:#fff;border-radius:12px;padding:20px 22px;
-  box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 12px rgba(0,0,0,.05);
-  border:1px solid #E6E9EF;
+  background:var(--surface);border-radius:var(--r-bento);padding:20px 22px;
+  box-shadow:var(--sh-md);border:1px solid var(--border);
+  transition:transform .22s cubic-bezier(.32,.72,0,1), box-shadow .22s cubic-bezier(.32,.72,0,1);
 }
-.stat-num{font-size:30px;font-weight:800;color:#323338;line-height:1;margin-bottom:4px;}
-.stat-label{font-size:12px;color:#676879;font-weight:500;}
+.stat-card:hover{transform:translateY(-4px);box-shadow:var(--sh-lg);}
+.stat-num{font-size:30px;font-weight:800;color:#0F172A;line-height:1;margin-bottom:4px;}
+.stat-label{font-size:12px;color:#64748B;font-weight:500;}
 .stat-bar{height:3px;border-radius:2px;margin-top:12px;}
 .bar-blue  {background:linear-gradient(90deg,#0073EA,#5aafff);}
 .bar-orange{background:linear-gradient(90deg,#FF8C00,#FFD060);}
-.bar-green {background:linear-gradient(90deg,#00C875,#00E096);}
+.bar-green {background:linear-gradient(90deg,#059669,#00E096);}
 
-.section-card{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.06);border:1px solid #E6E9EF;overflow:hidden;}
+.section-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-md);border:1px solid var(--border);overflow:hidden;}
 .section-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid #F0F1F5;flex-wrap:wrap;gap:8px;}
-.section-head-title{font-size:14px;font-weight:700;color:#323338;}
+.section-head-title{font-size:14px;font-weight:700;color:#0F172A;}
 .filtros{display:flex;gap:6px;}
-.filtro-btn{padding:5px 13px;border-radius:20px;border:1.5px solid #E6E9EF;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#676879;font-family:inherit;transition:.13s;}
+.filtro-btn{padding:5px 13px;border-radius:20px;border:1.5px solid #E2E8F0;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#64748B;font-family:inherit;transition:.13s;}
 .filtro-btn.active{background:#0073EA;border-color:#0073EA;color:#fff;}
-.filtro-btn:hover:not(.active){border-color:#b3c8e8;color:#323338;}
+.filtro-btn:hover:not(.active){border-color:#b3c8e8;color:#0F172A;}
 
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
 thead tr{background:#F8F9FC;}
-th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#676879;padding:10px 18px;text-align:left;border-bottom:1px solid #F0F1F5;white-space:nowrap;}
-td{font-size:13px;color:#323338;padding:12px 18px;border-bottom:1px solid #F6F7FB;vertical-align:middle;}
+th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#64748B;padding:10px 18px;text-align:left;border-bottom:1px solid #F0F1F5;white-space:nowrap;}
+td{font-size:13px;color:#0F172A;padding:12px 18px;border-bottom:1px solid #F6F7FB;vertical-align:middle;}
 tr:last-child td{border-bottom:none;}
 tbody tr:hover{background:#F8FAFF;}
 
 .pbadge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px;}
 .pb-tigo{background:#EEF5FF;color:#0073EA;}
-.pb-wom {background:#F3F0FF;color:#6161FF;}
+.pb-wom {background:#F3F0FF;color:#784BD1;}
 .estado-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
-.est-ok{background:#EDFFF6;color:#00A86B;}
-.td-fecha{color:#676879;font-size:12px;white-space:nowrap;}
+.est-ok{background:var(--success-soft);color:var(--success-ink);}
+.td-fecha{color:#64748B;font-size:12px;white-space:nowrap;}
 .td-tec{font-weight:500;}
 .td-sitio{font-weight:600;}
 
-.empty-tbl{text-align:center;padding:52px 20px;color:#676879;}
+.empty-tbl{text-align:center;padding:52px 20px;color:#64748B;}
 .empty-tbl .ei{font-size:38px;margin-bottom:8px;}
 .empty-tbl .ei svg{width:38px;height:38px;opacity:.6;}
 .search-icon svg{width:15px;height:15px;display:block;}
 
-.pag{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #F0F1F5;font-size:12px;color:#676879;flex-wrap:wrap;gap:8px;}
+.pag{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #F0F1F5;font-size:12px;color:#64748B;flex-wrap:wrap;gap:8px;}
 .pag-btns{display:flex;gap:3px;}
-.pag-btn{padding:4px 10px;border-radius:6px;border:1.5px solid #E6E9EF;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;transition:.12s;}
+.pag-btn{padding:4px 10px;border-radius:6px;border:1.5px solid #E2E8F0;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;transition:.12s;}
 .pag-btn:hover:not(:disabled){border-color:#0073EA;color:#0073EA;}
 .pag-btn:disabled{opacity:.4;cursor:not-allowed;}
 .pag-btn.cur{background:#0073EA;border-color:#0073EA;color:#fff;}
 
 /* LIST STATS */
 .list-stats{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-.ls-pill{background:#fff;border:1px solid #E6E9EF;border-radius:10px;padding:10px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-.ls-pill-num{font-size:20px;font-weight:800;color:#323338;line-height:1;}
-.ls-pill-label{font-size:11px;font-weight:600;color:#676879;line-height:1.3;}
+.ls-pill{background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:10px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.ls-pill-num{font-size:20px;font-weight:800;color:#0F172A;line-height:1;}
+.ls-pill-label{font-size:11px;font-weight:600;color:#64748B;line-height:1.3;}
 .ls-pill-accent{width:3px;height:32px;border-radius:3px;flex-shrink:0;}
 
 /* VIEW TOGGLE */
 .view-toggle{display:none;background:#F0F2F8;border-radius:8px;padding:3px;gap:2px;}
 .view-toggle.visible{display:flex;}
-.vt-btn{padding:6px 15px;border-radius:6px;border:none;font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:#676879;background:transparent;transition:.13s;white-space:nowrap;}
-.vt-btn.active{background:#fff;color:#323338;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+.vt-btn{padding:6px 15px;border-radius:6px;border:none;font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:#64748B;background:transparent;transition:.13s;white-space:nowrap;}
+.vt-btn.active{background:#fff;color:#0F172A;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 
 /* OVERLAY mobile */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90;}
 .overlay.show{display:block;}
 
 /* TOAST */
-#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#323338;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#0F172A;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* CHARTS */
 .charts-row{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:24px;}
-.chart-card{background:#fff;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 12px rgba(0,0,0,.05);border:1px solid #E6E9EF;}
-.chart-head{font-size:13px;font-weight:700;color:#323338;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.chart-head-sub{font-size:11px;font-weight:500;color:#676879;margin-left:auto;}
+.chart-card{background:var(--surface);border-radius:var(--r-bento);padding:20px 22px;box-shadow:var(--sh-md);border:1px solid var(--border);transition:transform .22s cubic-bezier(.32,.72,0,1), box-shadow .22s cubic-bezier(.32,.72,0,1);}
+.chart-card:hover{transform:translateY(-4px);box-shadow:var(--sh-lg);}
+.chart-head{font-size:13px;font-weight:700;color:#0F172A;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.chart-head-sub{font-size:11px;font-weight:500;color:#64748B;margin-left:auto;}
 .chart-wrap{position:relative;width:100%;}
 .proj-pills{display:flex;gap:8px;margin-bottom:20px;}
-.proj-pill{flex:1;background:#F8F9FC;border-radius:10px;padding:14px 16px;border:1px solid #E6E9EF;}
+.proj-pill{flex:1;background:#F8F9FC;border-radius:10px;padding:14px 16px;border:1px solid #E2E8F0;}
 .proj-pill-num{font-size:24px;font-weight:800;line-height:1;margin-bottom:3px;}
-.proj-pill-label{font-size:11px;font-weight:600;color:#676879;text-transform:uppercase;letter-spacing:.5px;}
+.proj-pill-label{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.5px;}
 .pill-tigo .proj-pill-num{color:#0073EA;}
-.pill-wom  .proj-pill-num{color:#6161FF;}
+.pill-wom  .proj-pill-num{color:#784BD1;}
+
+/* ═══════════ INFORMES POR PROYECTO (módulo portado de /admin) ═══════════ */
+.ip-tools{display:flex;gap:8px;align-items:center;}
+.ip-select{border:1.5px solid #E2E8F0;border-radius:8px;padding:7px 12px;font-size:13px;font-family:inherit;color:#0F172A;background:#F6F7FB;outline:none;min-width:230px;}
+.ip-select:focus{border-color:#0073EA;background:#fff;}
+.ip-chips{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:12px 22px;border-bottom:1px solid #F0F1F5;}
+.ip-chips-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-right:2px;}
+.ip-chip{padding:5px 12px;border-radius:20px;border:1.5px solid #E2E8F0;background:#fff;font-size:12px;font-weight:600;color:#475569;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:.13s;}
+.ip-chip:hover{border-color:#b3c8e8;color:#0F172A;}
+.ip-chip.active{background:#0073EA;border-color:#0073EA;color:#fff;}
+.ip-chip-n{background:rgba(0,0,0,.08);border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;}
+.ip-chip.active .ip-chip-n{background:rgba(255,255,255,.25);}
+.ip-toolbar{padding:14px 22px;border-bottom:1px solid #F0F1F5;}
+.ip-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:capitalize;}
+.ip-borrador{background:#FEF3E2;color:#B45309;}
+.ip-enviado{background:#E0F2FE;color:#0369A1;}
+.ip-aprobado{background:#EDFFF6;color:#059669;}
+.ip-rechazado{background:#FEECEC;color:#DC2626;}
+.ip-planificado{background:#F1F5F9;color:#475569;}
+/* Botones del módulo */
+.ip-btn{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;border:none;cursor:pointer;transition:.13s;text-decoration:none;display:inline-block;}
+.ip-btn:hover{filter:brightness(.96);}
+.ip-btn-sm{padding:7px 13px;font-size:12px;}
+.ip-btn-prim{background:#059669;color:#fff;}
+.ip-btn-confirm{background:#0073EA;color:#fff;}
+.ip-btn-cancel{background:#F0F2F8;color:#475569;}
+/* Modal */
+.ip-modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.ip-modal-bg.open{display:flex;}
+.ip-modal{background:#fff;border:1px solid #E2E8F0;border-radius:14px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(15,23,42,.2);padding:24px;max-height:90vh;overflow-y:auto;}
+.ip-modal h3{font-size:17px;font-weight:800;margin-bottom:4px;color:#0F172A;}
+.ip-modal-sub{font-size:13px;color:#64748B;margin-bottom:18px;line-height:1.5;}
+.ip-field{margin-bottom:14px;}
+.ip-field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:5px;}
+.ip-field input,.ip-field select,.ip-field textarea{width:100%;border:1.5px solid #E2E8F0;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:#0F172A;background:#F8F9FC;outline:none;}
+.ip-field input:focus,.ip-field select:focus,.ip-field textarea:focus{border-color:#0073EA;background:#fff;}
+.ip-field textarea{min-height:72px;resize:vertical;}
+.ip-hint{font-size:11px;color:#94A3B8;margin-top:4px;}
+.ip-err{font-size:12px;color:#DC2626;background:#FEECEC;border:1px solid #F8C9C9;padding:9px 12px;border-radius:8px;margin-bottom:12px;display:none;}
+.ip-actions{display:flex;gap:10px;margin-top:6px;justify-content:flex-end;}
 
 /* RESPONSIVE */
 @media(max-width:768px){
@@ -295,6 +342,10 @@ tbody tr:hover{background:#F8FAFF;}
     <button class="sb-item" id="nav-informes" onclick="showView('informes')">
       <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> Dashboard
       <span class="sb-badge" id="badgeTotal">—</span>
+    </button>
+
+    <button class="sb-item" id="nav-informesproy" onclick="showView('informesproy')" style="display:none">
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span> Informes
     </button>
 
     <div class="sb-divider"></div>
@@ -363,65 +414,75 @@ tbody tr:hover{background:#F8FAFF;}
 
     <!-- ═══ VISTA: PROYECTOS ═══ -->
     <div class="view active" id="view-proyectos">
-      <div class="welcome-bar">
-        <h1 id="welcomeMsg">Bienvenido</h1>
-        <p>Selecciona un proyecto para crear o gestionar informes</p>
+      <div class="bento">
+
+        <!-- HERO -->
+        <div class="bento-tile is-dark col-2 row-2">
+          <div class="bento-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+          <h1 id="welcomeMsg" style="font-size:26px;font-weight:800;font-family:var(--font-head);letter-spacing:-.02em;color:#fff;">Bienvenido</h1>
+          <p class="bento-desc" style="max-width:36ch;">Selecciona un proyecto para crear o gestionar informes.</p>
+          <div class="bento-foot" style="display:flex;gap:28px;">
+            <div><div class="bento-kpi" id="heroMes">—</div><div class="bento-label">Informes este mes</div></div>
+            <div><div class="bento-kpi" id="heroTotal">—</div><div class="bento-label">Total de informes</div></div>
+          </div>
+        </div>
+
+        <!-- TIGO -->
+        <a href="/tigo" class="bento-tile is-accent col-2">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <img src="tigo-logo.png" alt="Tigo" style="height:30px;filter:brightness(0) invert(1);" onerror="this.style.display='none'">
+            <span style="font-size:22px;opacity:.85;">→</span>
+          </div>
+          <div class="bento-foot">
+            <div class="bento-title" style="color:#fff;">Proyecto Tigo</div>
+            <div class="bento-desc">Generar informe de clima</div>
+          </div>
+        </a>
+
+        <!-- WOM -->
+        <a href="/wom" class="bento-tile is-violet">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:30px;font-weight:900;font-style:italic;letter-spacing:-2px;line-height:1;color:#fff;">wom</span>
+            <span style="font-size:22px;opacity:.85;">→</span>
+          </div>
+          <div class="bento-foot">
+            <div class="bento-title" style="color:#fff;">Proyecto WOM</div>
+            <div class="bento-desc">Informe de clima</div>
+          </div>
+        </a>
+
+        <!-- PREVENTIVO -->
+        <a href="/preventivo" class="bento-tile is-green">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+            <span style="font-size:22px;opacity:.85;">→</span>
+          </div>
+          <div class="bento-foot">
+            <div class="bento-title" style="color:#fff;">Preventivo</div>
+            <div class="bento-desc">Tareas y carga masiva</div>
+          </div>
+        </a>
+
       </div>
-      <div class="projects-grid">
 
-        <a href="/tigo" class="proj-card proj-tigo">
-          <div class="proj-card-inner">
-            <div class="proj-top">
-              <img src="tigo-logo.png" alt="Tigo" class="proj-logo-img" onerror="this.style.display='none'">
-            </div>
-            <div class="proj-inner">
-              <span class="proj-name">Proyecto Tigo</span>
-              <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
-            </div>
-            <button class="proj-btn">Ingresar →</button>
-          </div>
-        </a>
-
-        <a href="/wom" class="proj-card proj-wom">
-          <div class="proj-card-inner">
-            <div class="proj-top">
-              <span class="wom-text">wom</span>
-            </div>
-            <div class="proj-inner">
-              <span class="proj-name">Proyecto WOM</span>
-              <span class="proj-desc">Informes de mantenimiento<br>de equipos de clima</span>
-            </div>
-            <button class="proj-btn">Ingresar →</button>
-          </div>
-        </a>
-
-        <a href="/preventivo" class="proj-card proj-preventivo">
-          <div class="proj-card-inner">
-            <div class="proj-top">
-              <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:relative;z-index:1"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
-            </div>
-            <div class="proj-inner">
-              <span class="proj-name">Mantenimiento Preventivo</span>
-              <span class="proj-desc">Planificación y carga<br>masiva de tareas</span>
-            </div>
-            <button class="proj-btn">Ingresar →</button>
-          </div>
-        </a>
-
+      <!-- Proyectos asignados al usuario (supervisor / técnico) -->
+      <div id="misProyWrap" style="display:none;margin-top:28px;">
+        <div class="proj-divider">Mis proyectos asignados</div>
+        <div class="bento" id="misProyGrid" style="margin-top:14px;"></div>
       </div>
 
       <!-- Proyectos personalizados -->
-      <div id="proyCustomWrap" style="display:none;max-width:860px;margin-top:24px;">
+      <div id="proyCustomWrap" style="display:none;margin-top:28px;">
         <div class="proj-divider">Proyectos adicionales</div>
-        <div class="projects-grid" id="proyCustomGrid" style="margin-top:14px;"></div>
+        <div class="bento" id="proyCustomGrid" style="margin-top:14px;"></div>
       </div>
 
       <!-- Botón nuevo proyecto (solo superadmin) -->
-      <div id="wrapNuevoProyecto" style="display:none;max-width:860px;margin-top:24px;">
-        <a href="/nuevo-proyecto" class="btn-new-proj">
-          <span class="np-icon">＋</span>
-          <span class="np-label">Nuevo proyecto</span>
-          <span class="np-sub">Solo superadmin</span>
+      <div id="wrapNuevoProyecto" style="display:none;margin-top:28px;max-width:300px;">
+        <a href="/nuevo-proyecto" class="bento-tile is-soft" style="border-style:dashed;align-items:center;justify-content:center;text-align:center;min-height:150px;gap:6px;color:var(--muted);">
+          <span style="font-size:30px;line-height:1;">＋</span>
+          <span class="bento-title" style="color:var(--text);">Nuevo proyecto</span>
+          <span class="bento-desc">Solo superadmin</span>
         </a>
       </div>
 
@@ -501,8 +562,8 @@ tbody tr:hover{background:#F8FAFF;}
           <span class="chart-head-sub" id="prevSub">—</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;" id="prevStatCards">
-          <div class="proj-pill" style="border-left:3px solid #1a3a6c;">
-            <div class="proj-pill-num" id="prevTotal" style="color:#1a3a6c;">—</div>
+          <div class="proj-pill" style="border-left:3px solid #0073EA;">
+            <div class="proj-pill-num" id="prevTotal" style="color:#0073EA;">—</div>
             <div class="proj-pill-label">Total tareas</div>
           </div>
           <div class="proj-pill" style="border-left:3px solid #2563EB;">
@@ -560,14 +621,35 @@ tbody tr:hover{background:#F8FAFF;}
       </div><!-- /subview-listado -->
     </div>
 
+    <!-- ═══ VISTA: INFORMES POR PROYECTO ═══ -->
+    <div class="view" id="view-informesproy">
+      <div class="section-card">
+        <div class="section-head">
+          <span class="section-head-title">Informes por proyecto</span>
+          <div class="ip-tools">
+            <select class="ip-select" id="ipProy" onchange="ipLoad()">
+              <option value="">— Selecciona proyecto —</option>
+            </select>
+          </div>
+        </div>
+        <div id="ipChipsWrap"></div>
+        <div id="ipBody">
+          <div class="empty-tbl"><div class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><p>Selecciona un proyecto para ver sus informes.</p></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
+
+<div class="ip-modal-bg" id="ipModalBg"><div class="ip-modal" id="ipModalBox"></div></div>
 
 <div id="toast"></div>
 
 <script>
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
+const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 // Guard
 if (!TOKEN()) { window.location.replace('/login'); }
@@ -593,6 +675,7 @@ async function init() {
     if (!r.ok) { window.location.replace('/login'); return; }
     const { usuario } = await r.json();
     const miRol = usuario.rol;
+    MIROL = miRol;
 
     const initials = usuario.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     document.getElementById('sbAvatar').textContent    = initials;
@@ -603,13 +686,15 @@ async function init() {
 
     if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
       document.getElementById('nav-personal').style.display = 'flex';
+      document.getElementById('nav-informesproy').style.display = 'flex';
     }
     // Catálogo de sitios: supervisor y superiores lo ven (asignar queda gated dentro)
     if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
       document.getElementById('nav-catalogo').style.display = 'flex';
     }
-    // Mi Perfil: solo supervisor y admin_empresa (no superadmin, no técnico)
-    if (['admin_empresa','supervisor'].includes(miRol)) {
+    // Mi Perfil (único, en /perfil): superadmin, admin_empresa y supervisor.
+    // El técnico lo abre desde su panel (/panel → Mi Perfil).
+    if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
       document.getElementById('nav-perfil').style.display = 'flex';
     }
     if (miRol === 'tecnico') {
@@ -619,9 +704,74 @@ async function init() {
       document.getElementById('wrapNuevoProyecto').style.display = 'block';
     }
 
-    // Cargar proyectos personalizados
+    // KPIs del hero + proyectos asignados/personalizados
+    cargarHomeKpis();
+    await cargarMisProyectos();
     await cargarProyectosCustom();
   } catch(e) { toast('Error de sesión: ' + e.message); }
+}
+
+// ── KPIs del tile hero (home) ────────────────────────────────────
+async function cargarHomeKpis() {
+  try {
+    const r = await fetch('/api/dashboard', { headers: authH() });
+    if (!r.ok) return;
+    const { stats } = await r.json();
+    if (!stats) return;
+    document.getElementById('heroMes').textContent   = stats.totalMes;
+    document.getElementById('heroTotal').textContent = stats.total;
+  } catch(e) { /* silencioso */ }
+}
+
+// ── Proyectos asignados (BD de gestión: /api/gestion/mis-proyectos) ──
+// Muestra TODOS los proyectos donde el usuario está asignado. Si el
+// proyecto tiene plantilla tigo/wom, la tarjeta enlaza a su generador.
+async function cargarMisProyectos() {
+  try {
+    const r = await fetch('/api/gestion/mis-proyectos', { headers: authH() });
+    if (!r.ok) return;
+    const proyectos = await r.json();
+    if (!Array.isArray(proyectos) || !proyectos.length) return;
+
+    const ROL_PROY = { responsable: 'Responsable', supervisor: 'Supervisor', tecnico: 'Técnico' };
+    // Plantillas/slugs que tienen generador propio en la app.
+    const SLUG_RUTA = { tigo: '/tigo', wom: '/wom', preventivo: '/preventivo' };
+    // TIGO / WOM / Preventivo ya tienen su tarjeta fija arriba: aquí solo
+    // mostramos asignaciones ADICIONALES, para no duplicar esas tarjetas.
+    const adicionales = proyectos.filter(p =>
+      !(SLUG_RUTA[(p.template || '').toLowerCase()] || SLUG_RUTA[(p.slug || '').toLowerCase()]));
+    if (!adicionales.length) return;
+    const grid = document.getElementById('misProyGrid');
+    grid.innerHTML = adicionales.map(p => {
+      // local: proyecto_nombre · supabase: nombre
+      const nombre = p.proyecto_nombre || p.nombre || 'Proyecto';
+      const color  = p.color || '#0F172A';
+      const tmpl   = (p.template || '').toLowerCase();
+      const slug   = (p.slug || '').toLowerCase();
+      // Enlaza al generador por plantilla; si no hay, por slug conocido.
+      const href   = SLUG_RUTA[tmpl] || SLUG_RUTA[slug] || null;
+      const rol    = ROL_PROY[p.rol_en_proyecto] || p.rol_en_proyecto || '—';
+      const estado = p.estado || '—';
+      const ini    = nombre.trim().substring(0, 2).toUpperCase();
+      const logoMini = p.logo
+        ? `<img src="${esc(p.logo)}" alt="" style="max-width:24px;max-height:24px;object-fit:contain;">`
+        : `<span style="font-weight:800;font-size:14px;">${esc(ini)}</span>`;
+      const tile = `
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="bento-ico" style="margin-bottom:0;background:${esc(color)}22;color:${esc(color)};">${logoMini}</div>
+            ${href ? `<span style="opacity:.45;font-size:20px;">→</span>` : ''}
+          </div>
+          <div class="bento-foot">
+            <div class="bento-title">${esc(nombre)}</div>
+            <div class="bento-desc">Rol: ${esc(rol)} · ${esc(estado)}</div>
+          </div>`;
+      return href
+        ? `<a href="${href}" class="bento-tile">${tile}</a>`
+        : `<div class="bento-tile">${tile}</div>`;
+    }).join('');
+
+    document.getElementById('misProyWrap').style.display = 'block';
+  } catch(e) { /* silencioso */ }
 }
 
 async function cargarProyectosCustom() {
@@ -633,19 +783,21 @@ async function cargarProyectosCustom() {
 
     const grid = document.getElementById('proyCustomGrid');
     grid.innerHTML = proyectos.map(p => {
-      const color = p.color || '#323338';
-      const logo = p.logo
-        ? `<img src="${p.logo}" class="proj-logo-img" alt="${p.nombre}">`
-        : `<span style="font-size:36px;font-weight:800;color:${color}">${p.nombre.substring(0,2).toUpperCase()}</span>`;
+      const color = p.color || '#0F172A';
+      const ini = (p.nombre || '').substring(0,2).toUpperCase();
+      const logoMini = p.logo
+        ? `<img src="${esc(p.logo)}" alt="" style="max-width:24px;max-height:24px;object-fit:contain;">`
+        : `<span style="font-weight:800;font-size:14px;">${esc(ini)}</span>`;
       return `
-        <a href="/proyecto/${p.slug}" class="proj-card proj-custom" style="--proj-color:${color}">
-          <div class="proj-top"></div>
-          <div class="proj-inner">
-            <div class="proj-icon">${logo}</div>
-            <span class="proj-name">${p.nombre}</span>
-            <span class="proj-desc">${p.totalSitios} sitios · ${p.totalTecnicos} técnicos<br>Formato ${p.template === 'tigo' ? 'Tigo' : 'WOM'}</span>
+        <a href="/proyecto/${esc(p.slug)}" class="bento-tile">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="bento-ico" style="margin-bottom:0;background:${esc(color)}22;color:${esc(color)};">${logoMini}</div>
+            <span style="opacity:.45;font-size:20px;">→</span>
           </div>
-          <button class="proj-btn">Ingresar →</button>
+          <div class="bento-foot">
+            <div class="bento-title">${esc(p.nombre)}</div>
+            <div class="bento-desc">${p.totalSitios} sitios · ${p.totalTecnicos} técnicos · ${p.template === 'tigo' ? 'Tigo' : 'WOM'}</div>
+          </div>
         </a>`;
     }).join('');
 
@@ -654,7 +806,8 @@ async function cargarProyectosCustom() {
 }
 
 // ── Vistas ────────────────────────────────────────────────────────
-const viewTitles = { proyectos: 'Proyectos', informes: 'Panel de Control' };
+const viewTitles = { proyectos: 'Proyectos', informes: 'Panel de Control', informesproy: 'Informes' };
+let MIROL = '';
 
 function switchSubview(v) {
   const isDash = v === 'dashboard';
@@ -681,6 +834,10 @@ function showView(v) {
     switchSubview('dashboard');
     if (!informesCargados) cargarInformes();
     cargarPreventivo();
+  } else if (v === 'informesproy') {
+    toggle.classList.remove('visible');
+    document.getElementById('searchWrap').style.display = 'none';
+    cargarInformesProy();
   } else {
     toggle.classList.remove('visible');
     document.getElementById('searchWrap').style.display = 'none';
@@ -729,7 +886,7 @@ function renderCharts(data) {
     data: {
       labels: ['TIGO', 'WOM'],
       datasets: [{ data: [tigoCount, womCount],
-        backgroundColor: ['#0073EA','#6161FF'],
+        backgroundColor: ['#0073EA','#784BD1'],
         borderWidth: 0, hoverOffset: 6 }]
     },
     options: {
@@ -748,7 +905,7 @@ function renderCharts(data) {
       labels: months.map(m => m.label),
       datasets: [
         { label: 'TIGO', data: tigoByM, backgroundColor: '#0073EA', borderRadius: 5, borderSkipped: false },
-        { label: 'WOM',  data: womByM,  backgroundColor: '#6161FF', borderRadius: 5, borderSkipped: false }
+        { label: 'WOM',  data: womByM,  backgroundColor: '#784BD1', borderRadius: 5, borderSkipped: false }
       ]
     },
     options: {
@@ -789,7 +946,7 @@ function renderCharts(data) {
       labels: sitios.map(s => s.nombre),
       datasets: [
         { label: 'TIGO', data: sitios.map(s => s.tigo), backgroundColor: '#0073EA', borderRadius: 4, borderSkipped: false },
-        { label: 'WOM',  data: sitios.map(s => s.wom),  backgroundColor: '#6161FF', borderRadius: 4, borderSkipped: false }
+        { label: 'WOM',  data: sitios.map(s => s.wom),  backgroundColor: '#784BD1', borderRadius: 4, borderSkipped: false }
       ]
     },
     options: {
@@ -836,7 +993,7 @@ async function cargarPreventivo() {
     _chartPrevTec = new Chart(document.getElementById('chartPrevTec'), {
       type: 'bar',
       data: { labels, datasets:[{ label:'Tareas', data,
-        backgroundColor:'rgba(26,58,108,.7)', borderRadius:6, borderSkipped:false }] },
+        backgroundColor:'rgba(0,115,234,.7)', borderRadius:6, borderSkipped:false }] },
       options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false} },
         scales:{ x:{grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:11}} },
@@ -936,6 +1093,166 @@ function irPag(p) {
   if (p<1||p>max) return;
   pagina=p; renderTabla();
   document.querySelector('.section-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ══════════ INFORMES POR PROYECTO (módulo portado de /admin) ══════════
+// supervisor → sus proyectos asignados · admin/superadmin → los de su empresa/todos.
+const IP_PREV_PILL = { 'Nuevo':'ip-enviado', 'En Progreso':'ip-borrador', 'Cerrado':'ip-aprobado' };
+const ipPillPrev = e => IP_PREV_PILL[e] || 'ip-planificado';
+const IP_ICO_DOC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+const ipEmpty = (msg, icon) => `<div class="empty-tbl"><div class="ei">${icon||''}</div><p>${esc(msg)}</p></div>`;
+
+async function cargarInformesProy() {
+  try {
+    const ruta = MIROL === 'supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos';
+    const [proyectos, resumen] = await Promise.all([
+      fetch(ruta, { headers: authH() }).then(r => r.ok ? r.json() : []),
+      fetch('/api/gestion/resumen', { headers: authH() }).then(r => r.ok ? r.json() : null).catch(() => null)
+    ]);
+    // Normaliza ambas formas (mis-proyectos: proyecto_id/proyecto_nombre · proyectos: id/nombre)
+    const norm = (Array.isArray(proyectos) ? proyectos : []).map(p => ({
+      id: p.proyecto_id || p.id,
+      nombre: p.proyecto_nombre || p.nombre || 'Proyecto',
+      tipo: p.tipo || p.proyecto_tipo || '',
+      empresa_nombre: p.empresa_nombre || ''
+    })).filter(p => p.id);
+    window._ipProyectos = norm;
+    window._ipTipos = {};
+    norm.forEach(p => { window._ipTipos[p.id] = p.tipo; });
+
+    const sel = document.getElementById('ipProy');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">— Selecciona proyecto —</option>' +
+      norm.map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}${p.empresa_nombre ? ' · ' + esc(p.empresa_nombre) : ''}</option>`).join('');
+
+    // Chips de "más usados" (por nº de informes), si el resumen los trae.
+    const porNombre = {};
+    norm.forEach(p => { if (!(p.nombre in porNombre)) porNombre[p.nombre] = p.id; });
+    const top = ((resumen && resumen.stats && resumen.stats.por_proyecto) || [])
+      .filter(x => porNombre[x.nombre]).slice(0, 6);
+    document.getElementById('ipChipsWrap').innerHTML = top.length
+      ? `<div class="ip-chips"><span class="ip-chips-label">Más usados</span>${top.map(x =>
+          `<button class="ip-chip" data-pid="${esc(porNombre[x.nombre])}" onclick="ipQuick('${esc(porNombre[x.nombre])}')">${esc(x.nombre)} <span class="ip-chip-n">${x.count}</span></button>`).join('')}</div>`
+      : '';
+
+    // Conserva la selección previa si sigue disponible.
+    if (prev && norm.some(p => p.id === prev)) { sel.value = prev; ipLoad(); }
+    else document.getElementById('ipBody').innerHTML = ipEmpty('Selecciona un proyecto para ver sus informes.', IP_ICO_DOC);
+  } catch (e) { toast('Error al cargar proyectos: ' + e.message); }
+}
+
+function ipQuick(pid) {
+  const sel = document.getElementById('ipProy');
+  if (sel) sel.value = pid;
+  ipLoad();
+}
+
+async function ipLoad() {
+  const pid = document.getElementById('ipProy').value;
+  document.querySelectorAll('#ipChipsWrap .ip-chip').forEach(c => c.classList.toggle('active', c.dataset.pid === pid));
+  const body = document.getElementById('ipBody');
+  if (!pid) { body.innerHTML = ipEmpty('Selecciona un proyecto.', IP_ICO_DOC); return; }
+  // Proyecto preventivo → sus ítems son tareas del módulo de mantenimiento.
+  if ((window._ipTipos || {})[pid] === 'preventivo') return ipLoadTareas(pid);
+  try {
+    const r = await fetch('/api/gestion/proyectos/' + pid + '/informes', { headers: authH() });
+    if (!r.ok) throw new Error('No se pudieron cargar los informes');
+    const list = await r.json();
+    body.innerHTML = `<div class="ip-toolbar"><button class="ip-btn ip-btn-prim ip-btn-sm" onclick="ipModalInforme('${esc(pid)}')">+ Nuevo informe</button></div>
+      ${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Título</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+        ${list.map(i => `<tr><td class="td-sitio">${esc(i.titulo)}</td>
+          <td><span class="ip-pill ip-${esc(i.estado)}">${esc(i.estado)}</span></td>
+          <td class="td-fecha">${esc((i.fecha_creacion || '').slice(0, 10) || '—')}</td></tr>`).join('')}
+        </tbody></table></div>` : ipEmpty('Este proyecto no tiene informes.', IP_ICO_DOC)}`;
+  } catch (e) { body.innerHTML = ipEmpty(e.message, IP_ICO_DOC); }
+}
+
+async function ipLoadTareas(pid) {
+  const body = document.getElementById('ipBody');
+  try {
+    const r = await fetch('/tareas', { headers: authH() });
+    const tareas = r.ok ? await r.json() : [];
+    body.innerHTML = `<div class="ip-toolbar"><a class="ip-btn ip-btn-prim ip-btn-sm" href="/preventivo">+ Nueva tarea</a></div>
+      ${tareas.length ? `<div class="tbl-wrap"><table><thead><tr><th>Tarea</th><th>Sitio</th><th>Técnico</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+        ${tareas.map(t => `<tr><td class="td-sitio">${esc(t.descripcion || t.tareaNumero || '—')}</td>
+          <td class="td-tec">${esc(t.sitio || '—')}</td>
+          <td class="td-tec">${esc(t.tecnico || '—')}</td>
+          <td><span class="ip-pill ${ipPillPrev(t.estado)}">${esc(t.estado || 'Nuevo')}</span></td>
+          <td class="td-fecha">${esc((t.fechaInicio || '').slice(0, 10) || '—')}</td></tr>`).join('')}
+        </tbody></table></div>` : ipEmpty('Este proyecto no tiene tareas registradas.', IP_ICO_DOC)}`;
+  } catch (e) { body.innerHTML = ipEmpty(e.message, IP_ICO_DOC); }
+}
+
+// ── Modal: crear informe ──
+function ipOpenModal(html) { document.getElementById('ipModalBox').innerHTML = html; document.getElementById('ipModalBg').classList.add('open'); }
+function ipCloseModal() { document.getElementById('ipModalBg').classList.remove('open'); }
+function ipShowErr(msg) { const e = document.getElementById('ipErr'); if (e) { e.textContent = msg; e.style.display = 'block'; } }
+
+async function ipModalInforme(pid) {
+  const proyectos = window._ipProyectos || [];
+  if (!proyectos.length) return toast('No hay proyectos disponibles');
+  let sitios = window._ipSitios;
+  if (!sitios) {
+    try { sitios = await fetch('/api/sitios-preventivos', { headers: authH() }).then(r => r.ok ? r.json() : []); }
+    catch { sitios = []; }
+    window._ipSitios = sitios;
+  }
+  const proySel = proyectos.find(p => p.id === pid);
+  const esTarea = proySel && proySel.tipo === 'preventivo';
+  const proyOpts = proyectos.map(p => `<option value="${esc(p.id)}" ${p.id === pid ? 'selected' : ''}>${esc(p.nombre)}${p.tipo ? ' · ' + esc(p.tipo) : ''}</option>`).join('');
+  const sitioOpts = (sitios || []).map(s => `<option value="${esc(s.nombre)}">${esc(s.nombre)}${s.ciudad ? ' · ' + esc(s.ciudad) : ''}</option>`).join('');
+  ipOpenModal(`<h3>${esTarea ? 'Nueva tarea' : 'Nuevo informe'}</h3>
+    <p class="ip-modal-sub">Elige el proyecto; el técnico/supervisor debe ser personal asignado a ese proyecto.</p>
+    <div class="ip-field"><label>Proyecto</label><select id="ipMProy" onchange="ipRecargarPersonal()">${proyOpts}</select></div>
+    <div class="ip-field"><label>Sitio</label><select id="ipMSitio"><option value="">— ninguno —</option>${sitioOpts}</select>
+      <div class="ip-hint">A qué sitio va asignada la actividad.</div></div>
+    <div class="ip-field"><label>LPU</label><input id="ipMLpu" placeholder="N.º de LPU"></div>
+    <div class="ip-field"><label>Título</label><input id="ipMTitulo" placeholder="Mantención preventiva sala A"></div>
+    <div class="ip-field"><label>Técnico</label><select id="ipMTec"></select><div class="ip-hint" id="ipMTecHint"></div></div>
+    <div class="ip-field"><label>Supervisor</label><select id="ipMSup"></select></div>
+    <div class="ip-field"><label>Contenido</label><textarea id="ipMCont" placeholder="Detalle de la actividad…"></textarea></div>
+    <div class="ip-err" id="ipErr"></div>
+    <div class="ip-actions"><button class="ip-btn ip-btn-cancel" onclick="ipCloseModal()">Cancelar</button>
+      <button class="ip-btn ip-btn-confirm" onclick="ipCrearInforme(this)">Crear</button></div>`);
+  await ipRecargarPersonal();
+  setTimeout(() => { const t = document.getElementById('ipMTitulo'); if (t) t.focus(); }, 80);
+}
+
+// Recarga técnicos/supervisores según el proyecto elegido (solo personal asignado).
+async function ipRecargarPersonal() {
+  const pid = document.getElementById('ipMProy').value;
+  let personal = [];
+  try { personal = await fetch('/api/gestion/proyectos/' + pid + '/personal', { headers: authH() }).then(r => r.ok ? r.json() : []); } catch {}
+  const tecs = personal.filter(p => p.rol === 'tecnico'), sups = personal.filter(p => p.rol === 'supervisor');
+  const opt = arr => '<option value="">— ninguno —</option>' + arr.map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join('');
+  const tEl = document.getElementById('ipMTec'), sEl = document.getElementById('ipMSup'), hEl = document.getElementById('ipMTecHint');
+  if (tEl) tEl.innerHTML = opt(tecs);
+  if (sEl) sEl.innerHTML = opt(sups);
+  if (hEl) hEl.textContent = tecs.length ? '' : 'No hay técnicos asignados a este proyecto.';
+}
+
+async function ipCrearInforme(btn) {
+  const pid = document.getElementById('ipMProy').value;
+  const body = {
+    titulo: document.getElementById('ipMTitulo').value.trim(),
+    tecnico_id: document.getElementById('ipMTec').value || null,
+    supervisor_id: document.getElementById('ipMSup').value || null,
+    contenido: document.getElementById('ipMCont').value.trim() || null,
+    sitio: document.getElementById('ipMSitio').value.trim() || null,
+    lpu: document.getElementById('ipMLpu').value.trim() || null
+  };
+  if (!body.titulo) return ipShowErr('Título requerido');
+  if (!pid) return ipShowErr('Selecciona un proyecto');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/gestion/proyectos/' + pid + '/informes', {
+      method: 'POST', headers: authH({ 'Content-Type': 'application/json' }), body: JSON.stringify(body)
+    });
+    const data = await r.json().catch(() => null);
+    if (!r.ok) throw new Error((data && data.error) || 'No se pudo crear');
+    ipCloseModal(); toast('Informe creado');
+    document.getElementById('ipProy').value = pid; ipLoad();
+  } catch (e) { ipShowErr(e.message); btn.disabled = false; }
 }
 
 // ── Sidebar mobile ────────────────────────────────────────────────

@@ -198,14 +198,30 @@ const db = {
     local.informes.updateEstado(id, estado);
   },
 
+  // Adjunta el documento generado y marca el informe como 'enviado' (generado).
+  async informeSetDocumento(id, doc_url, doc_nombre) {
+    if (supa) {
+      const { error } = await supa.from('informes')
+        .update({ estado: 'enviado', doc_url, doc_nombre }).eq('id', id);
+      if (error) throw new Error(error.message);
+      return;
+    }
+    local.informes.setDocumento(id, doc_url, doc_nombre);
+  },
+
   // Informes del usuario (técnico o supervisor) — "Mis informes"
   async misInformes(usuario_id) {
     if (supa) {
       const { data } = await supa.from('informes')
-        .select('*, proyectos(nombre,tipo)')
+        .select('*, proyectos(nombre,tipo,slug,template,color)')
         .or(`tecnico_id.eq.${usuario_id},supervisor_id.eq.${usuario_id}`)
         .order('fecha_creacion', { ascending: false });
-      return (data || []).map(i => ({ ...i, proyecto_nombre: i.proyectos?.nombre, proyecto_tipo: i.proyectos?.tipo }));
+      return (data || []).map(i => ({
+        ...i,
+        proyecto_nombre: i.proyectos?.nombre, proyecto_tipo: i.proyectos?.tipo,
+        proyecto_slug: i.proyectos?.slug, proyecto_template: i.proyectos?.template,
+        proyecto_color: i.proyectos?.color
+      }));
     }
     return local.informes.listByUsuario(usuario_id);
   },
@@ -219,6 +235,21 @@ const db = {
       return (data || []).map(i => ({ ...i, proyecto_nombre: i.proyectos?.nombre, proyecto_tipo: i.proyectos?.tipo }));
     }
     return local.informes.recientes(limit, empresa_id);
+  },
+
+  // Listado liviano de TODOS los informes para estadísticas del dashboard.
+  // empresa_id opcional para acotar (admin_empresa); sin él, todos (superadmin).
+  async informesParaStats(empresa_id = null) {
+    if (supa) {
+      let q = supa.from('informes').select('estado,fecha_creacion,sitio, proyectos!inner(nombre,tipo,empresa_id)');
+      if (empresa_id) q = q.eq('proyectos.empresa_id', empresa_id);
+      const { data } = await q;
+      return (data || []).map(i => ({
+        estado: i.estado, fecha_creacion: i.fecha_creacion, sitio: i.sitio,
+        proyecto_nombre: i.proyectos?.nombre, proyecto_tipo: i.proyectos?.tipo
+      }));
+    }
+    return local.informes.paraStats(empresa_id);
   },
 
   // ── Lectura de empresas/usuarios (misma BD) para el panel ──

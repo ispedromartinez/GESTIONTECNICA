@@ -10,6 +10,7 @@ const path = require('path');
 const XLSXStyle = require('xlsx-js-style');
 const { authMiddleware } = require('../middleware/auth');
 const { requireNivel } = require('../middleware/roles');
+const { canAccessTenant, scopeToTenant } = require('../middleware/tenant');
 const localDB = require('../db/local');
 const { supabase } = require('../db/supabase');
 
@@ -235,16 +236,14 @@ const TAREAS_COLUMNAS_INV = Object.fromEntries(Object.entries(TAREAS_COLUMNAS).m
 const router = express.Router();
 router.use(authMiddleware);
 
-// ── Scope por empresa ───────────────────────────────────────────
-// superadmin ve todo; el resto solo las tareas de su propia empresa.
-// Las tareas sin empresa (legado) solo las ve superadmin.
+// ── Scope por tenant (delegado en middleware/tenant.js) ─────────
+// superadmin ve todo; el resto solo las tareas de su propio tenant.
+// Las tareas sin tenant (legado) solo las ve superadmin.
 function filtraEmpresa(rows, user) {
-  if (user.rol === 'superadmin') return rows;
-  return rows.filter(r => r.empresaId && r.empresaId === user.empresa_id);
+  return scopeToTenant({ user }, rows, r => r.empresaId);
 }
 function puedeTocar(tarea, user) {
-  if (user.rol === 'superadmin') return true;
-  return !!tarea.empresaId && tarea.empresaId === user.empresa_id;
+  return canAccessTenant({ user }, tarea && tarea.empresaId);
 }
 // Nombres (en minúscula) de los técnicos activos de una empresa — para validar asignaciones.
 async function tecnicosDeEmpresa(empresaId) {

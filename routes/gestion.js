@@ -1,6 +1,7 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
 const { requireRol } = require('../middleware/roles');
+const { canAccessTenant } = require('../middleware/tenant');
 const { validarRut, normalizarRut } = require('../utils/rut');
 const db = require('../db/gestion');
 
@@ -21,7 +22,7 @@ async function cargarProyecto(req, res, next) {
   try {
     const proyecto = await db.proyectoById(req.params.id || req.params.proyecto_id);
     if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' });
-    if (req.user.rol !== 'superadmin' && proyecto.empresa_id !== req.user.empresa_id) {
+    if (!canAccessTenant(req, proyecto.empresa_id)) {
       return res.status(403).json({ error: 'Proyecto fuera de tu empresa' });
     }
     req.proyecto = proyecto;
@@ -75,30 +76,81 @@ async function guardarPerfil(req, res, usuario_id) {
 // DASHBOARD / VISTAS PROPIAS  (recorte por rol)
 // ════════════════════════════════════════════════════════════════
 
+// Agrega un listado de informes en métricas listas para graficar.
+// Cada informe aporta: estado, rama (proyecto_tipo), proyecto, mes y sitio.
+function agregarInformes(informes) {
+  const porEstado = {};
+  const porTipo = {};
+  const porProyecto = {};
+  const sitios = new Set();
+  const porMes = {};
+  // Claves de los últimos 6 meses (AAAA-MM), de más antiguo a más reciente.
+  const meses = [];
+  const hoy = new Date();
+  for (let k = 5; k >= 0; k--) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - k, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    meses.push(key);
+    porMes[key] = 0;
+  }
+  for (const i of (informes || [])) {
+    const estado = i.estado || 'borrador';
+    porEstado[estado] = (porEstado[estado] || 0) + 1;
+    const tipo = i.proyecto_tipo || 'otros';
+    porTipo[tipo] = (porTipo[tipo] || 0) + 1;
+    const proy = i.proyecto_nombre || '—';
+    porProyecto[proy] = (porProyecto[proy] || 0) + 1;
+    const mes = String(i.fecha_creacion || '').slice(0, 7);
+    if (mes in porMes) porMes[mes]++;
+    const sitio = (i.sitio || '').toString().trim();
+    if (sitio) sitios.add(sitio.toLowerCase());
+  }
+  const topSitios = {};
+  for (const i of (informes || [])) {
+    const sitio = (i.sitio || '').toString().trim();
+    if (sitio) topSitios[sitio] = (topSitios[sitio] || 0) + 1;
+  }
+  return {
+    total: (informes || []).length,
+    por_estado: porEstado,
+    por_tipo: porTipo,
+    por_mes: meses.map(m => ({ mes: m, count: porMes[m] })),
+    por_proyecto: Object.entries(porProyecto)
+      .sort((a, b) => b[1] - a[1]).slice(0, 6)
+      .map(([nombre, count]) => ({ nombre, count })),
+    top_sitios: Object.entries(topSitios)
+      .sort((a, b) => b[1] - a[1]).slice(0, 10)
+      .map(([nombre, count]) => ({ nombre, count })),
+    sitios_distintos: sitios.size
+  };
+}
+
 // GET /api/gestion/resumen — métricas del dashboard, según rol
 router.get('/resumen', async (req, res) => {
   try {
     const { rol, empresa_id, usuario_id } = req.user;
     if (rol === 'superadmin') {
-      const [empresas, proyectos, recientes] = await Promise.all([
-        db.empresasList(), db.proyectosAll(), db.informesRecientes(12)
+      const [empresas, proyectos, recientes, todos] = await Promise.all([
+        db.empresasList(), db.proyectosAll(), db.informesRecientes(12), db.informesParaStats()
       ]);
       return res.json({
         empresas: empresas.length,
         proyectos_activos: proyectos.filter(p => p.estado === 'activo').length,
         proyectos_total: proyectos.length,
-        informes_recientes: recientes
+        informes_recientes: recientes,
+        stats: agregarInformes(todos)
       });
     }
     if (rol === 'admin_empresa') {
-      const [proyectos, recientes] = await Promise.all([
-        db.proyectosByEmpresa(empresa_id), db.informesRecientes(12, empresa_id)
+      const [proyectos, recientes, todos] = await Promise.all([
+        db.proyectosByEmpresa(empresa_id), db.informesRecientes(12, empresa_id), db.informesParaStats(empresa_id)
       ]);
       return res.json({
         empresas: 1,
         proyectos_activos: proyectos.filter(p => p.estado === 'activo').length,
         proyectos_total: proyectos.length,
-        informes_recientes: recientes
+        informes_recientes: recientes,
+        stats: agregarInformes(todos)
       });
     }
     // supervisor / tecnico: lo suyo
@@ -109,7 +161,8 @@ router.get('/resumen', async (req, res) => {
       proyectos_total: misProyectos.length,
       proyectos_activos: misProyectos.filter(p => p.estado === 'activo').length,
       informes_total: misInformes.length,
-      informes_recientes: misInformes.slice(0, 12)
+      informes_recientes: misInformes.slice(0, 12),
+      stats: agregarInformes(misInformes)
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -135,7 +188,7 @@ router.get('/usuarios/:id/proyectos', requireRol(...ROLES_ADMIN), async (req, re
   try {
     const u = await db.usuarioById(req.params.id);
     if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
-    if (req.user.rol !== 'superadmin' && u.empresa_id !== req.user.empresa_id)
+    if (!canAccessTenant(req, u.empresa_id))
       return res.status(403).json({ error: 'Usuario fuera de tu empresa' });
     res.json(await db.misProyectos(req.params.id));
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -287,21 +340,32 @@ router.get('/informes/:id', async (req, res) => {
     const informe = await db.informeById(req.params.id);
     if (!informe) return res.status(404).json({ error: 'Informe no encontrado' });
     const proyecto = await db.proyectoById(informe.proyecto_id);
-    if (req.user.rol !== 'superadmin' && (!proyecto || proyecto.empresa_id !== req.user.empresa_id))
+    if (!canAccessTenant(req, proyecto && proyecto.empresa_id))
       return res.status(403).json({ error: 'Informe fuera de tu empresa' });
     res.json(informe);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // PATCH /api/gestion/informes/:id/estado
+const ESTADOS_INFORME = ['borrador', 'enviado', 'aprobado', 'rechazado'];
 router.patch('/informes/:id/estado', async (req, res) => {
   try {
     const { estado } = req.body;
+    if (!ESTADOS_INFORME.includes(estado))
+      return res.status(400).json({ error: 'Estado no válido' });
     const informe = await db.informeById(req.params.id);
     if (!informe) return res.status(404).json({ error: 'Informe no encontrado' });
     const proyecto = await db.proyectoById(informe.proyecto_id);
-    if (req.user.rol !== 'superadmin' && (!proyecto || proyecto.empresa_id !== req.user.empresa_id))
+    if (!canAccessTenant(req, proyecto && proyecto.empresa_id))
       return res.status(403).json({ error: 'Informe fuera de tu empresa' });
+    // El técnico solo opera sobre SUS informes y solo puede generar/cerrar
+    // (borrador→enviado "generar", enviado→aprobado "cerrar").
+    if (req.user.rol === 'tecnico') {
+      if (informe.tecnico_id !== req.user.usuario_id)
+        return res.status(403).json({ error: 'No es tu informe' });
+      if (!['enviado', 'aprobado'].includes(estado))
+        return res.status(403).json({ error: 'Transición no permitida para técnico' });
+    }
     await db.informeUpdateEstado(informe.id, estado);
     res.json({ ok: true });
   } catch (err) { res.status(400).json({ error: err.message }); }

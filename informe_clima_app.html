@@ -10,17 +10,17 @@
 <link rel="stylesheet" href="/theme.css">
 <style>
 :root {
-  --blue:#0073EA; --bl:#E6F2FF; --bm:#1976D2; --bd:#0D47A1; --b2:#D9E2F3;
-  --white:#fff; --bg:#F6F7FB; --text:#323338; --muted:#676879;
-  --green:#00C875; --red:#E2445C; --orange:#FF7B1C;
-  --border:#D0D4E4;
+  --blue:#0073EA; --bl:#E6F2FF; --bm:#0073EA; --bd:#0D47A1; --b2:#D9E2F3;
+  --white:#fff; --bg:#F6F7FB; --text:#0F172A; --muted:#64748B;
+  --green:#059669; --red:#DC2626; --orange:#FF7B1C;
+  --border:#E2E8F0;
   --r:12px;
   --sh:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
   --sh-lg:0 4px 8px rgba(0,0,0,.08),0 12px 32px rgba(0,0,0,.12);
   --max-w:860px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Poppins',system-ui,sans-serif;background:#F6F7FB;color:var(--text);min-height:100vh;}
+body{font-family:var(--font-body);background:#F6F7FB;color:var(--text);min-height:100vh;}
 
 /* ── HEADER ── */
 header{background:#1C1F3B;color:#fff;padding:14px 20px 12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.2);border-bottom:3px solid #0073EA;}
@@ -65,8 +65,8 @@ header{background:#1C1F3B;color:#fff;padding:14px 20px 12px;position:sticky;top:
 .section.active{display:block;}
 
 /* ── CARDS ── */
-.card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:20px;margin-bottom:16px;border:1px solid var(--border);}
-.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#323338;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.card{background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh);padding:20px;margin-bottom:16px;border:1px solid var(--border);}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#0F172A;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
 .card-title::before{content:'';display:block;width:4px;height:16px;background:var(--blue);border-radius:3px;}
 
 /* ── FIELDS ── */
@@ -197,11 +197,13 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .act-perm:hover{background:#fee2e2;}
 
 /* ── NUEVO BANNER ── */
-.nuevo-banner{background:linear-gradient(135deg,#EBF4FE 0%,#F0F8FF 100%);border:1.5px solid #bfdbfe;border-radius:12px;padding:28px 24px;margin-bottom:16px;text-align:center;}
-.nuevo-banner h2{font-size:18px;font-weight:800;color:var(--blue);margin-bottom:8px;}
-.nuevo-banner p{font-size:13px;color:var(--muted);line-height:1.65;}
-.btn-nuevo-start{width:100%;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px;box-shadow:0 4px 14px rgba(0,115,234,.25);transition:.2s;letter-spacing:.1px;font-family:inherit;}
-.btn-nuevo-start:hover{background:#005bb5;box-shadow:0 6px 20px rgba(0,115,234,.35);}
+.nuevo-banner{position:relative;overflow:hidden;background:linear-gradient(135deg,#EBF4FE 0%,#F0F8FF 100%);border:1px solid #cfe3fb;border-radius:14px;padding:30px 24px;margin-bottom:16px;text-align:center;box-shadow:0 1px 3px rgba(0,115,234,.06),0 10px 30px rgba(0,115,234,.08);}
+.nuevo-banner::before{content:'';position:absolute;width:200px;height:200px;border-radius:50%;top:-100px;right:-60px;background:radial-gradient(circle,rgba(0,115,234,.16),rgba(0,115,234,0) 70%);pointer-events:none;}
+.nb-badge{position:relative;z-index:1;width:54px;height:54px;border-radius:15px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,var(--blue),var(--blue-d));box-shadow:0 6px 16px rgba(0,115,234,.30);}
+.nuevo-banner h2{position:relative;z-index:1;font-size:18px;font-weight:800;color:#0F2C52;margin-bottom:8px;}
+.nuevo-banner p{position:relative;z-index:1;font-size:13px;color:var(--muted);line-height:1.65;}
+.btn-nuevo-start{position:relative;z-index:1;width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:18px;box-shadow:0 4px 14px rgba(0,115,234,.25);transition:.2s;letter-spacing:.1px;font-family:inherit;}
+.btn-nuevo-start:hover{background:#005bb5;box-shadow:0 6px 20px rgba(0,115,234,.35);transform:translateY(-1px);}
 .btn-nuevo-start:active{transform:scale(.98);}
 
 /* ── HISTORIAL ── */
@@ -211,7 +213,7 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .btn-refresh{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s;}
 .btn-refresh:hover{background:var(--bm);}
 .hist-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
-.stat-box{background:var(--white);border-radius:10px;box-shadow:var(--sh);padding:16px 12px;text-align:center;border:1px solid var(--border);}
+.stat-box{background:var(--white);border-radius:var(--r-md);box-shadow:var(--sh);padding:16px 12px;text-align:center;border:1px solid var(--border);}
 .stat-num{font-size:26px;font-weight:800;color:var(--blue);}
 .stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:4px;font-weight:600;}
 .hist-empty{text-align:center;padding:48px 20px;color:var(--muted);}
@@ -355,7 +357,8 @@ function cerrarSesion(){
 <!-- ══ TAB 0: NUEVO ══ -->
 <div class="section active" id="tab0">
   <div class="nuevo-banner">
-    <h2 style="display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Nuevo Informe de Trabajo</h2>
+    <div class="nb-badge"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg></div>
+    <h2>Nuevo Informe de Trabajo</h2>
     <p>Inicia un informe de mantenimiento preventivo desde cero.<br>Todos los campos serán limpiados.</p>
     <button class="btn-nuevo-start" onclick="nuevoInforme()">＋ Crear Nuevo Informe</button>
   </div>
@@ -1433,7 +1436,8 @@ async function generateDocx(){
     m_tinj:document.getElementById('m_tinj').value,m_tret:document.getElementById('m_tret').value,
     photos:photoDataUrls,
     photoDescs:photoDescs,
-    tareaId:TAREA_ID
+    tareaId:TAREA_ID,
+    gestionInformeId:new URLSearchParams(location.search).get('informeId')||null
   };
   try{
     const resp=await fetch(SERVER+'/generar',{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(payload)});

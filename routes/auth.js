@@ -3,7 +3,7 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const { authMiddleware, JWT_SECRET } = require('../middleware/auth');
 const { requireRol } = require('../middleware/roles');
-const { rateLimit } = require('../middleware/rateLimit');
+const { canAccessTenant } = require('../middleware/tenant');
 const { validarRut, normalizarRut } = require('../utils/rut');
 const gestionDB = require('../db/gestion');
 
@@ -151,30 +151,58 @@ const db = {
 };
 
 // ── POST /auth/login ─────────────────────────────────────────
-// Máx. 20 intentos cada 15 min por IP (anti fuerza bruta)
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Demasiados intentos de inicio de sesión. Espera unos minutos.' });
-router.post('/login', loginLimiter, async (req, res) => {
+// Anti fuerza bruta por IP: máx. 20 intentos FALLIDOS cada 15 min.
+// Solo cuenta fallos (un login correcto limpia el contador) y el
+// superadmin nunca queda bloqueado: siempre puede iniciar sesión.
+const LOGIN_MAX = 20;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const loginFails = new Map(); // ip -> { count, reset }
+const ipDe = req => req.ip || (req.connection && req.connection.remoteAddress) || 'unknown';
+function loginBloqueado(ip) {
+  const rec = loginFails.get(ip);
+  if (!rec) return false;
+  if (Date.now() > rec.reset) { loginFails.delete(ip); return false; }
+  return rec.count >= LOGIN_MAX;
+}
+function loginFallo(ip) {
+  const now = Date.now();
+  let rec = loginFails.get(ip);
+  if (!rec || now > rec.reset) { rec = { count: 0, reset: now + LOGIN_WINDOW_MS }; loginFails.set(ip, rec); }
+  rec.count++;
+}
+const loginReset = ip => loginFails.delete(ip);
+
+router.post('/login', async (req, res) => {
   try {
+    const ip = ipDe(req);
     const { email, password, empresa: empresaSlug } = req.body;
     if (!email || !password)
       return res.status(400).json({ error: 'Email y contraseña requeridos' });
 
     const usuario = await db.findUserByEmail(email.toLowerCase().trim());
+    const esSuper = !!usuario && usuario.rol === 'superadmin';
+
+    // El bloqueo por fuerza bruta NO aplica al superadmin.
+    if (!esSuper && loginBloqueado(ip))
+      return res.status(429).json({ error: 'Demasiados intentos de inicio de sesión. Espera unos minutos.' });
+
     // Mismo mensaje para email no encontrado y contraseña incorrecta — evita enumeración
-    if (!usuario) return res.status(401).json({ error: 'Credenciales inválidas' });
+    if (!usuario) { loginFallo(ip); return res.status(401).json({ error: 'Credenciales inválidas' }); }
     if (!usuario.activo) return res.status(403).json({ error: 'Cuenta desactivada' });
 
     const ok = await bcrypt.compare(password, usuario.password_hash);
-    if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
+    if (!ok) { if (!esSuper) loginFallo(ip); return res.status(401).json({ error: 'Credenciales inválidas' }); }
 
     // Validar empresa si se envió en el formulario
     // superadmin no tiene empresa asignada → se omite la validación
     if (empresaSlug && usuario.rol !== 'superadmin') {
       const empresa = await db.findEmpresaBySlug(empresaSlug.toLowerCase().trim());
       if (!empresa) {
+        loginFallo(ip);
         return res.status(401).json({ error: 'Empresa no encontrada o inactiva' });
       }
       if (empresa.id !== usuario.empresa_id) {
+        loginFallo(ip);
         return res.status(401).json({ error: 'Credenciales inválidas' });
       }
     }
@@ -196,6 +224,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       areas_permitidas
     };
 
+    loginReset(ip); // login correcto → limpia el contador de fallos de esta IP
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
     res.json({ token, usuario: payload });
   } catch (err) {
@@ -333,11 +362,10 @@ router.post('/asignar-area', authMiddleware, requireRol('superadmin', 'admin_emp
     if (!usuario_id || !area_id)
       return res.status(400).json({ error: 'usuario_id y area_id requeridos' });
 
-    if (req.user.rol === 'admin_empresa') {
-      const area = await db.getAreaById(area_id);
-      if (!area || area.empresa_id !== req.user.empresa_id)
-        return res.status(403).json({ error: 'Área no pertenece a tu empresa' });
-    }
+    const area = await db.getAreaById(area_id);
+    if (!area) return res.status(404).json({ error: 'Área no encontrada' });
+    if (!canAccessTenant(req, area.empresa_id))
+      return res.status(403).json({ error: 'Área no pertenece a tu empresa' });
 
     await db.upsertUsuarioArea(usuario_id, area_id, req.user.usuario_id);
     res.json({ ok: true });

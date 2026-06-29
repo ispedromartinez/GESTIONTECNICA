@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const XLSX = require('xlsx-js-style');
 const { authMiddleware } = require('../middleware/auth');
 const { requireRol } = require('../middleware/roles');
+const { canAccessTenant } = require('../middleware/tenant');
 const { validarRut, normalizarRut } = require('../utils/rut');
 const db = require('../db/gestion');
 
@@ -14,10 +15,9 @@ router.use(authMiddleware);
 const adminEmpresa = requireRol('superadmin', 'admin_empresa');
 const soloSuper = requireRol('superadmin');
 
-// Límite de seguridad: admin_empresa solo accede a su propia empresa.
+// Límite de seguridad: admin_empresa solo accede a su propia empresa (tenant).
 function scopeEmpresa(req, res, next) {
-  if (req.user.rol === 'superadmin') return next();
-  if (req.params.id !== req.user.empresa_id)
+  if (!canAccessTenant(req, req.params.id))
     return res.status(403).json({ error: 'Solo puedes acceder a tu propia empresa' });
   next();
 }
@@ -362,7 +362,7 @@ router.post('/usuarios/:id/invitacion', adminEmpresa, async (req, res) => {
   try {
     const usuario = await db.usuarioById(req.params.id);
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
-    if (req.user.rol === 'admin_empresa' && usuario.empresa_id !== req.user.empresa_id)
+    if (!canAccessTenant(req, usuario.empresa_id))
       return res.status(403).json({ error: 'Ese usuario no pertenece a tu empresa' });
     const temporal = 'Tmp-' + Math.random().toString(36).slice(2, 8) + Math.floor(10 + Math.random() * 89);
     const password_hash = await bcrypt.hash(temporal, 12);

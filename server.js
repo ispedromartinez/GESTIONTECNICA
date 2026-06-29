@@ -18,6 +18,7 @@ const preventivoRoutes = require('./routes/preventivo');
 const gestionDb = require('./db/gestion');
 const { authMiddleware } = require('./middleware/auth');
 const { requireRol, requireNivel } = require('./middleware/roles');
+const { canAccessTenant, scopeToTenant } = require('./middleware/tenant');
 const { rateLimit } = require('./middleware/rateLimit');
 
 // Cliente Supabase compartido (respeta USE_LOCAL_DB, igual que el resto de la app)
@@ -103,11 +104,8 @@ app.post('/api/contacto', contactoLimiter, express.json(), (req, res) => {
 });
 
 app.get('/api/proyectos', authMiddleware, (req, res) => {
-  let proyectos = loadProyectos();
-  // Aislamiento por empresa: solo superadmin ve todas las empresas
-  if (req.user.rol !== 'superadmin') {
-    proyectos = proyectos.filter(p => p.empresa_id === req.user.empresa_id);
-  }
+  // Aislamiento por tenant centralizado (superadmin ve todos).
+  const proyectos = scopeToTenant(req, loadProyectos());
   res.json(proyectos.map(p => ({
     id:p.id, slug:p.slug, nombre:p.nombre, logo:p.logo, template:p.template,
     empresa_id:p.empresa_id||null, empresa_nombre:p.empresa_nombre||null,
@@ -188,7 +186,7 @@ function mergeSitios(proyecto, sitios) {
 }
 // El usuario solo puede tocar proyectos de su empresa (superadmin, todas).
 function puedeEditarProyecto(user, proyecto) {
-  return user.rol === 'superadmin' || proyecto.empresa_id === user.empresa_id;
+  return canAccessTenant({ user }, proyecto && proyecto.empresa_id);
 }
 
 // Asignar sitios a UN proyecto
@@ -317,18 +315,15 @@ function escapeLike(s) {
   return s.replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 
-// ── Aislamiento multi-empresa para informes (clima/wom/prev) ───
-// superadmin ve todo; el resto SOLO los informes de su propia empresa.
-// Los informes antiguos sin empresa_id (legado) solo los ve superadmin.
+// ── Aislamiento multi-tenant para informes (clima/wom/prev) ────
+// Delegan en el módulo central de tenant (middleware/tenant.js): superadmin ve
+// todo; el resto SOLO su propio tenant; informes legado sin tenant → solo superadmin.
 function filtrarInformesPorEmpresa(rows, user) {
-  if (!user || user.rol === 'superadmin') return rows;
-  return (rows || []).filter(r => r.empresaId && r.empresaId === user.empresa_id);
+  return scopeToTenant({ user }, rows, r => r.empresaId);
 }
 // ¿Este usuario puede acceder a un informe concreto (por id)?
 function puedeVerInforme(entry, user) {
-  if (!user) return false;
-  if (user.rol === 'superadmin') return true;
-  return !!entry.empresaId && entry.empresaId === user.empresa_id;
+  return canAccessTenant({ user }, entry && entry.empresaId);
 }
 
 // Escapa texto antes de inyectarlo en HTML (evita XSS en páginas públicas)
@@ -991,6 +986,22 @@ app.get('/version', (req,res) => {
   } catch { res.json({ v: 0 }); }
 });
 
+// Vincula un informe de gestión con el documento recién generado: lo marca
+// 'enviado' (generado) y guarda el enlace de descarga. Solo si el usuario es
+// el técnico/supervisor asignado o admin. Nunca rompe la generación.
+async function vincularInformeGestion(req, gestionInformeId, doc_url, doc_nombre) {
+  if (!gestionInformeId) return;
+  try {
+    const inf = await gestionDb.informeById(gestionInformeId);
+    if (!inf) return;
+    const u = req.user || {};
+    const autorizado = inf.tecnico_id === u.usuario_id || inf.supervisor_id === u.usuario_id
+      || ['superadmin', 'admin_empresa'].includes(u.rol);
+    if (!autorizado) return;
+    await gestionDb.informeSetDocumento(gestionInformeId, doc_url, doc_nombre);
+  } catch (e) { console.error('vincularInformeGestion:', e.message); }
+}
+
 app.post('/generar', authMiddleware, async (req,res) => {
   try {
     const d = req.body;
@@ -1018,6 +1029,8 @@ app.post('/generar', authMiddleware, async (req,res) => {
       mapa[d.tareaId] = { informeId: entry.id, filename: fname };
       saveTareasInformes(mapa);
     }
+    // Informe de gestión asignado al técnico → marcar generado + enlazar doc.
+    await vincularInformeGestion(req, d.gestionInformeId, `/descargar/${entry.id}`, fname);
 
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
@@ -1793,6 +1806,8 @@ app.post('/generar-wom', authMiddleware, async (req, res) => {
       empresaId: req.user.empresa_id || null
     };
     await dbWomInsert(entry);
+    // Informe de gestión asignado al técnico → marcar generado + enlazar doc.
+    await vincularInformeGestion(req, d.gestionInformeId, `/descargar-wom/${entry.id}`, fname);
 
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
@@ -1977,6 +1992,8 @@ app.post('/generar-preventivo', authMiddleware, async (req, res) => {
       map[d.tareaId] = { informeId: entry.id, filename: fname, tipo: 'prev' };
       fs.writeFileSync(mapFile, JSON.stringify(map, null, 2));
     }
+    // Informe de gestión asignado al técnico → marcar generado + enlazar doc.
+    await vincularInformeGestion(req, d.gestionInformeId, `/descargar-prev/${entry.id}`, fname);
 
     res.setHeader('Content-Type','application/pdf');
     res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);

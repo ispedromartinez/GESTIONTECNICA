@@ -116,6 +116,10 @@ try { db.exec("ALTER TABLE proyectos ADD COLUMN categoria TEXT"); } catch {}
 // Sitio al que va asignada la actividad y su LPU
 try { db.exec("ALTER TABLE informes ADD COLUMN sitio TEXT"); } catch {}
 try { db.exec("ALTER TABLE informes ADD COLUMN lpu TEXT"); } catch {}
+// Documento generado (Word .docx): enlace de descarga y nombre de archivo.
+// Se rellena cuando el técnico realmente genera el documento desde el formulario.
+try { db.exec("ALTER TABLE informes ADD COLUMN doc_url TEXT"); } catch {}
+try { db.exec("ALTER TABLE informes ADD COLUMN doc_nombre TEXT"); } catch {}
 
 function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -397,7 +401,8 @@ const local = {
     // Informes donde el usuario es técnico O supervisor (para "Mis informes")
     listByUsuario(usuario_id) {
       return db.prepare(`
-        SELECT i.*, p.nombre AS proyecto_nombre, p.tipo AS proyecto_tipo
+        SELECT i.*, p.nombre AS proyecto_nombre, p.tipo AS proyecto_tipo,
+               p.slug AS proyecto_slug, p.template AS proyecto_template, p.color AS proyecto_color
         FROM informes i JOIN proyectos p ON p.id = i.proyecto_id
         WHERE i.tecnico_id = ? OR i.supervisor_id = ?
         ORDER BY i.fecha_creacion DESC
@@ -419,8 +424,21 @@ const local = {
         ORDER BY i.fecha_creacion DESC LIMIT ?
       `).all(limit);
     },
+    // Listado liviano de todos los informes para estadísticas del dashboard.
+    paraStats(empresa_id = null) {
+      const base = `SELECT i.estado, i.fecha_creacion, i.sitio,
+                      p.nombre AS proyecto_nombre, p.tipo AS proyecto_tipo
+                    FROM informes i JOIN proyectos p ON p.id = i.proyecto_id`;
+      if (empresa_id) return db.prepare(base + ' WHERE p.empresa_id = ?').all(empresa_id);
+      return db.prepare(base).all();
+    },
     updateEstado(id, estado) {
       db.prepare('UPDATE informes SET estado = ? WHERE id = ?').run(estado, id);
+    },
+    // El documento real fue generado: pasa a 'enviado' y guarda el enlace.
+    setDocumento(id, doc_url, doc_nombre) {
+      db.prepare("UPDATE informes SET estado = 'enviado', doc_url = ?, doc_nombre = ? WHERE id = ?")
+        .run(doc_url, doc_nombre, id);
     },
     delete(id) {
       db.prepare('DELETE FROM informes WHERE id = ?').run(id);

@@ -11,14 +11,14 @@
 <style>
 :root{
   --mag:#784BD1; --mag-d:#4A148C; --mag-l:#EDE7F6; --mag-b:#B39DDB;
-  --blue:#0073EA; --white:#fff; --bg:#F6F7FB; --text:#323338; --muted:#676879;
-  --green:#00C875; --red:#E2445C; --border:#D0D4E4; --r:12px;
+  --blue:#0073EA; --white:#fff; --bg:#F6F7FB; --text:#0F172A; --muted:#64748B;
+  --green:#059669; --red:#DC2626; --border:#E2E8F0; --r:12px;
   --sh:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
   --sh-lg:0 4px 8px rgba(0,0,0,.08),0 12px 32px rgba(0,0,0,.12);
   --max-w:860px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Poppins',system-ui,sans-serif;background:#F6F7FB;color:var(--text);min-height:100vh;}
+body{font-family:var(--font-body);background:#F6F7FB;color:var(--text);min-height:100vh;}
 
 /* ── HEADER ── */
 header{background:#1C1F3B;color:#fff;padding:13px 18px 11px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25);border-bottom:3px solid #784BD1;}
@@ -58,8 +58,8 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 .panel{display:none;} .panel.active{display:block;}
 
 /* ── CARDS ── */
-.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:14px;border:1px solid var(--border);}
-.card-title{font-size:11px;font-weight:700;color:#323338;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh);padding:18px;margin-bottom:14px;border:1px solid var(--border);}
+.card-title{font-size:11px;font-weight:700;color:#0F172A;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
 .card-title::before{content:'';display:inline-block;width:4px;height:16px;background:var(--mag);border-radius:3px;}
 
 /* ── FORM ELEMENTS ── */
@@ -789,6 +789,7 @@ async function generarInforme() {
 
   const payload = {
     ticket:        ticketCompleto(),
+    gestionInformeId: new URLSearchParams(location.search).get('informeId') || null,
     codInterno:    g('cod-interno').value.trim(),
     fechaInicio:   g('fecha-inicio').value,
     horaInicio:    g('hora-inicio').value,

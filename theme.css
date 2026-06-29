@@ -1,54 +1,191 @@
 /* ════════════════════════════════════════════════════════════════
    TEMA CENTRAL — ICETEL / Gestión Técnica
-   Fuente única de verdad para colores, tipografía y tamaños.
-   Se enlaza ANTES del <style> de cada página, así define los valores
-   base y cada página puede ajustar componentes puntuales si hace falta.
+   DESIGN SYSTEM v2 · estilo "Data-Dense Dashboard"
+   Fuente única de verdad para color, tipografía, espaciado, radios y
+   sombras. Se enlaza ANTES del <style> de cada página: define los
+   valores base y cada página puede ajustar componentes puntuales.
+
+   Reglas de uso:
+   · En los componentes usa SIEMPRE var(--token), nunca hex sueltos.
+   · Los nombres antiguos (--blue, --sb, --green…) se conservan como
+     alias y ahora apuntan a los tokens nuevos: nada se rompe y todo
+     lo que ya usaba tokens se unifica al sistema nuevo.
    ════════════════════════════════════════════════════════════════ */
 
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  /* ── Paleta (Monday-style) ── */
-  --sb:            #1C1F3B;   /* sidebar / barras oscuras */
-  --sb-hover:      rgba(255,255,255,.07);
-  --sb-active:     #0073EA;
-  --sb-active-wom: #784BD1;
-  --blue:          #0073EA;
-  --blue-d:        #005bb5;
-  --mag:           #784BD1;
-  --green:         #00C875;
-  --green-d:       #00854D;
-  --red:           #E2445C;
-  --orange:        #FF7B1C;
-  --yellow:        #FDAB3D;
+  /* ── MARCA Y ACCIÓN ───────────────────────────────────────────── */
+  --primary:        #0073EA;   /* azul de acción (botones, links, nav activo) */
+  --primary-hover:  #005BB5;
+  --on-primary:     #FFFFFF;
+  --secondary:      #784BD1;   /* violeta · marca WOM / acentos secundarios */
+  --accent:         #059669;   /* verde · "crear", confirmaciones positivas */
 
-  /* ── Texto y superficies ── */
-  --text:   #323338;
-  --muted:  #676879;
-  --border: #D0D4E4;
-  --bg:     #F6F7FB;
-  --white:  #fff;
+  /* ── NEUTROS (fondos y texto) · escala slate ──────────────────── */
+  --bg:        #F1F5F9;   /* fondo de la app */
+  --surface:   #FFFFFF;   /* tarjetas, paneles, banners */
+  --surface-2: #F8FAFC;   /* filas zebra, cabeceras de tabla */
+  --text:      #0F172A;   /* texto principal (≈16:1 sobre blanco) */
+  --muted:     #64748B;   /* texto secundario / metadatos */
+  --text-muted:#64748B;   /* alias semántico */
+  --border:    #E2E8F0;   /* bordes y divisores */
+  --sidebar:   #1C1F3B;   /* sidebar / barras oscuras (navy de marca) */
 
-  /* ── Sombras y radios ── */
-  --sh:    0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
-  --sh-lg: 0 4px 12px rgba(0,0,0,.1), 0 16px 40px rgba(0,0,0,.12);
-  --r:     10px;
+  /* ── ESTADOS · patrón base / soft (fondo) / ink (texto) ───────── */
+  --success:#059669; --success-soft:#ECFDF5; --success-ink:#047857;
+  --error:  #DC2626; --error-soft:  #FEF2F2; --error-ink:  #B91C1C;
+  --warning:#D97706; --warning-soft:#FFFBEB; --warning-ink:#B45309;
+  --info:   #0073EA; --info-soft:   #EFF6FF; --info-ink:   #1D4ED8;
 
-  /* ── Escala tipográfica unificada ──
-     Úsala con var(--fs-*) para mantener tamaños coherentes. */
+  /* ── ESPACIADO · escala 4 / 8 px ──────────────────────────────── */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
+
+  /* ── RADIOS · una sola escala ─────────────────────────────────── */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-bento:24px; --r-pill:999px;
+  --r:10px;   /* alias antiguo */
+
+  /* ── SOMBRAS · escala de elevación ────────────────────────────── */
+  --sh-sm:    0 1px 2px rgba(15,23,42,.06);
+  --sh-md:    0 1px 3px rgba(15,23,42,.08), 0 4px 12px rgba(15,23,42,.06);
+  --sh-lg:    0 8px 24px rgba(15,23,42,.12);
+  --sh-modal: 0 16px 48px rgba(15,23,42,.20);
+  --sh:       var(--sh-md);   /* alias antiguo */
+
+  /* ── TIPOGRAFÍA ───────────────────────────────────────────────── */
+  --font-head: 'Plus Jakarta Sans', 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --font-body: 'Inter', 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+  --fs-xs:    12px;   /* etiquetas, badges */
+  --fs-sm:    13px;   /* texto secundario, metadatos */
   --fs-base:  14px;   /* cuerpo / base de todos los paneles */
-  --fs-sm:    12.5px; /* texto secundario, metadatos */
-  --fs-xs:    11px;   /* etiquetas, chips */
-  --fs-h1:    20px;
-  --fs-h2:    17px;
-  --fs-h3:    15px;
-  --lh:       1.55;
+  --fs-md:    16px;
+  --fs-lg:    18px;
+  --fs-h3:    18px;   /* alias antiguo (≈ lg) */
+  --fs-h2:    20px;
+  --fs-h1:    24px;
+  --lh:       1.5;
+
+  /* ── ALIAS DE COMPATIBILIDAD (paleta Monday antigua) ──────────── */
+  --sb:            var(--sidebar);
+  --sb-hover:      rgba(255,255,255,.07);
+  --sb-active:     var(--primary);
+  --sb-active-wom: var(--secondary);
+  --blue:    var(--primary);
+  --blue-d:  var(--primary-hover);
+  --mag:     var(--secondary);
+  --green:   var(--success);
+  --green-d: var(--success-ink);
+  --red:     var(--error);
+  --orange:  var(--warning);
+  --yellow:  var(--warning);
+  --white:   var(--surface);
 }
 
-/* ── Reset y tipografía base compartida ── */
+/* ── Reset y tipografía base compartida ──────────────────────────── */
 *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body {
-  font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--fs-base);
   line-height: var(--lh);
   color: var(--text);
+}
+
+h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; }
+
+/* ════════════════════════════════════════════════════════════════
+   COMPONENTES BASE (opcionales) — disponibles para todas las páginas.
+   Si una página define su propia clase con el mismo nombre, esa gana
+   (su <style> se carga después de este archivo). No rompe nada.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Banner / alerta unificado: soft bg + ícono + texto ink ──────── */
+.banner {
+  display: flex; gap: var(--sp-3); align-items: flex-start;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  border-left: 3px solid var(--info);
+  background: var(--info-soft); color: var(--info-ink);
+  font-size: var(--fs-sm);
+}
+.banner svg { flex: none; width: 20px; height: 20px; }
+.banner--success { border-color: var(--success); background: var(--success-soft); color: var(--success-ink); }
+.banner--error   { border-color: var(--error);   background: var(--error-soft);   color: var(--error-ink); }
+.banner--warning { border-color: var(--warning); background: var(--warning-soft); color: var(--warning-ink); }
+
+/* ── Tarjeta base ─────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  box-shadow: var(--sh-md);
+}
+
+/* ── Badge / pill base ────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: var(--r-pill);
+  font-size: var(--fs-xs); font-weight: 700;
+}
+.badge--success { background: var(--success-soft); color: var(--success-ink); }
+.badge--error   { background: var(--error-soft);   color: var(--error-ink); }
+.badge--warning { background: var(--warning-soft); color: var(--warning-ink); }
+.badge--info    { background: var(--info-soft);    color: var(--info-ink); }
+
+/* ════════════════════════════════════════════════════════════════
+   BENTO GRID — estética modular (Apple-style): tiles de tamaños
+   variados, esquinas 24px, sombras suaves, hover-lift. Reutilizable
+   en cualquier módulo. Responsive 4 → 2 → 1 columnas.
+   ════════════════════════════════════════════════════════════════ */
+.bento{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:var(--sp-4);
+  grid-auto-rows:minmax(116px,auto);
+  align-items:stretch;
+}
+.bento-tile{
+  position:relative;display:flex;flex-direction:column;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-bento);padding:var(--sp-5);
+  box-shadow:var(--sh-md);
+  transition:transform .22s cubic-bezier(.32,.72,0,1), box-shadow .22s cubic-bezier(.32,.72,0,1);
+  overflow:hidden;min-width:0;
+}
+.bento-tile:hover{transform:translateY(-4px);box-shadow:var(--sh-lg);}
+a.bento-tile{text-decoration:none;color:inherit;cursor:pointer;}
+/* Variantes de fondo */
+.bento-tile.is-accent{background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:#fff;border-color:transparent;}
+.bento-tile.is-violet{background:linear-gradient(135deg,var(--secondary),#5b34a8);color:#fff;border-color:transparent;}
+.bento-tile.is-green {background:linear-gradient(135deg,var(--accent),var(--success-ink));color:#fff;border-color:transparent;}
+.bento-tile.is-dark  {background:var(--sidebar);color:#fff;border-color:transparent;}
+.bento-tile.is-soft  {background:var(--surface-2);}
+/* Spans */
+.col-2{grid-column:span 2;} .col-3{grid-column:span 3;} .col-4{grid-column:span 4;}
+.row-2{grid-row:span 2;}
+/* Piezas internas */
+.bento-ico{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  background:var(--info-soft);color:var(--primary);margin-bottom:var(--sp-3);flex:none;}
+.bento-ico svg{width:22px;height:22px;}
+.bento-tile.is-accent .bento-ico,.bento-tile.is-violet .bento-ico,.bento-tile.is-green .bento-ico,.bento-tile.is-dark .bento-ico{background:rgba(255,255,255,.18);color:#fff;}
+.bento-kpi{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em;font-family:var(--font-head);}
+.bento-label{font-size:var(--fs-sm);color:var(--muted);font-weight:600;margin-top:6px;}
+.bento-tile.is-accent .bento-label,.bento-tile.is-violet .bento-label,.bento-tile.is-green .bento-label,.bento-tile.is-dark .bento-label{color:rgba(255,255,255,.82);}
+.bento-title{font-size:var(--fs-md);font-weight:700;font-family:var(--font-head);letter-spacing:-.01em;}
+.bento-desc{font-size:var(--fs-sm);color:var(--muted);margin-top:4px;line-height:1.5;}
+.bento-tile.is-accent .bento-desc,.bento-tile.is-violet .bento-desc,.bento-tile.is-green .bento-desc,.bento-tile.is-dark .bento-desc{color:rgba(255,255,255,.8);}
+.bento-foot{margin-top:auto;}
+@media(max-width:920px){ .bento{grid-template-columns:repeat(2,1fr);} .col-3,.col-4{grid-column:span 2;} }
+@media(max-width:560px){ .bento{grid-template-columns:1fr;} .col-2,.col-3,.col-4{grid-column:span 1;} .row-2{grid-row:auto;} }
+
+/* ── Accesibilidad: respeta reduce-motion (regla del design system) ─ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

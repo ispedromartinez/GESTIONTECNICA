@@ -17,20 +17,20 @@
   --sb-active-wom:#784BD1;
   --blue:#0073EA;
   --mag:#784BD1;
-  --green:#00C875;
+  --green:#059669;
   --green-d:#00854D;
-  --red:#E2445C;
+  --red:#DC2626;
   --orange:#FF7B1C;
-  --text:#323338;
-  --muted:#676879;
-  --border:#D0D4E4;
+  --text:#0F172A;
+  --muted:#64748B;
+  --border:#E2E8F0;
   --bg:#F6F7FB;
   --white:#fff;
   --sh:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
   --sh-lg:0 4px 12px rgba(0,0,0,.1),0 16px 40px rgba(0,0,0,.12);
   --r:10px;
 }
-body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;font-size:14px;}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;display:flex;font-size:14px;}
 
 /* ═══════════════════════════════════
    SIDEBAR
@@ -138,9 +138,10 @@ body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg);color:var(-
 /* TOP BAR */
 .topbar{
   background:var(--white);border-bottom:1px solid var(--border);
-  padding:13px 24px;display:flex;align-items:center;
+  padding:14px 24px;display:flex;align-items:center;
   justify-content:space-between;
   position:sticky;top:0;z-index:100;
+  box-shadow:0 1px 3px rgba(15,23,42,.05);
 }
 .topbar-left h1{font-size:17px;font-weight:800;color:var(--text);}
 .topbar-left p{font-size:11px;color:var(--muted);margin-top:1px;font-weight:400;}
@@ -200,7 +201,7 @@ body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg);color:var(-
 
 /* CARDS */
 .card{
-  background:var(--white);border-radius:var(--r);
+  background:var(--white);border-radius:var(--r-lg);
   border:1px solid var(--border);box-shadow:var(--sh);
   margin-bottom:14px;overflow:hidden;
 }
@@ -209,29 +210,9 @@ body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg);color:var(-
   display:flex;align-items:center;gap:10px;background:#FAFBFC;
 }
 .ch-bar{width:4px;height:18px;border-radius:3px;flex-shrink:0;}
-.ch-title{font-size:11px;font-weight:700;color:#323338;text-transform:uppercase;letter-spacing:.8px;}
+.ch-title{font-size:11px;font-weight:700;color:#0F172A;text-transform:uppercase;letter-spacing:.8px;}
 .ch-right{margin-left:auto;font-size:11px;color:var(--muted);}
 .card-body{padding:18px;}
-
-/* NUEVO BANNER */
-.nuevo-banner{
-  background:linear-gradient(135deg,#EBF4FE 0%,#F0F8FF 100%);
-  border:1.5px solid #bfdbfe;border-radius:var(--r);
-  padding:28px 24px;margin-bottom:14px;text-align:center;
-}
-.nuevo-banner h2{
-  font-size:18px;font-weight:800;color:var(--blue);margin-bottom:8px;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-}
-.nuevo-banner p{font-size:13px;color:var(--muted);line-height:1.65;}
-.btn-nuevo{
-  width:100%;background:var(--blue);color:#fff;border:none;
-  border-radius:8px;padding:13px;font-size:14px;font-weight:700;
-  cursor:pointer;margin-top:16px;
-  box-shadow:0 4px 14px rgba(0,115,234,.25);
-  transition:.2s;font-family:'Poppins',sans-serif;
-}
-.btn-nuevo:hover{background:#005bb5;}
 
 /* FORM FIELDS */
 .frow{display:grid;gap:12px;margin-bottom:14px;}
@@ -263,6 +244,10 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 .col-date{color:var(--muted);font-size:12px;}
 .status-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
 .tag-ok{background:#D4F5E7;color:var(--green-d);}
+.tag-pend{background:var(--warning-soft);color:var(--warning-ink);}
+.tag-gen{background:var(--info-soft);color:var(--info-ink);}
+.tag-done{background:var(--success-soft);color:var(--success-ink);}
+.tag-rej{background:var(--error-soft);color:var(--error-ink);}
 .act-cell{display:flex;gap:6px;}
 .icon-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.13s;background:transparent;border:none;color:var(--muted);}
 .icon-btn:hover{background:var(--border);}
@@ -275,23 +260,24 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
   display:flex;align-items:center;justify-content:space-between;
   box-shadow:var(--sh);margin-top:4px;
 }
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Poppins',sans-serif;transition:.14s;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--font-body);transition:.14s;}
 .btn-primary{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(0,115,234,.25);}
 .btn-primary:hover{background:#005bb5;}
 .btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
 .btn-ghost:hover{border-color:var(--blue);color:var(--blue);}
 .btn-green{background:var(--green);color:#fff;}
 .btn-green:hover{background:#00A65F;}
+.btn-sm{padding:6px 12px;font-size:12px;}
 
 /* SELECTOR CARDS */
 .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:20px;}
 .proj-card{
-  background:var(--white);border-radius:var(--r);border:1px solid var(--border);
+  background:var(--white);border-radius:var(--r-bento);border:1px solid var(--border);
   padding:22px;box-shadow:var(--sh);cursor:pointer;
-  text-decoration:none;color:inherit;transition:all .18s;
+  text-decoration:none;color:inherit;transition:transform .22s cubic-bezier(.32,.72,0,1), box-shadow .22s cubic-bezier(.32,.72,0,1), border-color .22s;
   display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden;
 }
-.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
+.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-bento) var(--r-bento) 0 0;}
 .proj-card.tigo::before{background:linear-gradient(90deg,#579BFC,#0073EA);}
 .proj-card.wom::before{background:linear-gradient(90deg,#A25DDC,#784BD1);}
 .proj-card:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);border-color:transparent;}
@@ -313,12 +299,27 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 @media(max-width:720px){
   .sidebar{position:fixed;z-index:999;transform:translateX(-100%);transition:transform .25s;}
   .sidebar.open{transform:translateX(0);}
+  .sb-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:998;}
+  .sb-overlay.show{display:block;}
   .topbar{padding:12px 16px;}
   .page{padding:14px 16px;}
   .tabs-bar{padding:0 12px;}
   .frow.two,.frow.four{grid-template-columns:1fr;}
   .projects-grid{grid-template-columns:1fr;}
   .sb-toggle{display:flex!important;}
+  .card-header .ch-right{display:none;}
+  /* Tablas → tarjetas apiladas, legibles en teléfono */
+  .h-table thead{display:none;}
+  .h-table, .h-table tbody{display:block;width:100%;}
+  .h-table tr{display:block;border:1px solid var(--border);border-radius:var(--r-md);
+    margin:0 0 10px;padding:4px 2px;background:var(--white);}
+  .h-table tr:last-child{margin-bottom:0;}
+  .h-table td{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    padding:7px 12px;font-size:13px;text-align:right;border:none;}
+  .h-table td::before{content:attr(data-label);font-weight:700;color:var(--muted);
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;flex:none;}
+  .h-table td:empty{display:none;}
+  .h-table .btn-sm{padding:7px 14px;}
 }
 .sb-toggle{
   display:none;align-items:center;justify-content:center;
@@ -328,7 +329,8 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
 /* ── Dashboard de Informes (estadísticas) ── */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;margin-bottom:18px;}
-.stat-box{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
+.stat-box{background:var(--white);border:1px solid var(--border);border-radius:var(--r-bento);padding:18px;box-shadow:var(--sh);transition:transform .22s cubic-bezier(.32,.72,0,1), box-shadow .22s cubic-bezier(.32,.72,0,1);}
+.stat-box:hover{transform:translateY(-4px);box-shadow:var(--sh-lg);}
 .stat-n{font-size:28px;font-weight:800;color:var(--text);line-height:1;}
 .stat-l{font-size:12px;color:var(--muted);margin-top:6px;font-weight:500;}
 .stat-bar{height:6px;border-radius:4px;background:#EEF0F5;margin-top:12px;overflow:hidden;}
@@ -345,23 +347,23 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 }
 .pcard:hover{transform:translateY(-5px);box-shadow:0 14px 44px rgba(0,0,0,.14),0 4px 14px rgba(0,0,0,.07);border-color:transparent;}
 .pcard:active{transform:translateY(-1px);}
-.pcard-top{width:100%;height:6px;border-radius:14px 14px 0 0;flex-shrink:0;background:linear-gradient(90deg,#00C875,#00897B);}
-.pcard.tigo .pcard-top{background:linear-gradient(90deg,#0073EA,#1976D2);}
-.pcard.wom  .pcard-top{background:linear-gradient(90deg,#6161FF,#7B1FA2);}
+.pcard-top{width:100%;height:6px;border-radius:14px 14px 0 0;flex-shrink:0;background:linear-gradient(90deg,#059669,#00897B);}
+.pcard.tigo .pcard-top{background:linear-gradient(90deg,#0073EA,#0073EA);}
+.pcard.wom  .pcard-top{background:linear-gradient(90deg,#784BD1,#784BD1);}
 .pcard-inner{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 28px 0;width:100%;}
 .pcard-logo{height:80px;display:flex;align-items:center;justify-content:center;}
 .pcard-logo img{max-height:80px;max-width:200px;object-fit:contain;}
-.pcard-wom{font-size:56px;font-weight:900;color:#7B1FA2;letter-spacing:-3px;line-height:1;font-style:italic;}
-.pcard-label{font-size:13px;font-weight:700;color:#323338;letter-spacing:.2px;text-transform:uppercase;text-align:center;}
-.pcard-desc{font-size:12px;font-weight:400;color:#676879;text-align:center;line-height:1.65;}
+.pcard-wom{font-size:56px;font-weight:900;color:#784BD1;letter-spacing:-3px;line-height:1;font-style:italic;}
+.pcard-label{font-size:13px;font-weight:700;color:#0F172A;letter-spacing:.2px;text-transform:uppercase;text-align:center;}
+.pcard-desc{font-size:12px;font-weight:400;color:#64748B;text-align:center;line-height:1.65;}
 .pcard-btn{
   width:calc(100% - 56px);margin:16px 28px 0;padding:11px 24px;border-radius:8px;
-  font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;border:none;cursor:pointer;
-  letter-spacing:.1px;color:#fff;background:#00C875;transition:opacity .15s;
+  font-size:13px;font-weight:600;font-family:var(--font-body);border:none;cursor:pointer;
+  letter-spacing:.1px;color:#fff;background:#059669;transition:opacity .15s;
 }
 .pcard:hover .pcard-btn{opacity:.9;}
 .pcard.tigo .pcard-btn{background:#0073EA;}
-.pcard.wom  .pcard-btn{background:#6161FF;}
+.pcard.wom  .pcard-btn{background:#784BD1;}
 .pcards-empty{font-size:13px;color:var(--muted);padding:30px 4px;}
 </style>
 </head>
@@ -382,16 +384,16 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
   <div class="sb-section">
     <div class="sb-label">Técnico</div>
 
-    <!-- 1. TAREAS -->
+    <!-- 1. TAREAS PENDIENTES -->
     <a class="nav-item" id="navTareas" onclick="showPage('tareas')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Tareas
+      Tareas pendientes
     </a>
 
-    <!-- 2. INFORMES (dashboard con estadísticas) -->
+    <!-- 2. HISTORIAL DE ACTIVIDADES -->
     <a class="nav-item" id="navInformes" onclick="showPage('informes')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
-      Informes
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,14"/></svg>
+      Historial
     </a>
   </div>
 
@@ -442,13 +444,16 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
 </aside>
 
+<!-- Velo para cerrar el panel en móvil al tocar fuera -->
+<div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
+
 <!-- ═══ MAIN ═══ -->
 <div class="main">
 
   <!-- TOP BAR -->
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:12px;">
-      <button class="sb-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Menú">
+      <button class="sb-toggle" onclick="toggleSidebar()" title="Menú">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="topbar-left">
@@ -458,49 +463,50 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
     </div>
   </div>
 
-  <!-- ═══ PÁGINA: INFORMES (dashboard con estadísticas) ═══ -->
-  <div class="page active" id="page-informes">
+  <!-- ═══ PÁGINA: HISTORIAL DE ACTIVIDADES ═══ -->
+  <div class="page" id="page-informes">
     <div style="max-width:880px;margin:0 auto;">
-      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Resumen de Informes</h2>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Tu actividad de informes y proyectos.</p>
-
-      <div class="stat-grid" id="statGrid">
-        <p class="pcards-empty">Cargando estadísticas…</p>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <span class="ch-bar" style="background:var(--orange);"></span>
-          <span class="ch-title">Mis tareas pendientes</span>
-        </div>
-        <div class="card-body" id="tareasResumenBody">
-          <p style="font-size:13px;color:var(--muted);">Cargando…</p>
-        </div>
-      </div>
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Historial de actividades</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Registro de tus informes y su estado.</p>
 
       <div class="card">
         <div class="card-header">
           <span class="ch-bar" style="background:var(--blue);"></span>
-          <span class="ch-title">Informes recientes</span>
+          <span class="ch-title">Historial de actividades</span>
         </div>
-        <div class="card-body" id="recientesBody">
+        <div class="card-body" id="historialBody">
           <p style="font-size:13px;color:var(--muted);">Cargando…</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ═══ PÁGINA: TAREAS ═══ -->
-  <div class="page" id="page-tareas">
+  <!-- ═══ PÁGINA: TAREAS PENDIENTES (correctivos + preventivos) ═══ -->
+  <div class="page active" id="page-tareas">
     <div style="max-width:880px;margin:0 auto;">
-      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Mis tareas pendientes</h2>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Todas las tareas asignadas a ti que siguen abiertas.</p>
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Tareas pendientes</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Tus tareas asignadas, divididas por tipo.</p>
+
+      <!-- CORRECTIVOS -->
       <div class="card">
         <div class="card-header">
-          <span class="ch-bar" style="background:var(--orange);"></span>
-          <span class="ch-title">Tareas pendientes</span>
+          <span class="ch-bar" style="background:var(--blue);"></span>
+          <span class="ch-title">Correctivos</span>
+          <span class="ch-right">Generar y cerrar informes</span>
         </div>
-        <div class="card-body" id="tareasBody">
+        <div class="card-body" id="tareasCorrBody">
+          <p style="font-size:13px;color:var(--muted);">Cargando…</p>
+        </div>
+      </div>
+
+      <!-- PREVENTIVOS -->
+      <div class="card">
+        <div class="card-header">
+          <span class="ch-bar" style="background:var(--green);"></span>
+          <span class="ch-title">Preventivos</span>
+          <span class="ch-right">Mantenimiento programado</span>
+        </div>
+        <div class="card-body" id="tareasPrevBody">
           <p style="font-size:13px;color:var(--muted);">Cargando…</p>
         </div>
       </div>
@@ -533,8 +539,8 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
 <script>
 const TITLES = {
-  informes:   ['Resumen de Informes', 'Tu actividad y estadísticas'],
-  tareas:     ['Tareas', 'Asignadas por tu supervisor'],
+  informes:   ['Historial de actividades', 'Tu actividad reciente'],
+  tareas:     ['Tareas pendientes', 'Correctivos y preventivos asignados'],
   preventivo: ['Proyectos — Preventivo', 'Mantenimiento programado'],
   correctivo: ['Proyectos — Correctivo', 'Informes correctivos'],
 };
@@ -550,6 +556,17 @@ function cerrarSesion() {
   window.location.replace('/login');
 }
 
+// ── Panel lateral (móvil): abrir/cerrar con velo ──
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const open = sb.classList.toggle('open');
+  document.getElementById('sbOverlay').classList.toggle('show', open);
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbOverlay').classList.remove('show');
+}
+
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const page = document.getElementById('page-' + id);
@@ -563,6 +580,7 @@ function showPage(id) {
   if (navMap[id]) document.getElementById(navMap[id]).classList.add('active');
   if (id === 'preventivo') document.querySelector('#grupoPrev .nav-group-head').classList.add('active');
   if (id === 'correctivo') document.querySelector('#grupoCorr .nav-group-head').classList.add('active');
+  closeSidebar();   // en móvil, cerrar el panel al navegar
 }
 
 // Despliega la categoría y muestra su página
@@ -572,35 +590,36 @@ function toggleGroup(groupId, e) {
   showPage(groupId === 'grupoPrev' ? 'preventivo' : 'correctivo');
 }
 
-// ── Dashboard de informes (datos reales: /api/gestion/resumen) ──
-async function loadResumen() {
-  const sg = document.getElementById('statGrid');
-  const rb = document.getElementById('recientesBody');
+// ── Historial de actividades (informes del técnico, sin estadísticas) ──
+async function loadHistorial() {
+  const hb = document.getElementById('historialBody');
+  if (!hb) return;
   try {
-    const r = await fetch('/api/gestion/resumen', { headers: authH });
+    const r = await fetch('/api/gestion/mis-informes', { headers: authH });
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    const d = await r.json();
-    const stats = [
-      { n: d.informes_total ?? 0,    l: 'Informes realizados', c: '#0073EA' },
-      { n: d.proyectos_total ?? 0,   l: 'Proyectos asignados', c: '#784BD1' },
-      { n: d.proyectos_activos ?? 0, l: 'Proyectos activos',   c: '#00C875' },
-    ];
-    const max = Math.max(1, ...stats.map(s => s.n));
-    sg.innerHTML = stats.map(s =>
-      `<div class="stat-box">
-         <div class="stat-n">${s.n}</div>
-         <div class="stat-l">${s.l}</div>
-         <div class="stat-bar"><div class="stat-fill" style="width:${Math.round(s.n / max * 100)}%;background:${s.c}"></div></div>
-       </div>`).join('');
-    const rec = d.informes_recientes || [];
-    rb.innerHTML = rec.length
-      ? `<table class="h-table"><thead><tr><th>Título</th><th>Proyecto</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>${
-          rec.map(i => `<tr><td class="col-site">${i.titulo || '—'}</td><td>${i.proyecto_nombre || '—'}</td><td><span class="status-tag tag-ok">${i.estado || '—'}</span></td><td class="col-date">${(i.fecha_creacion || '').slice(0, 10)}</td></tr>`).join('')
+    const all = await r.json();
+    const list = Array.isArray(all) ? all : [];
+    hb.innerHTML = list.length
+      ? `<table class="h-table"><thead><tr><th>Informe</th><th>Proyecto</th><th>Tipo</th><th>Estado</th><th>Fecha</th><th>Documento</th></tr></thead><tbody>${
+          list.map(i => {
+            const lbl  = ESTADO_LBL[i.estado] || i.estado || '—';
+            const cls  = ESTADO_CLS[i.estado] || 'tag-ok';
+            const tipo = esPreventivo(i) ? 'Preventivo' : 'Correctivo';
+            const doc  = i.doc_url
+              ? `<button class="btn btn-ghost btn-sm" onclick="verDocumento('${esc(i.doc_url)}','${esc(i.doc_nombre || 'informe')}')">Ver</button>`
+              : '<span style="color:var(--muted)">—</span>';
+            return `<tr>
+              <td class="col-site" data-label="Informe">${esc(i.titulo || '—')}</td>
+              <td data-label="Proyecto">${esc(i.proyecto_nombre || '—')}</td>
+              <td data-label="Tipo">${esc(tipo)}</td>
+              <td data-label="Estado"><span class="status-tag ${cls}">${esc(lbl)}</span></td>
+              <td class="col-date" data-label="Fecha">${esc((i.fecha_creacion || '').slice(0, 10) || '—')}</td>
+              <td data-label="Documento">${doc}</td></tr>`;
+          }).join('')
         }</tbody></table>`
-      : '<p style="font-size:13px;color:var(--muted)">Aún no has registrado informes.</p>';
+      : '<p style="font-size:13px;color:var(--muted)">Aún no tienes actividad registrada.</p>';
   } catch (err) {
-    sg.innerHTML = '<p class="pcards-empty" style="color:var(--red)">Error cargando estadísticas: ' + err.message + '</p>';
-    rb.innerHTML = '';
+    hb.innerHTML = '<p style="font-size:13px;color:var(--red)">Error cargando historial: ' + err.message + '</p>';
   }
 }
 
@@ -669,37 +688,110 @@ function cardHTML(d) {
   </a>`;
 }
 
-// ── Tareas pendientes asignadas al técnico (datos reales: /tareas) ──
-// El backend ya acota /tareas a las tareas del propio técnico; aquí solo
-// filtramos las que siguen abiertas (estado distinto de "Cerrado").
-async function loadTareas() {
-  const destinos = [document.getElementById('tareasResumenBody'), document.getElementById('tareasBody')].filter(Boolean);
-  try {
+// ── Escape para interpolar datos en innerHTML de forma segura ──
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── Tareas pendientes: correctivos (informes) + preventivos (/tareas) ──
+const ESTADO_LBL = { borrador:'Pendiente', enviado:'Generado', aprobado:'Cerrado', rechazado:'Rechazado' };
+const ESTADO_CLS = { borrador:'tag-pend', enviado:'tag-gen', aprobado:'tag-done', rechazado:'tag-rej' };
+
+// ¿El proyecto del informe es preventivo? (por tipo/plantilla/slug)
+function esPreventivo(i){
+  return ['proyecto_tipo','proyecto_template','proyecto_slug']
+    .some(k => (i[k] || '').toLowerCase() === 'preventivo');
+}
+// Ruta del formulario para generar el informe correctivo
+function formUrlFor(i){
+  const slug = (i.proyecto_slug || '').toLowerCase(), tpl = (i.proyecto_template || '').toLowerCase();
+  if (slug === 'tigo' || tpl === 'tigo') return '/tigo';
+  if (slug === 'wom'  || tpl === 'wom')  return '/wom';
+  return slug ? '/' + slug : '/dashboard';
+}
+
+async function loadTareasPendientes(){
+  // ── Correctivos: informes de gestión asignados al técnico ──
+  const corrEl = document.getElementById('tareasCorrBody');
+  if (corrEl) try {
+    const r = await fetch('/api/gestion/mis-informes', { headers: authH });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const all = await r.json();
+    const corr = (Array.isArray(all) ? all : [])
+      .filter(i => !esPreventivo(i) && ['borrador','enviado'].includes(i.estado));
+    corrEl.innerHTML = corr.length
+      ? `<table class="h-table"><thead><tr><th>Informe</th><th>Proyecto</th><th>Sitio</th><th>Estado</th><th>Acción</th></tr></thead><tbody>${
+          corr.map(i => {
+            const lbl = ESTADO_LBL[i.estado] || i.estado;
+            const cls = ESTADO_CLS[i.estado] || 'tag-ok';
+            const verDoc = i.doc_url
+              ? `<button class="btn btn-ghost btn-sm" onclick="verDocumento('${esc(i.doc_url)}','${esc(i.doc_nombre || 'informe')}')">Ver documento</button>`
+              : '';
+            const accion = i.estado === 'borrador'
+              ? `<button class="btn btn-primary btn-sm" onclick="genInforme('${esc(i.id)}','${formUrlFor(i)}')">Generar informe</button>`
+              : `<span style="display:inline-flex;gap:6px;flex-wrap:wrap;">${verDoc}<button class="btn btn-green btn-sm" onclick="cerrarInforme('${esc(i.id)}')">Cerrar</button></span>`;
+            return `<tr>
+              <td class="col-site" data-label="Informe">${esc(i.titulo || '—')}</td>
+              <td data-label="Proyecto">${esc(i.proyecto_nombre || '—')}</td>
+              <td data-label="Sitio">${esc(i.sitio || '—')}</td>
+              <td data-label="Estado"><span class="status-tag ${cls}">${esc(lbl)}</span></td>
+              <td data-label="Acción">${accion}</td></tr>`;
+          }).join('')
+        }</tbody></table>`
+      : '<p style="font-size:13px;color:var(--muted)">No tienes tareas correctivas pendientes. 🎉</p>';
+  } catch (err) { corrEl.innerHTML = '<p style="font-size:13px;color:var(--red)">Error: ' + err.message + '</p>'; }
+
+  // ── Preventivos: tareas del módulo de mantenimiento (/tareas) ──
+  const prevEl = document.getElementById('tareasPrevBody');
+  if (prevEl) try {
     const r = await fetch('/tareas', { headers: authH });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const all = await r.json();
     const pend = (Array.isArray(all) ? all : []).filter(t => (t.estado || 'Nuevo') !== 'Cerrado');
-    const html = pend.length
-      ? `<table class="h-table"><thead><tr><th>Sitio</th><th>Descripción</th><th>Inicio</th><th>Vence</th><th>Estado</th></tr></thead><tbody>${
+    prevEl.innerHTML = pend.length
+      ? `<table class="h-table"><thead><tr><th>Sitio</th><th>Descripción</th><th>Vence</th><th>Estado</th><th>Acción</th></tr></thead><tbody>${
           pend.map(t => `<tr>
-            <td class="col-site">${t.sitio || '—'}</td>
-            <td>${t.descripcion || '—'}</td>
-            <td class="col-date">${(t.fechaInicio || '').slice(0, 10) || '—'}</td>
-            <td class="col-date">${(t.fechaVencimiento || '').slice(0, 10) || '—'}</td>
-            <td><span class="status-tag tag-ok">${t.estado || 'Nuevo'}</span></td>
-          </tr>`).join('')
+            <td class="col-site" data-label="Sitio">${esc(t.sitio || '—')}</td>
+            <td data-label="Descripción">${esc(t.descripcion || '—')}</td>
+            <td class="col-date" data-label="Vence">${esc((t.fechaVencimiento || '').slice(0, 10) || '—')}</td>
+            <td data-label="Estado"><span class="status-tag tag-ok">${esc(t.estado || 'Nuevo')}</span></td>
+            <td data-label="Acción"><a class="btn btn-ghost btn-sm" href="/preventivo">Abrir</a></td></tr>`).join('')
         }</tbody></table>`
-      : '<p style="font-size:13px;color:var(--muted)">No tienes tareas pendientes. 🎉</p>';
-    destinos.forEach(el => el.innerHTML = html);
-  } catch (err) {
-    destinos.forEach(el => el.innerHTML = '<p style="font-size:13px;color:var(--red)">Error cargando tareas: ' + err.message + '</p>');
-  }
+      : '<p style="font-size:13px;color:var(--muted)">No tienes tareas preventivas pendientes. 🎉</p>';
+  } catch (err) { prevEl.innerHTML = '<p style="font-size:13px;color:var(--red)">Error: ' + err.message + '</p>'; }
 }
 
-showPage('informes');
-loadResumen();
+// Abrir el formulario para generar el informe correctivo.
+// NO marca "generado" aquí: el estado pasa a 'enviado' solo cuando el documento
+// se guarda de verdad (el formulario envía ?informeId= y el servidor lo vincula).
+function genInforme(id, url){
+  window.location.href = url + (url.includes('?') ? '&' : '?') + 'informeId=' + encodeURIComponent(id);
+}
+// Descargar/ver el documento generado (con el token, vía fetch + blob).
+async function verDocumento(url, nombre){
+  try {
+    const r = await fetch(url, { headers: authH });
+    if (!r.ok) throw new Error('No se pudo abrir el documento');
+    const blob = await r.blob();
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = u; a.download = nombre || 'informe'; a.click();
+    URL.revokeObjectURL(u);
+  } catch (err) { alert('Error: ' + err.message); }
+}
+// Cerrar informe correctivo (el técnico lo da por terminado).
+async function cerrarInforme(id){
+  try {
+    const r = await fetch('/api/gestion/informes/' + id + '/estado', {
+      method: 'PATCH', headers: { ...authH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado: 'aprobado' })
+    });
+    if (!r.ok) { const d = await r.json().catch(() => null); throw new Error((d && d.error) || 'No se pudo cerrar'); }
+    loadTareasPendientes(); loadHistorial();
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+showPage('tareas');
+loadHistorial();
 loadProyectos();
-loadTareas();
+loadTareasPendientes();
 </script>
 </body>
 </html>

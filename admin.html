@@ -8,19 +8,22 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/theme.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-/* ── Paleta del panel · ui-ux-pro-max "Data-Dense Dashboard" (navy + azul, sin degradados) ── */
+/* ── Paleta del panel · alias sobre el Design System central (theme.css) ──
+   Los nombres --p-* se conservan, pero ahora resuelven a los tokens
+   globales: el panel queda unificado con el resto de la app. ── */
 :root{
-  --p-navy:#0F172A; --p-accent:#0369A1; --p-accent-d:#075985; --p-accent-soft:#E0F2FE; --p-accent-bd:#BAE6FD;
-  --p-bg:#F8FAFC; --p-surface:#fff; --p-text:#1E293B; --p-muted:#64748B; --p-faint:#94A3B8;
-  --p-border:#E2E8F0; --p-subtle:#F1F5F9;
-  --p-green:#059669; --p-green-soft:#ECFDF5; --p-red:#DC2626; --p-red-soft:#FEF2F2; --p-red-bd:#FECACA;
-  --p-amber:#B45309; --p-amber-soft:#FFFBEB; --p-indigo:#4338CA; --p-indigo-soft:#EEF2FF;
-  --p-sh:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
-  --p-sh-lg:0 10px 30px rgba(15,23,42,.12);
+  --p-navy:var(--sidebar); --p-accent:var(--primary); --p-accent-d:var(--primary-hover); --p-accent-soft:var(--info-soft); --p-accent-bd:#BFDBFE;
+  --p-bg:var(--bg); --p-surface:var(--surface); --p-text:var(--text); --p-muted:var(--muted); --p-faint:#94A3B8;
+  --p-border:var(--border); --p-subtle:var(--surface-2);
+  --p-green:var(--success); --p-green-soft:var(--success-soft); --p-red:var(--error); --p-red-soft:var(--error-soft); --p-red-bd:#FECACA;
+  --p-amber:var(--warning-ink); --p-amber-soft:var(--warning-soft); --p-indigo:#4338CA; --p-indigo-soft:#EEF2FF;
+  --p-sh:var(--sh-md);
+  --p-sh-lg:var(--sh-lg);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Poppins',system-ui,sans-serif;background:var(--p-bg);color:var(--p-text);min-height:100vh;display:flex;}
+body{font-family:var(--font-body);background:var(--p-bg);color:var(--p-text);min-height:100vh;display:flex;}
 
 /* Foco accesible para navegación con teclado */
 a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--p-accent);outline-offset:2px;}
@@ -59,7 +62,7 @@ a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,
 
 /* ── MAIN ── */
 .wrap{margin-left:220px;flex:1;min-width:0;display:flex;flex-direction:column;}
-.topbar{background:var(--p-surface);border-bottom:1px solid var(--p-border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;}
+.topbar{background:var(--p-surface);border-bottom:1px solid var(--p-border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;box-shadow:0 1px 3px rgba(15,23,42,.05);}
 .tb-title{font-size:15px;font-weight:800;color:var(--p-text);letter-spacing:-.01em;}
 .tb-sub{font-size:12px;color:var(--p-muted);margin-top:1px;}
 .menu-toggle{display:none;background:var(--p-navy);color:#fff;border:none;border-radius:8px;width:38px;height:38px;font-size:18px;cursor:pointer;}
@@ -69,13 +72,35 @@ a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,
 
 /* ── CARDS / STATS ── */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;}
-.stat-card{background:var(--p-surface);border:1px solid var(--p-border);border-radius:12px;padding:20px;box-shadow:var(--p-sh);transition:box-shadow .2s,border-color .2s,transform .2s;}
-.stat-card:hover{box-shadow:var(--p-sh-lg);border-color:#CBD5E1;transform:translateY(-1px);}
+.stat-card{background:var(--p-surface);border:1px solid var(--p-border);border-radius:var(--r-bento);padding:20px;box-shadow:var(--p-sh);transition:box-shadow .22s cubic-bezier(.32,.72,0,1),border-color .22s,transform .22s cubic-bezier(.32,.72,0,1);}
+.stat-card:hover{box-shadow:var(--sh-lg);border-color:transparent;transform:translateY(-4px);}
 .stat-ico{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px;}
 .stat-val{font-size:28px;font-weight:800;color:var(--p-text);line-height:1;letter-spacing:-.02em;}
 .stat-label{font-size:12px;color:var(--p-muted);margin-top:5px;font-weight:600;}
 .si-blue{background:var(--p-accent-soft);color:var(--p-accent);}.si-green{background:var(--p-green-soft);color:var(--p-green);}.si-purple{background:var(--p-indigo-soft);color:var(--p-indigo);}.si-orange{background:var(--p-amber-soft);color:var(--p-amber);}
 .stat-ico svg{width:22px;height:22px;}
+
+/* ── CHARTS ── */
+.charts-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-bottom:22px;}
+.chart-card{background:var(--p-surface);border:1px solid var(--p-border);border-radius:12px;padding:18px 20px;box-shadow:var(--p-sh);min-width:0;}
+.chart-head{display:flex;align-items:baseline;gap:8px;margin-bottom:14px;}
+.chart-title{font-size:13px;font-weight:800;color:var(--p-text);letter-spacing:-.01em;}
+.chart-sub{font-size:11px;font-weight:600;color:var(--p-faint);margin-left:auto;}
+.chart-box{position:relative;width:100%;height:220px;}
+.chart-box.tall{height:300px;}
+.chart-empty{display:flex;align-items:center;justify-content:center;height:220px;color:var(--p-faint);font-size:12.5px;text-align:center;}
+@media(max-width:760px){.charts-grid{grid-template-columns:1fr;}}
+
+/* ── CHIPS de acceso rápido (proyectos más usados) ── */
+.proy-chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--p-border);}
+.chips-label{font-size:11px;font-weight:700;color:var(--p-faint);text-transform:uppercase;letter-spacing:.5px;}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;border:1.5px solid var(--p-border);background:var(--p-surface);color:var(--p-text);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
+.chip:hover{border-color:var(--p-accent);color:var(--p-accent);background:var(--p-accent-soft);}
+.chip.active{background:var(--p-accent);border-color:var(--p-accent);color:#fff;}
+.chip-n{font-size:11px;font-weight:700;background:var(--p-subtle);color:var(--p-muted);border-radius:10px;padding:1px 7px;}
+.chip:hover .chip-n{background:#fff;}
+.chip.active .chip-n{background:rgba(255,255,255,.25);color:#fff;}
+
 .empty-icon{color:var(--p-faint);}
 .empty-icon svg{width:34px;height:34px;}
 .tb-home svg{width:16px;height:16px;}
@@ -97,7 +122,7 @@ a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,
 .btn-del{background:var(--p-red-soft);color:var(--p-red);border:1px solid var(--p-red-bd);}
 .btn-del:hover{background:#FEE2E2;}
 select.filter,input.filter{border:1.5px solid var(--p-border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;color:var(--p-text);background:var(--p-surface);outline:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
-select.filter:focus,input.filter:focus{border-color:var(--p-accent);box-shadow:0 0 0 3px rgba(3,105,161,.12);}
+select.filter:focus,input.filter:focus{border-color:var(--p-accent);box-shadow:0 0 0 3px rgba(0,115,234,.12);}
 
 table{width:100%;border-collapse:collapse;}
 th{text-align:left;font-size:11px;font-weight:700;color:var(--p-muted);text-transform:uppercase;letter-spacing:.5px;padding:12px 22px;border-bottom:1px solid var(--p-border);background:var(--p-subtle);}
@@ -124,10 +149,10 @@ tr:hover td{background:var(--p-subtle);}
 .modal h3{font-size:17px;font-weight:800;margin-bottom:5px;letter-spacing:-.01em;}
 .modal-sub{font-size:13px;color:var(--p-muted);margin-bottom:20px;}
 /* Banner de cabecera del modal: franja sólida (sin degradado) a sangre completa */
-.modal-head{display:flex;align-items:center;gap:14px;margin:-26px -24px 22px;padding:18px 24px;background:var(--p-subtle);border-bottom:1px solid var(--p-border);border-radius:14px 14px 0 0;}
+.modal-head{display:flex;align-items:center;gap:14px;margin:-26px -24px 22px;padding:18px 24px;background:linear-gradient(135deg,var(--p-accent-soft) 0%,var(--p-subtle) 60%);border-bottom:1px solid var(--p-accent-bd);border-radius:14px 14px 0 0;}
 .modal-head .modal-sub{margin-bottom:0;color:var(--p-muted);}
 .modal-head h3{margin-bottom:2px;}
-.modal-ico{flex:none;width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--p-accent);color:#fff;box-shadow:var(--p-sh);}
+.modal-ico{flex:none;width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(135deg,var(--p-accent),var(--p-accent-d));color:#fff;box-shadow:0 6px 16px rgba(3,105,161,.30);}
 .field-row{display:flex;gap:12px;}
 .field-row .field{flex:1;min-width:0;}
 .ctx-box{display:flex;align-items:center;gap:11px;background:var(--p-subtle);border:1px solid var(--p-border);border-radius:10px;padding:11px 13px;margin-bottom:18px;}
@@ -228,31 +253,30 @@ async function api(path, opts={}){
 
 // ── MENÚ por rol ───────────────────────────────────────────────
 const ITEMS = {
-  dashboard:    { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>', label:'Dashboard',  sub:'Resumen general',           grp:'Inicio' },
   empresas:     { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg>', label:'Empresas',   sub:'Crear y administrar empresas', grp:'Estructura' },
   proyectos:    { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>', label:'Proyectos',  sub:'Proyectos por empresa',     grp:'Estructura' },
   'mis-proyectos':{ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',label:'Mis proyectos',sub:'Proyectos asignados a ti',grp:'Estructura' },
   usuarios:     { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', label:'Usuarios',   sub:'Supervisores y técnicos',   grp:'Equipo' },
   asignaciones: { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>', label:'Asignaciones',sub:'Quién trabaja en qué',     grp:'Equipo' },
   tecnicos:     { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>', label:'Técnicos de mis proyectos', sub:'Equipo de tus proyectos', grp:'Equipo' },
-  informes:     { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>', label:'Informes',   sub:'Informes por proyecto',     grp:'Trabajo' },
   'mis-informes':{ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>', label:'Mis informes',sub:'Informes que registraste', grp:'Trabajo' },
   config:       { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>', label:'Configuración',sub:'Ajustes generales',       grp:'Cuenta' },
-  perfil:       { ico:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M14 9h4"/><path d="M14 13h4"/><path d="M6 16h6"/></svg>', label:'Mi perfil',  sub:'Tus datos personales',      grp:'Cuenta' },
 };
 const MENU = {
-  superadmin:    ['dashboard','empresas','proyectos','usuarios','asignaciones','informes','config','perfil'],
-  admin_empresa: ['dashboard','empresas','proyectos','usuarios','asignaciones','informes','config','perfil'],
-  supervisor:    ['dashboard','mis-proyectos','tecnicos','informes','perfil'],
-  tecnico:       ['dashboard','mis-proyectos','mis-informes','perfil'],
+  superadmin:    ['empresas','proyectos','usuarios','asignaciones','config'],
+  admin_empresa: ['empresas','proyectos','usuarios','asignaciones','config'],
+  supervisor:    ['mis-proyectos','tecnicos'],
+  tecnico:       ['mis-proyectos','mis-informes'],
 };
+// El dashboard único vive en /dashboard. Aquí, la vista inicial es el primer ítem del rol.
+const inicioVista = () => (MENU[ME.rol] || ['config'])[0];
 const ROL_LABEL = { superadmin:'Superadmin', admin_empresa:'Administrador', supervisor:'Supervisor', tecnico:'Técnico' };
 const CAT_LABEL = { clima:'Clima', energia:'Energía', obras_civiles:'Obras Civiles (OOCC)' };
 const catOpciones = (sel) => Object.entries(CAT_LABEL)
   .map(([v,l])=>`<option value="${v}" ${sel===v?'selected':''}>${l}</option>`).join('');
 
 function buildSidebar(){
-  const items = MENU[ME.rol] || ['dashboard','perfil'];
+  const items = MENU[ME.rol] || ['config'];
   // Botón fijo para volver al panel principal (/dashboard, el nodo central)
   let html = `<a class="sb-item sb-home" href="/dashboard" title="Ir al panel principal">
     <span class="sb-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>Inicio</a>`;
@@ -270,52 +294,16 @@ function go(view){
   toggleMenu(false);
   if(location.hash.slice(1)!==view) history.replaceState(null,'','#'+view);
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
-  const it = ITEMS[view] || ITEMS.dashboard;
+  const it = ITEMS[view] || ITEMS[inicioVista()];
   $('tbTitle').textContent = it.label; $('tbSub').textContent = it.sub;
   $('content').innerHTML = '<div class="empty-state">Cargando…</div>';
-  (VIEWS[view] || VIEWS.dashboard)();
+  (VIEWS[view] || VIEWS[inicioVista()])();
 }
 
 // ════════════════════════════════════════════════════════════════
 // VISTAS
 // ════════════════════════════════════════════════════════════════
 const VIEWS = {};
-
-// ── Dashboard ──
-VIEWS.dashboard = async () => {
-  const r = await api('/api/gestion/resumen');
-  const cards = [];
-  if(r.empresas!=null) cards.push(['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg>','si-blue',r.empresas,'Empresas']);
-  cards.push(['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>','si-green',r.proyectos_activos??0,'Proyectos activos']);
-  if(r.proyectos_total!=null && ME.rol!=='superadmin' && ME.rol!=='admin_empresa') cards[cards.length-1]=['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>','si-green',r.proyectos_total,'Mis proyectos'];
-  if(r.informes_total!=null) cards.push(['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>','si-purple',r.informes_total,'Mis informes']);
-  else cards.push(['<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>','si-purple',(r.informes_recientes||[]).length,'Informes recientes']);
-
-  const rec = r.informes_recientes||[];
-  // División por rama: cada informe hereda la rama (tipo) de su proyecto.
-  const RAMAS = [['correctivo','Correctivos'],['preventivo','Preventivos'],['temporal','Temporales']];
-  const tablaInformes = items => `<table><thead><tr><th>Título</th><th>Proyecto</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
-      ${items.map(i=>`<tr><td><b>${esc(i.titulo)}</b></td><td>${esc(i.proyecto_nombre||'—')}</td>
-        <td><span class="pill pill-${i.estado}">${i.estado}</span></td><td class="muted">${(i.fecha_creacion||'').slice(0,10)}</td></tr>`).join('')}
-    </tbody></table>`;
-  const grupoInformes = (tipo,label,items,siempre)=> (!items.length && !siempre) ? '' : `
-    <div class="section">
-      <div class="sec-head"><div><div class="sec-name">${label}</div><div class="sec-sub">${items.length} informe${items.length===1?'':'s'} reciente${items.length===1?'':'s'}</div></div>
-        <span class="pill pill-${tipo}">${tipo}</span></div>
-      ${items.length? tablaInformes(items)
-        : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>Sin informes en esta rama.</div>`}
-    </div>`;
-  const sinRama = rec.filter(i=>!RAMAS.some(([t])=>t===i.proyecto_tipo));
-  $('content').innerHTML = `
-    <div class="stats">${cards.map(([i,c,v,l])=>`
-      <div class="stat-card"><div class="stat-ico ${c}">${i}</div><div class="stat-val">${v}</div><div class="stat-label">${l}</div></div>`).join('')}
-    </div>
-    <div style="font-size:13px;font-weight:800;color:var(--p-text);margin:4px 0 14px;letter-spacing:-.01em">Informes recientes por rama</div>
-    ${grupoInformes('correctivo','Correctivos',rec.filter(i=>i.proyecto_tipo==='correctivo'),true)}
-    ${grupoInformes('preventivo','Preventivos',rec.filter(i=>i.proyecto_tipo==='preventivo'),true)}
-    ${grupoInformes('temporal','Temporales',rec.filter(i=>i.proyecto_tipo==='temporal'),false)}
-    ${sinRama.length?`<div class="section"><div class="sec-head"><div><div class="sec-name">Sin clasificar</div><div class="sec-sub">${sinRama.length} informe(s) en proyectos sin rama asignada</div></div></div>${tablaInformes(sinRama)}</div>`:''}`;
-};
 
 // ── Empresas / Clientes (superadmin) — LISTA ──
 VIEWS.empresas = async () => {
@@ -540,17 +528,18 @@ async function gestionarEquipo(pid){
   const sups = personal.filter(x => x.rol_en_proyecto==='supervisor' || x.rol_en_proyecto==='responsable');
   const tecs = personal.filter(x => x.rol_en_proyecto==='tecnico');
 
-  let empresaBlock;
+  // Sección "Vínculo con empresa": solo para superadmin, donde es editable
+  // (reasigna la empresa del proyecto). Para el resto no aporta y se omite.
+  let empresaSection = '';
   if (esSuper) {
     const emps = window._empresas?.length ? window._empresas : await api('/auth/empresas');
     window._empresas = emps;
-    empresaBlock = `<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-      <div class="field" style="margin:0;flex:1;min-width:220px"><label>Empresa</label>
-        <select id="eqEmp">${emps.map(e=>`<option value="${e.id}" ${e.id===proyecto.empresa_id?'selected':''}>${esc(e.nombre)}</option>`).join('')}</select></div>
-      <button class="btn btn-blue" onclick="reasignarEmpresa('${pid}')">Guardar empresa</button></div>`;
-  } else {
-    empresaBlock = `<div class="field" style="margin:0"><label>Empresa</label>
-      <div style="font-weight:700;margin-top:2px">${esc(proyecto.empresa_nombre||'—')}</div></div>`;
+    empresaSection = `<div class="section"><div class="sec-head"><div><div class="sec-name">Vínculo con empresa</div>
+      <div class="sec-sub">A qué empresa pertenece el proyecto</div></div></div>
+      <div style="padding:18px 22px"><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="field" style="margin:0;flex:1;min-width:220px"><label>Empresa</label>
+          <select id="eqEmp">${emps.map(e=>`<option value="${e.id}" ${e.id===proyecto.empresa_id?'selected':''}>${esc(e.nombre)}</option>`).join('')}</select></div>
+        <button class="btn btn-blue" onclick="reasignarEmpresa('${pid}')">Guardar empresa</button></div></div></div>`;
   }
 
   const teamTable = (titulo, arr, rolProy) => `<div class="section">
@@ -567,9 +556,7 @@ async function gestionarEquipo(pid){
   $('tbSub').textContent = 'Equipo del proyecto';
   $('content').innerHTML = `
     <button class="btn btn-ghost btn-sm" onclick="go('asignaciones')" style="margin-bottom:16px">← Volver a asignaciones</button>
-    <div class="section"><div class="sec-head"><div><div class="sec-name">Vínculo con empresa</div>
-      <div class="sec-sub">A qué empresa pertenece el proyecto</div></div></div>
-      <div style="padding:18px 22px">${empresaBlock}</div></div>
+    ${empresaSection}
     ${teamTable('Supervisores', sups, 'supervisor')}
     ${teamTable('Técnicos', tecs, 'tecnico')}`;
 }
@@ -648,28 +635,6 @@ function toggleTecInformes(id){
   if(row) row.style.display = row.style.display==='none' ? 'table-row' : 'none';
 }
 
-// ── Informes (admin/supervisor): por proyecto ──
-VIEWS.informes = async () => {
-  const proyectos = await api(ME.rol==='supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos');
-  $('content').innerHTML = `<div class="section">
-    <div class="sec-head"><div><div class="sec-name">Informes</div><div class="sec-sub">Filtra por proyecto</div></div>
-      <div class="sec-tools"><select class="filter" id="iProy" onchange="loadInformes()">
-        <option value="">— Selecciona proyecto —</option>
-        ${proyectos.map(p=>`<option value="${p.proyecto_id||p.id}">${esc(p.proyecto_nombre||p.nombre)}${p.empresa_nombre?' · '+esc(p.empresa_nombre):''}</option>`).join('')}
-      </select></div></div>
-    <div id="iBody"><div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>Selecciona un proyecto para ver sus informes.</div></div></div>`;
-};
-async function loadInformes(){
-  const pid = $('iProy').value; if(!pid){ $('iBody').innerHTML=`<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>Selecciona un proyecto.</div>`; return; }
-  const list = await api('/api/gestion/proyectos/'+pid+'/informes');
-  $('iBody').innerHTML = `<div style="padding:14px 22px;border-bottom:1px solid var(--p-border);">
-      <button class="btn btn-green btn-sm" onclick="modalInforme('${pid}')">+ Nuevo informe</button></div>
-    ${list.length? `<table><thead><tr><th>Título</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
-      ${list.map(i=>`<tr><td><b>${esc(i.titulo)}</b></td><td><span class="pill pill-${i.estado}">${i.estado}</span></td>
-        <td class="muted">${(i.fecha_creacion||'').slice(0,10)}</td></tr>`).join('')}
-    </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>Este proyecto no tiene informes.</div>`}`;
-}
-
 // ── Mis informes (técnico) ──
 VIEWS['mis-informes'] = async () => {
   const list = await api('/api/gestion/mis-informes');
@@ -692,32 +657,6 @@ VIEWS.config = async () => {
       <a class="btn btn-ghost" href="/dashboard">← Ir al inicio</a>
     </div></div>`;
 };
-
-// ── Mi perfil ──
-VIEWS.perfil = async () => {
-  const p = await api('/api/gestion/perfil') || {};
-  $('content').innerHTML = `<div class="section" style="max-width:520px">
-    <div class="sec-head"><div><div class="sec-name">Mi perfil</div><div class="sec-sub">${esc(ME.email)}</div></div></div>
-    <div style="padding:22px">
-      <div class="field"><label>RUT</label><input id="pRut" value="${esc(p.rut||'')}" placeholder="12.345.678-5"><div class="hint">Se valida con dígito verificador (módulo 11).</div></div>
-      <div class="field"><label>Nombre</label><input id="pNombre" value="${esc(p.nombre||'')}"></div>
-      <div class="field"><label>Apellidos</label><input id="pApe" value="${esc(p.apellidos||'')}"></div>
-      <div class="field"><label>Teléfono</label><input id="pTel" value="${esc(p.telefono||'')}"></div>
-      <div class="field"><label>Cargo</label><input id="pCargo" value="${esc(p.cargo||'')}"></div>
-      <button class="btn btn-blue" id="pSave" onclick="guardarPerfil()">Guardar cambios</button>
-    </div></div>`;
-};
-async function guardarPerfil(){
-  const btn=$('pSave'); btn.disabled=true; btn.textContent='Guardando…';
-  try{
-    await api('/api/gestion/perfil',{ method:'PUT', body:JSON.stringify({
-      rut:$('pRut').value.trim()||null, nombre:$('pNombre').value.trim(),
-      apellidos:$('pApe').value.trim(), telefono:$('pTel').value.trim(), cargo:$('pCargo').value.trim()
-    })});
-    toast('Perfil actualizado','ok');
-    go('dashboard');   // tras guardar, volver al panel
-  }catch(e){ toast(e.message,'err'); btn.disabled=false; btn.textContent='Guardar cambios'; }
-}
 
 // ── Helper de tabla genérica ──
 // Código identificador de un proyecto: RUT de la empresa + slug del proyecto.
@@ -1059,15 +998,30 @@ async function modalAsignar(pid, rolProyecto){
     return;
   }
   const rolDef = rolProyecto || 'tecnico';
+  // El usuario a asignar debe coincidir con el rol elegido en el proyecto:
+  // técnico → técnicos; supervisor/responsable → supervisores.
+  window._asignUsuarios = usuarios;
   openModal(`<h3>Asignar al proyecto</h3><p class="modal-sub">Vincula a alguien a "${esc(proy.nombre)}".</p>
-    <div class="field"><label>Usuario</label><select id="mAUser">${usuarios.map(u=>`<option value="${u.id}">${esc(u.nombre)} (${ROL_LABEL[u.rol]})</option>`).join('')}</select></div>
-    <div class="field"><label>Rol en el proyecto</label><select id="mARol">
+    <div class="field"><label>Usuario</label><select id="mAUser">${opcionesUsuarioAsignar(rolDef)}</select></div>
+    <div class="field"><label>Rol en el proyecto</label><select id="mARol" onchange="onCambioRolAsignar()">
       <option value="tecnico" ${rolDef==='tecnico'?'selected':''}>Técnico</option>
       <option value="supervisor" ${rolDef==='supervisor'?'selected':''}>Supervisor</option>
       <option value="responsable" ${rolDef==='responsable'?'selected':''}>Responsable</option></select></div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="confirmAsignar('${pid}',this)">Asignar</button></div>`);
+}
+// Roles de usuario válidos para cada rol en el proyecto.
+const rolesUsuarioPara = rolProy => rolProy==='tecnico' ? ['tecnico'] : ['supervisor'];
+function opcionesUsuarioAsignar(rolProy){
+  const permit = rolesUsuarioPara(rolProy);
+  const filtrados = (window._asignUsuarios||[]).filter(u=>permit.includes(u.rol));
+  if(!filtrados.length)
+    return `<option value="" disabled selected>— Sin ${rolProy==='tecnico'?'técnicos':'supervisores'} disponibles —</option>`;
+  return filtrados.map(u=>`<option value="${u.id}">${esc(u.nombre)} (${ROL_LABEL[u.rol]})</option>`).join('');
+}
+function onCambioRolAsignar(){
+  const sel=$('mAUser'); if(sel) sel.innerHTML=opcionesUsuarioAsignar($('mARol').value);
 }
 async function confirmAsignar(pid,btn){
   const usuario_id=$('mAUser').value, rol_en_proyecto=$('mARol').value;
@@ -1089,55 +1043,6 @@ async function confirmQuitar(pid,uid,btn){
   }catch(e){ toast(e.message,'err'); closeModal(); }
 }
 
-async function modalInforme(pid){
-  // Proyectos disponibles para elegir a cuál se asigna la actividad
-  const [proyectos, sitios] = await Promise.all([
-    api(ME.rol==='supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos'),
-    (window._sitiosCat ? Promise.resolve(window._sitiosCat) : api('/api/sitios-preventivos').catch(()=>[]))
-  ]);
-  window._sitiosCat = sitios;
-  if(!proyectos.length) return toast('No hay proyectos disponibles','err');
-  const proyOpts = proyectos.map(p=>`<option value="${p.id}" ${p.id===pid?'selected':''}>${esc(p.nombre)}${p.tipo?' · '+p.tipo:''}</option>`).join('');
-  const sitioOpts = (sitios||[]).map(s=>`<option value="${esc(s.nombre)}">${esc(s.nombre)}${s.ciudad?' · '+esc(s.ciudad):''}</option>`).join('');
-  openModal(`<div class="modal-head"><div class="modal-ico">📄</div>
-      <div><h3>Nuevo informe</h3><p class="modal-sub">Elige el proyecto; el técnico/supervisor debe ser personal asignado a ese proyecto.</p></div></div>
-    <div class="field"><label>Proyecto</label><select id="mIProy" onchange="recargarPersonalInforme()">${proyOpts}</select></div>
-    <div class="field"><label>Sitio</label><select id="mISitio"><option value="">— ninguno —</option>${sitioOpts}</select>
-      <div class="hint">A qué sitio va asignada la actividad.</div></div>
-    <div class="field"><label>LPU</label><input id="mILpu" placeholder="N.º de LPU"></div>
-    <div class="field"><label>Título</label><input id="mITitulo" placeholder="Mantención preventiva sala A"></div>
-    <div class="field"><label>Técnico</label><select id="mITec"></select><div class="hint" id="mITecHint"></div></div>
-    <div class="field"><label>Supervisor</label><select id="mISup"></select></div>
-    <div class="field"><label>Contenido</label><textarea id="mICont" placeholder="Detalle de la actividad…"></textarea></div>
-    <div class="modal-err" id="mErr"></div>
-    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-confirm" onclick="crearInforme(this)">Crear informe</button></div>`);
-  await recargarPersonalInforme();
-  setTimeout(()=>$('mITitulo').focus(),80);
-}
-// Recarga técnicos/supervisores según el proyecto elegido (Regla 2: solo personal asignado)
-async function recargarPersonalInforme(){
-  const pid = $('mIProy').value;
-  const personal = await api('/api/gestion/proyectos/'+pid+'/personal').catch(()=>[]);
-  const tecs = personal.filter(p=>p.rol==='tecnico'), sups = personal.filter(p=>p.rol==='supervisor');
-  const opt = arr=>`<option value="">— ninguno —</option>`+arr.map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
-  if($('mITec')) $('mITec').innerHTML = opt(tecs);
-  if($('mISup')) $('mISup').innerHTML = opt(sups);
-  if($('mITecHint')) $('mITecHint').textContent = tecs.length ? '' : 'No hay técnicos asignados a este proyecto.';
-}
-async function crearInforme(btn){
-  const pid = $('mIProy').value;
-  const body={ titulo:$('mITitulo').value.trim(), tecnico_id:$('mITec').value||null,
-    supervisor_id:$('mISup').value||null, contenido:$('mICont').value.trim()||null,
-    sitio:$('mISitio').value.trim()||null, lpu:$('mILpu').value.trim()||null };
-  if(!body.titulo) return showErr('Título requerido');
-  if(!pid) return showErr('Selecciona un proyecto');
-  btn.disabled=true;
-  try{ await api('/api/gestion/proyectos/'+pid+'/informes',{method:'POST',body:JSON.stringify(body)});
-    closeModal(); toast('Informe creado','ok'); $('iProy').value=pid; loadInformes();
-  }catch(e){ showErr(e.message); btn.disabled=false; }
-}
-
 function showErr(msg){ const e=$('mErr'); if(e){ e.textContent=msg; e.style.display='block'; } }
 function togglePw(id,btn){ const i=$(id); if(!i) return; if(i.type==='password'){ i.type='text'; btn.textContent='🙈'; } else { i.type='password'; btn.textContent='👁'; } }
 
@@ -1155,7 +1060,7 @@ $('btnLogout').addEventListener('click',()=>{ localStorage.removeItem('token');s
     $('sbUname').textContent = ME.nombre;
     $('sbUrol').textContent = ROL_LABEL[ME.rol]||ME.rol;
     buildSidebar();
-    // Abre la sección del hash si es válida para el rol; si no, dashboard
+    // Abre la sección del hash si es válida para el rol; si no, la vista inicial
     const hash = location.hash.slice(1);
     const detEmp = hash.match(/^empresa:(.+)$/);
     if (detEmp && ME.rol === 'superadmin') {
@@ -1163,7 +1068,7 @@ $('btnLogout').addEventListener('click',()=>{ localStorage.removeItem('token');s
       verEmpresa(detEmp[1]);
     } else {
       const permitido = (MENU[ME.rol]||[]).includes(hash);
-      go(permitido ? hash : 'dashboard');
+      go(permitido ? hash : inicioVista());
     }
   }catch(e){ /* api() ya redirige en 401 */ }
 })();
