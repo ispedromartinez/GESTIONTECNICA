@@ -680,7 +680,6 @@ function sectionTable({name,sub,tools='',addBtn='',head,rows,emptyIcon,emptyMsg}
 // ════════════════════════════════════════════════════════════════
 function openModal(html){ $('modalBox').innerHTML=html; $('modalBg').classList.add('open'); }
 function closeModal(){ $('modalBg').classList.remove('open'); }
-$('modalBg').addEventListener('click',e=>{ if(e.target===$('modalBg')) closeModal(); });
 
 function modalEmpresa(){
   openModal(`<h3>Nueva empresa</h3><p class="modal-sub">Crea un nuevo cliente en la plataforma.</p>

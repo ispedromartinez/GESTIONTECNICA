@@ -1549,8 +1549,6 @@ async function sendEmail(){
     st.className='status ok';st.textContent='✅ Informe enviado correctamente';setTimeout(closeEmailModal,2000);
   }catch(e){st.className='status err';st.textContent='❌ '+e.message;}
 }
-document.getElementById('emailModal').addEventListener('click',function(e){if(e.target===this)closeEmailModal();});
-document.getElementById('confirmDel').addEventListener('click',function(e){if(e.target===this)closeConfirm();});
 
 // ══ PAPELERA ══
 let allPapelera = [];
@@ -1648,8 +1646,6 @@ async function confirmVaciar(){
     await loadPapelera();
   } catch(e){ alert('Error: '+e.message); }
 }
-document.getElementById('confirmPerm').addEventListener('click',function(e){if(e.target===this)closeConfirmPerm();});
-document.getElementById('confirmVaciar').addEventListener('click',function(e){if(e.target===this)closeConfirmVaciar();});
 
 // Fix: immediate UI remove on delete from historial
 async function confirmDelete(){
