@@ -44,7 +44,8 @@ body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:10
 .sb-chevron{margin-left:auto;display:flex;align-items:center;opacity:.55;transition:transform .22s ease;}
 .sb-proy-toggle.open .sb-chevron{transform:rotate(90deg);}
 .sb-proy-group{overflow:hidden;max-height:0;transition:max-height .28s ease;}
-.sb-proy-group.open{max-height:70vh;overflow-y:auto;}
+.sb-proy-group.open{max-height:70vh;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;}
+.sb-proy-group.open::-webkit-scrollbar{width:0;height:0;display:none;}
 .sb-item{
   display:flex;align-items:center;gap:10px;
   padding:9px 10px;border-radius:8px;cursor:pointer;
