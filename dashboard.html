@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/theme.css">
+<script src="/searchable-select.js" defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:100vh;display:flex;}
@@ -291,9 +292,9 @@ tbody tr:hover{background:#F8FAFF;}
 /* Modal */
 .ip-modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center;padding:20px;}
 .ip-modal-bg.open{display:flex;}
-.ip-modal{background:#fff;border:1px solid #E2E8F0;border-radius:14px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(15,23,42,.2);padding:24px;max-height:90vh;overflow-y:auto;}
-.ip-modal h3{font-size:17px;font-weight:800;margin-bottom:4px;color:#0F172A;}
-.ip-modal-sub{font-size:13px;color:#64748B;margin-bottom:18px;line-height:1.5;}
+.ip-modal{background:#fff;border:1px solid #E2E8F0;border-radius:14px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(15,23,42,.2);padding:24px 24px 20px;max-height:90vh;overflow-y:auto;}
+.ip-modal h3{font-size:18px;font-weight:800;margin-bottom:4px;color:#0F172A;letter-spacing:-.01em;}
+.ip-modal-sub{font-size:12.5px;color:#64748B;margin-bottom:18px;line-height:1.5;padding-bottom:16px;border-bottom:1px solid #EEF1F6;}
 .ip-field{margin-bottom:14px;}
 .ip-field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:5px;}
 .ip-field input,.ip-field select,.ip-field textarea{width:100%;border:1.5px solid #E2E8F0;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:#0F172A;background:#F8F9FC;outline:none;}
@@ -301,7 +302,25 @@ tbody tr:hover{background:#F8FAFF;}
 .ip-field textarea{min-height:72px;resize:vertical;}
 .ip-hint{font-size:11px;color:#94A3B8;margin-top:4px;}
 .ip-err{font-size:12px;color:#DC2626;background:#FEECEC;border:1px solid #F8C9C9;padding:9px 12px;border-radius:8px;margin-bottom:12px;display:none;}
-.ip-actions{display:flex;gap:10px;margin-top:6px;justify-content:flex-end;}
+.ip-actions{display:flex;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid #EEF1F6;justify-content:flex-end;}
+/* ── Buscador de sitio (estilo TIGO) ── */
+.ipsite-wrap{position:relative;}
+.ipsite-in{width:100%;border:1.5px solid #E2E8F0;border-radius:8px;padding:9px 32px 9px 32px;font-size:13px;font-family:inherit;color:#0F172A;background:#F8F9FC;outline:none;transition:.15s;}
+.ipsite-in:focus{border-color:#0073EA;background:#fff;box-shadow:0 0 0 3px rgba(0,115,234,.12);}
+.ipsite-in.sel{border-color:#16A34A;background:#F0FDF4;cursor:pointer;}
+.ipsite-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#94A3B8;pointer-events:none;transition:.15s;}
+.ipsite-wrap:focus-within .ipsite-ico{opacity:0;}
+.ipsite-wrap:focus-within .ipsite-in{padding-left:11px;}
+.ipsite-clr{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94A3B8;font-size:15px;cursor:pointer;padding:2px;display:none;line-height:1;}
+.ipsite-clr.show{display:block;}
+.ipsite-dd{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid #0073EA;border-radius:10px;box-shadow:0 16px 40px rgba(15,23,42,.18);max-height:230px;overflow-y:auto;z-index:50;display:none;}
+.ipsite-dd.open{display:block;}
+.ipsite-di{padding:9px 13px;font-size:13px;cursor:pointer;border-bottom:1px solid #F1F5F9;}
+.ipsite-di:last-child{border-bottom:none;}
+.ipsite-di:hover,.ipsite-di.hi{background:#EFF6FF;}
+.ipsite-di .dn{font-weight:600;color:#0F172A;}
+.ipsite-di .da{font-size:11px;color:#94A3B8;margin-top:1px;}
+.ipsite-di mark{background:#FEF9C3;border-radius:2px;padding:0 1px;}
 
 /* RESPONSIVE */
 @media(max-width:768px){
@@ -1222,11 +1241,17 @@ async function ipModalInforme(pid) {
   const proySel = proyectos.find(p => p.id === pid);
   const esTarea = proySel && proySel.tipo === 'preventivo';
   const proyOpts = proyectos.map(p => `<option value="${esc(p.id)}" ${p.id === pid ? 'selected' : ''}>${esc(p.nombre)}${p.tipo ? ' · ' + esc(p.tipo) : ''}</option>`).join('');
-  const sitioOpts = (sitios || []).map(s => `<option value="${esc(s.nombre)}">${esc(s.nombre)}${s.ciudad ? ' · ' + esc(s.ciudad) : ''}</option>`).join('');
   ipOpenModal(`<h3>${esTarea ? 'Nueva tarea' : 'Nuevo informe'}</h3>
     <p class="ip-modal-sub">Elige el proyecto; el técnico/supervisor debe ser personal asignado a ese proyecto.</p>
     <div class="ip-field"><label>Proyecto</label><select id="ipMProy" onchange="ipRecargarPersonal()">${proyOpts}</select></div>
-    <div class="ip-field"><label>Sitio</label><select id="ipMSitio"><option value="">— ninguno —</option>${sitioOpts}</select>
+    <div class="ip-field"><label>Sitio</label>
+      <div class="ipsite-wrap">
+        <span class="ipsite-ico">🔍</span>
+        <input type="text" class="ipsite-in" id="ipMSitioIn" placeholder="Escribe para buscar sitio..." autocomplete="off" spellcheck="false">
+        <button type="button" class="ipsite-clr" id="ipMSitioClr" onclick="ipSiteClear()">✕</button>
+        <div class="ipsite-dd" id="ipMSitioDD"></div>
+      </div>
+      <input type="hidden" id="ipMSitio">
       <div class="ip-hint">A qué sitio va asignada la actividad.</div></div>
     <div class="ip-field"><label>LPU</label><input id="ipMLpu" placeholder="N.º de LPU"></div>
     <div class="ip-field"><label>Título</label><input id="ipMTitulo" placeholder="Mantención preventiva sala A"></div>
@@ -1236,9 +1261,72 @@ async function ipModalInforme(pid) {
     <div class="ip-err" id="ipErr"></div>
     <div class="ip-actions"><button class="ip-btn ip-btn-cancel" onclick="ipCloseModal()">Cancelar</button>
       <button class="ip-btn ip-btn-confirm" onclick="ipCrearInforme(this)">Crear</button></div>`);
+  ipSiteSetup();
   await ipRecargarPersonal();
   setTimeout(() => { const t = document.getElementById('ipMTitulo'); if (t) t.focus(); }, 80);
 }
+
+// ── Buscador de sitio (autocomplete estilo TIGO) ──
+let _ipSiteHi = -1;
+const _ipNorm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+function _ipHl(t, q) {
+  if (!q) return esc(t);
+  const nq = _ipNorm(q), nt = _ipNorm(t); let r = '', i = 0;
+  while (i < t.length) {
+    if (nt.slice(i, i + nq.length) === nq) { r += '<mark>' + esc(t.slice(i, i + nq.length)) + '</mark>'; i += nq.length; }
+    else { r += esc(t[i]); i++; }
+  }
+  return r;
+}
+function _ipSiteHilight(dd) {
+  const items = dd.querySelectorAll('.ipsite-di[data-name]');
+  items.forEach((el, i) => el.classList.toggle('hi', i === _ipSiteHi));
+  if (_ipSiteHi >= 0) items[_ipSiteHi]?.scrollIntoView({ block: 'nearest' });
+}
+function ipSiteSetup() {
+  const inp = document.getElementById('ipMSitioIn'); if (!inp) return;
+  const dd = document.getElementById('ipMSitioDD'), clr = document.getElementById('ipMSitioClr'), hidden = document.getElementById('ipMSitio');
+  const sitios = window._ipSitios || [];
+  const render = (list, q) => {
+    _ipSiteHi = -1;
+    dd.innerHTML = list.length
+      ? list.map((s, i) => `<div class="ipsite-di" data-name="${esc(s.nombre)}" data-i="${i}"><div class="dn">${_ipHl(s.nombre, q)}</div>${s.ciudad ? `<div class="da">${_ipHl(s.ciudad, q)}</div>` : ''}</div>`).join('')
+      : '<div class="ipsite-di" style="color:#94A3B8;cursor:default">Sin resultados</div>';
+    dd.querySelectorAll('.ipsite-di[data-name]').forEach(el => {
+      el.addEventListener('click', () => ipSitePick(el.dataset.name));
+      el.addEventListener('mouseenter', function () { _ipSiteHi = +this.dataset.i; _ipSiteHilight(dd); });
+    });
+    dd.classList.add('open');
+  };
+  inp.addEventListener('input', function () {
+    const q = this.value.trim(); clr.classList.toggle('show', q.length > 0);
+    hidden.value = ''; inp.classList.remove('sel');
+    if (!q) { render(sitios.slice(0, 25), ''); return; }
+    const nq = _ipNorm(q);
+    render(sitios.filter(s => _ipNorm(s.nombre).includes(nq) || _ipNorm(s.ciudad).includes(nq)), q);
+  });
+  inp.addEventListener('focus', () => { if (!inp.classList.contains('sel')) render(sitios.slice(0, 25), inp.value.trim()); });
+  inp.addEventListener('keydown', e => {
+    const items = dd.querySelectorAll('.ipsite-di[data-name]');
+    if (e.key === 'ArrowDown') { e.preventDefault(); _ipSiteHi = Math.min(_ipSiteHi + 1, items.length - 1); _ipSiteHilight(dd); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); _ipSiteHi = Math.max(_ipSiteHi - 1, -1); _ipSiteHilight(dd); }
+    else if (e.key === 'Escape') dd.classList.remove('open');
+    else if (e.key === 'Enter' && dd.classList.contains('open')) {
+      const pick = _ipSiteHi >= 0 ? items[_ipSiteHi] : items[0];
+      if (pick) { e.preventDefault(); ipSitePick(pick.dataset.name); }
+    }
+  });
+}
+function ipSitePick(name) {
+  const inp = document.getElementById('ipMSitioIn'), dd = document.getElementById('ipMSitioDD'), clr = document.getElementById('ipMSitioClr');
+  document.getElementById('ipMSitio').value = name;
+  inp.value = name; inp.classList.add('sel'); clr.classList.add('show'); dd.classList.remove('open');
+}
+function ipSiteClear() {
+  const inp = document.getElementById('ipMSitioIn'), dd = document.getElementById('ipMSitioDD'), clr = document.getElementById('ipMSitioClr');
+  document.getElementById('ipMSitio').value = ''; inp.value = ''; inp.classList.remove('sel'); clr.classList.remove('show'); dd.classList.remove('open'); inp.focus();
+}
+document.addEventListener('click', e => { const dd = document.getElementById('ipMSitioDD'); if (dd && !e.target.closest('.ipsite-wrap')) dd.classList.remove('open'); });
 
 // Recarga técnicos/supervisores según el proyecto elegido (solo personal asignado).
 async function ipRecargarPersonal() {
