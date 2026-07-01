@@ -111,10 +111,13 @@ a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,
 .sec-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--p-border);flex-wrap:wrap;gap:12px;}
 .sec-name{font-size:15px;font-weight:700;letter-spacing:-.01em;}
 .sec-sub{font-size:12px;color:var(--p-muted);margin-top:1px;}
-.sec-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.sec-tools{display:flex;gap:10px;align-items:center;flex-wrap:nowrap;justify-content:flex-end;}
 /* En barras de herramientas el select no debe expandirse al 100% (encimaba los botones) */
-.sec-tools .ss-wrap{width:auto;min-width:180px;flex:0 0 auto;}
-.sec-tools select.filter{min-width:180px;}
+.sec-tools > *{flex:0 0 auto;}
+.sec-tools .ss-wrap{width:auto!important;min-width:180px!important;max-width:230px!important;}
+.sec-tools .ss-disp{width:100%;}
+.sec-tools select.filter{min-width:180px;max-width:230px;}
+@media(max-width:640px){ .sec-tools{flex-wrap:wrap;} }
 .btn{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:background .15s,box-shadow .15s,transform .05s;display:inline-flex;align-items:center;gap:6px;}
 .btn:active{transform:translateY(1px);}
 .btn-blue{background:var(--p-accent);color:#fff;}.btn-blue:hover{background:var(--p-accent-d);}
@@ -437,7 +440,7 @@ VIEWS.proyectos = async () => {
     tools: empFilter,
     addBtn:`<button class="btn btn-blue" onclick="location.href='/nuevo-proyecto'">+ Nuevo proyecto</button>`,
     head:['Proyecto','Código', ...(esSuper?['Empresa']:[]),'Rama','Categoría','Estado','Inicio', ...(puedeEditar?['']:[])],
-    rows: list.map(p=>`<tr><td><b>${esc(p.nombre)}</b></td>
+    rows: list.map(p=>`<tr><td><b>${esc(p.nombre)}</b>${p.oculto?' <span class="pill" style="background:var(--p-subtle);color:var(--p-muted)">oculto</span>':''}</td>
       <td class="muted" style="white-space:nowrap">${esc(codProyecto(p.empresa_rut||rutMap[p.empresa_id], p.slug))}</td>
       ${esSuper?`<td class="muted">${esc(p.empresa_nombre||'—')}</td>`:''}
       <td>${p.tipo?`<span class="pill pill-${p.tipo}">${p.tipo}</span>`:'<span class="muted">—</span>'}</td>
@@ -930,8 +933,14 @@ async function modalEditarProyecto(pid, empresaId){
       ${estados.map(s=>`<option value="${s}" ${p.estado===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}</select></div>
     <div class="field"><label>Fecha de inicio</label><input id="ePFecha" type="date" value="${esc((p.fecha_inicio||'').slice(0,10))}"></div>
     ${CHIPS_FIELD}
+    <div class="field"><label style="display:flex;align-items:center;gap:9px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;cursor:pointer;color:var(--p-text);">
+      <input type="checkbox" id="ePOculto" ${p.oculto?'checked':''} style="width:16px;height:16px;accent-color:var(--p-accent);cursor:pointer;">
+      Ocultar a supervisores y técnicos
+    </label><div class="hint">Los usuarios asignados no verán este proyecto; los administradores sí.</div></div>
     <div class="modal-err" id="mErr"></div>
-    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+    <div class="modal-actions">
+      <button class="btn-del" style="margin-right:auto" onclick="borrarProyecto('${pid}',${empresaId?`'${esc(empresaId)}'`:'null'})">Borrar</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="guardarProyecto('${pid}',${empresaId?`'${esc(empresaId)}'`:'null'},this)">Guardar cambios</button></div>`);
   // Técnicos de la empresa + los ya asignados al proyecto.
   const asignados = await api('/api/gestion/proyectos/'+pid+'/personal').catch(()=>[]);
@@ -941,7 +950,8 @@ async function modalEditarProyecto(pid, empresaId){
 }
 async function guardarProyecto(pid, empresaId, btn){
   const body={ nombre:$('ePNombre').value.trim(), slug:$('ePSlug').value.trim().toLowerCase()||null,
-    tipo:$('ePTipo').value, categoria:$('ePCat').value, estado:$('ePEstado').value, fecha_inicio:$('ePFecha').value||null };
+    tipo:$('ePTipo').value, categoria:$('ePCat').value, estado:$('ePEstado').value, fecha_inicio:$('ePFecha').value||null,
+    oculto: $('ePOculto') ? $('ePOculto').checked : undefined };
   if(!body.nombre) return showErr('Nombre requerido');
   btn.disabled=true;
   try{ await api('/api/gestion/proyectos/'+pid,{method:'PUT',body:JSON.stringify(body)});
@@ -949,6 +959,13 @@ async function guardarProyecto(pid, empresaId, btn){
     closeModal(); toast('Proyecto actualizado','ok');
     if(empresaId) verEmpresa(empresaId); else go('proyectos');
   }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+async function borrarProyecto(pid, empresaId){
+  if(!confirm('¿Borrar este proyecto? Se eliminarán también sus informes y asignaciones. Esta acción no se puede deshacer.')) return;
+  try{ await api('/api/gestion/proyectos/'+pid,{method:'DELETE'});
+    closeModal(); toast('Proyecto borrado','ok');
+    if(empresaId) verEmpresa(empresaId); else go('proyectos');
+  }catch(e){ showErr(e.message); }
 }
 
 async function modalUsuario(){

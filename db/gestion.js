@@ -74,6 +74,15 @@ const db = {
     return local.proyectos.update(id, fields);
   },
 
+  async proyectoDelete(id) {
+    if (supa) {
+      const { error } = await supa.from('proyectos').delete().eq('id', id);
+      if (error) throw new Error(error.message);
+      return;
+    }
+    local.proyectos.delete(id);
+  },
+
   // Todos los proyectos (solo superadmin)
   async proyectosAll() {
     if (supa) {
@@ -89,7 +98,10 @@ const db = {
     if (supa) {
       const { data } = await supa.from('asignaciones')
         .select('rol_en_proyecto, proyectos(*)').eq('usuario_id', usuario_id);
-      return (data || []).map(r => ({ ...r.proyectos, rol_en_proyecto: r.rol_en_proyecto }));
+      // Los proyectos ocultos no se muestran a supervisores/técnicos.
+      return (data || [])
+        .filter(r => r.proyectos && !r.proyectos.oculto)
+        .map(r => ({ ...r.proyectos, rol_en_proyecto: r.rol_en_proyecto }));
     }
     return local.asignaciones.listByUsuario(usuario_id);
   },

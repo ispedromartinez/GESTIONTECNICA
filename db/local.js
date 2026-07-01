@@ -118,6 +118,8 @@ try { db.exec("ALTER TABLE usuarios ADD COLUMN supervisor_id TEXT"); } catch {}
 try { db.exec("ALTER TABLE proyectos ADD COLUMN tipo TEXT"); } catch {}
 // Categoría del proyecto: 'clima' | 'energia' | 'obras_civiles'
 try { db.exec("ALTER TABLE proyectos ADD COLUMN categoria TEXT"); } catch {}
+// Ocultar el proyecto de la vista de supervisores/técnicos (0/1)
+try { db.exec("ALTER TABLE proyectos ADD COLUMN oculto INTEGER DEFAULT 0"); } catch {}
 // Sitio al que va asignada la actividad y su LPU
 try { db.exec("ALTER TABLE informes ADD COLUMN sitio TEXT"); } catch {}
 try { db.exec("ALTER TABLE informes ADD COLUMN lpu TEXT"); } catch {}
@@ -311,7 +313,7 @@ const local = {
     },
     // Actualiza solo los campos provistos
     update(id, f) {
-      const cols = ['empresa_id','nombre','slug','estado','fecha_inicio','logo','template','color','tipo','categoria'];
+      const cols = ['empresa_id','nombre','slug','estado','fecha_inicio','logo','template','color','tipo','categoria','oculto'];
       const sets = [], vals = [];
       cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(f[k]); } });
       if (sets.length) { vals.push(id); db.prepare('UPDATE proyectos SET '+sets.join(', ')+' WHERE id = ?').run(...vals); }
@@ -363,10 +365,11 @@ const local = {
       `).all(proyecto_id, empresa_id);
     },
     listByUsuario(usuario_id) {
+      // Los proyectos ocultos no se muestran a supervisores/técnicos.
       return db.prepare(`
         SELECT a.*, p.nombre AS proyecto_nombre, p.slug, p.estado, p.color, p.logo, p.template, p.tipo
         FROM asignaciones a JOIN proyectos p ON p.id = a.proyecto_id
-        WHERE a.usuario_id = ?
+        WHERE a.usuario_id = ? AND COALESCE(p.oculto, 0) = 0
       `).all(usuario_id);
     },
     // Todas las asignaciones de una empresa (mapa usuario↔proyecto del panel).
