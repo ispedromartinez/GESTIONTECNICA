@@ -51,7 +51,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .flabel{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;display:block;}
 .finput{
   width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;
-  font-size:13.5px;color:var(--text);background:#fff;font-family:'Poppins',inherit;transition:.15s;
+  font-size:13.5px;color:var(--text);background:#fff;font-family:var(--font-body);transition:.15s;
 }
 .finput:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,115,234,.12);}
 .finput:read-only{background:#F1F2F6;color:var(--muted);cursor:not-allowed;}
@@ -83,7 +83,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .prof-head{display:flex;align-items:center;gap:18px;padding:22px;}
 .prof-avatar{
   width:60px;height:60px;border-radius:50%;flex-shrink:0;
-  background:linear-gradient(135deg,#0073EA,#784BD1);color:#fff;
+  background:#0073EA;color:#fff;
   display:flex;align-items:center;justify-content:center;
   font-size:22px;font-weight:700;letter-spacing:.5px;
 }
@@ -115,12 +115,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <span class="tb-title">Mi Perfil</span>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
-    <a class="btn-volver" id="btnVolver" href="/panel">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12,19 5,12 12,5"/></svg>
-      <span id="btnVolverTxt">Volver al panel</span>
+    <a class="ui-home" id="btnVolver" href="/panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span id="btnVolverTxt">Inicio</span>
     </a>
-    <button class="btn-volver" onclick="cerrarSesion()" title="Cerrar sesión">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    <button class="ui-logout" onclick="cerrarSesion()" title="Cerrar sesión">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Cerrar sesión
     </button>
   </div>
@@ -255,12 +255,11 @@ async function cargar() {
       // Si el perfil no tiene nombre, usa el del usuario
       if (!document.getElementById('f_nombre').value && usuario.nombre)
         document.getElementById('f_nombre').dataset.fallback = usuario.nombre;
-      // Botón "Volver" según rol: técnico → /panel, resto → /dashboard
+      // Destino de "Inicio" según rol: técnico → /panel, resto → /dashboard
+      // (la etiqueta se mantiene unificada como "Inicio").
       volverDestino = rol === 'tecnico' ? '/panel' : '/dashboard';
-      const etiqueta = rol === 'tecnico' ? 'Volver al panel' : 'Volver al dashboard';
       document.getElementById('btnVolver').href = volverDestino;
       document.getElementById('btnCancelar').href = volverDestino;
-      document.getElementById('btnVolverTxt').textContent = etiqueta;
     }
     if (perfR.ok) {
       const p = (await perfR.json()) || {};

@@ -157,9 +157,9 @@ h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; }
 .bento-tile:hover{transform:translateY(-4px);box-shadow:var(--sh-lg);}
 a.bento-tile{text-decoration:none;color:inherit;cursor:pointer;}
 /* Variantes de fondo */
-.bento-tile.is-accent{background:linear-gradient(135deg,var(--primary),var(--primary-hover));color:#fff;border-color:transparent;}
-.bento-tile.is-violet{background:linear-gradient(135deg,var(--secondary),#5b34a8);color:#fff;border-color:transparent;}
-.bento-tile.is-green {background:linear-gradient(135deg,var(--accent),var(--success-ink));color:#fff;border-color:transparent;}
+.bento-tile.is-accent{background:var(--primary);color:#fff;border-color:transparent;}
+.bento-tile.is-violet{background:var(--secondary);color:#fff;border-color:transparent;}
+.bento-tile.is-green {background:var(--accent);color:#fff;border-color:transparent;}
 .bento-tile.is-dark  {background:var(--sidebar);color:#fff;border-color:transparent;}
 .bento-tile.is-soft  {background:var(--surface-2);}
 /* Spans */
@@ -204,6 +204,46 @@ a.bento-tile{text-decoration:none;color:inherit;cursor:pointer;}
 .ss-opt mark{background:#FEF9C3;border-radius:2px;padding:0 1px;}
 .ss-empty{padding:9px 11px;font-size:inherit;color:var(--muted,#94A3B8);}
 .ss-disp:disabled{opacity:.6;cursor:not-allowed;background:#F1F5F9;}
+
+/* ════════════════════════════════════════════════════════════════
+   BOTONES DE NAVEGACIÓN UNIFICADOS — "Inicio" y "Cerrar sesión".
+   Mismo look en todas las páginas. Pensados para barras/headers
+   oscuros (texto claro translúcido); el logout va en rojo tenue.
+   Uso: <a class="ui-home" href="/dashboard"><svg…/>Inicio</a>
+        <button class="ui-logout" onclick="cerrarSesion()"><svg…/>Cerrar sesión</button>
+   ════════════════════════════════════════════════════════════════ */
+.ui-home, .ui-logout {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: var(--r-sm);
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  line-height: 1; white-space: nowrap; cursor: pointer;
+  text-decoration: none; transition: background .15s, color .15s, border-color .15s;
+}
+.ui-home svg, .ui-logout svg { width: 16px; height: 16px; flex: none; }
+
+.ui-home {
+  color: rgba(255,255,255,.72);
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.18);
+}
+.ui-home:hover { background: rgba(255,255,255,.16); color: #fff; border-color: rgba(255,255,255,.32); }
+
+.ui-logout {
+  color: #FCA5A5;
+  background: rgba(220,38,38,.15);
+  border: 1px solid rgba(220,38,38,.28);
+}
+.ui-logout:hover { background: rgba(220,38,38,.32); color: #fff; }
+
+/* Variante para fondos CLAROS (topbars blancos) — añade .on-light */
+.ui-home.on-light {
+  color: var(--muted); background: var(--surface-2); border-color: var(--border);
+}
+.ui-home.on-light:hover { color: var(--primary); background: var(--info-soft); border-color: var(--primary); }
+.ui-logout.on-light {
+  color: var(--error-ink); background: var(--error-soft); border-color: rgba(220,38,38,.22);
+}
+.ui-logout.on-light:hover { color: #fff; background: var(--error); border-color: var(--error); }
 
 /* ── Accesibilidad: respeta reduce-motion (regla del design system) ─ */
 @media (prefers-reduced-motion: reduce) {

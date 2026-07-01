@@ -121,10 +121,12 @@ app.get('/api/proyectos/:slug', authMiddleware, (req, res) => {
   res.json(p);
 });
 
-app.post('/api/proyectos', authMiddleware, requireRol('superadmin'), async (req, res) => {
+app.post('/api/proyectos', authMiddleware, requireRol('superadmin', 'admin_empresa'), async (req, res) => {
   try {
-    const { nombre, slug, template, color, sitios, tecnicos, supervisores, logo, empresa_id } = req.body;
+    const { nombre, slug, template, color, sitios, tecnicos, supervisores, logo, tipo, categoria } = req.body;
     if (!nombre || !slug || !template) return res.status(400).json({ error: 'nombre, slug y template requeridos' });
+    // admin_empresa solo puede crear en SU empresa; superadmin elige la empresa del cuerpo.
+    const empresa_id = req.user.rol === 'superadmin' ? req.body.empresa_id : req.user.empresa_id;
     if (!empresa_id) return res.status(400).json({ error: 'Debes seleccionar la empresa del proyecto' });
     // Valida la empresa contra la BD (no se confía en el nombre que envía el cliente)
     const empresa = (await gestionDb.empresasList()).find(e => e.id === empresa_id);
@@ -150,6 +152,18 @@ app.post('/api/proyectos', authMiddleware, requireRol('superadmin'), async (req,
     saveProyectos(proyectos);
     const regFile = path.join(__dirname, `registro_${proyecto.slug}.json`);
     if (!fs.existsSync(regFile)) fs.writeFileSync(regFile, '[]');
+    // Registrar también el proyecto en el sistema relacional (el que ven el panel
+    // Admin, el dashboard y el panel del técnico). No rompe la creación si falla.
+    try {
+      const TIPOS = ['correctivo', 'preventivo', 'temporal'];
+      const CATS = ['clima', 'energia', 'obras_civiles'];
+      await gestionDb.proyectoInsert({
+        empresa_id, nombre, slug: proyecto.slug, estado: 'activo', fecha_inicio: null,
+        logo: logoPath, template, color: proyecto.color,
+        tipo: TIPOS.includes(tipo) ? tipo : 'correctivo',
+        categoria: CATS.includes(categoria) ? categoria : 'clima'
+      });
+    } catch (e) { console.error('proyecto relacional:', e.message); }
     res.json({ ok:true, proyecto });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });

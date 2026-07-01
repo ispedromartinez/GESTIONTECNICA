@@ -191,7 +191,8 @@ const db = {
 
   async informeUpdateEstado(id, estado) {
     if (supa) {
-      const { error } = await supa.from('informes').update({ estado }).eq('id', id);
+      const { error } = await supa.from('informes')
+        .update({ estado, actualizado_en: new Date().toISOString() }).eq('id', id);
       if (error) throw new Error(error.message);
       return;
     }
@@ -202,7 +203,7 @@ const db = {
   async informeSetDocumento(id, doc_url, doc_nombre) {
     if (supa) {
       const { error } = await supa.from('informes')
-        .update({ estado: 'enviado', doc_url, doc_nombre }).eq('id', id);
+        .update({ estado: 'enviado', doc_url, doc_nombre, actualizado_en: new Date().toISOString() }).eq('id', id);
       if (error) throw new Error(error.message);
       return;
     }

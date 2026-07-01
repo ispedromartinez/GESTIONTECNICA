@@ -223,7 +223,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .finput{
   width:100%;border:1.5px solid var(--border);border-radius:8px;
   padding:9px 13px;font-size:13.5px;color:var(--text);
-  background:#fff;font-family:'Poppins',inherit;transition:.15s;-webkit-appearance:none;
+  background:#fff;font-family:var(--font-body);transition:.15s;-webkit-appearance:none;
 }
 .finput:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,115,234,.12);}
 .finput.filled{border-color:var(--green);background:#F0FDF8;}
@@ -279,8 +279,8 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
   display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden;
 }
 .proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-bento) var(--r-bento) 0 0;}
-.proj-card.tigo::before{background:linear-gradient(90deg,#579BFC,#0073EA);}
-.proj-card.wom::before{background:linear-gradient(90deg,#A25DDC,#784BD1);}
+.proj-card.tigo::before{background:#0073EA;}
+.proj-card.wom::before{background:#784BD1;}
 .proj-card:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);border-color:transparent;}
 .proj-logo{height:52px;display:flex;align-items:center;}
 .proj-logo img{max-height:50px;max-width:150px;object-fit:contain;}
@@ -348,9 +348,9 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 }
 .pcard:hover{transform:translateY(-5px);box-shadow:0 14px 44px rgba(0,0,0,.14),0 4px 14px rgba(0,0,0,.07);border-color:transparent;}
 .pcard:active{transform:translateY(-1px);}
-.pcard-top{width:100%;height:6px;border-radius:14px 14px 0 0;flex-shrink:0;background:linear-gradient(90deg,#059669,#00897B);}
-.pcard.tigo .pcard-top{background:linear-gradient(90deg,#0073EA,#0073EA);}
-.pcard.wom  .pcard-top{background:linear-gradient(90deg,#784BD1,#784BD1);}
+.pcard-top{width:100%;height:6px;border-radius:14px 14px 0 0;flex-shrink:0;background:#059669;}
+.pcard.tigo .pcard-top{background:#0073EA;}
+.pcard.wom  .pcard-top{background:#784BD1;}
 .pcard-inner{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 28px 0;width:100%;}
 .pcard-logo{height:80px;display:flex;align-items:center;justify-content:center;}
 .pcard-logo img{max-height:80px;max-width:200px;object-fit:contain;}
@@ -437,10 +437,9 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Mi Perfil
     </a>
-    <a class="nav-item" onclick="cerrarSesion()" style="cursor:pointer;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Cerrar sesión
-    </a>
+    <div style="padding:8px 10px 0;">
+      <button class="ui-logout" onclick="cerrarSesion()" style="width:100%;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Cerrar sesión</button>
+    </div>
   </div>
 
 </aside>
@@ -466,7 +465,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
   <!-- ═══ PÁGINA: HISTORIAL DE ACTIVIDADES ═══ -->
   <div class="page" id="page-informes">
-    <div style="max-width:880px;margin:0 auto;">
+    <div style="max-width:960px;">
       <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Historial de actividades</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Registro de tus informes y su estado.</p>
 
@@ -484,7 +483,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
   <!-- ═══ PÁGINA: TAREAS PENDIENTES (correctivos + preventivos) ═══ -->
   <div class="page active" id="page-tareas">
-    <div style="max-width:880px;margin:0 auto;">
+    <div style="max-width:960px;">
       <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Tareas pendientes</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Tus tareas asignadas, divididas por tipo.</p>
 
@@ -516,7 +515,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
   <!-- ═══ PÁGINA: PROYECTOS PREVENTIVO ═══ -->
   <div class="page" id="page-preventivo">
-    <div style="max-width:760px;margin:0 auto;">
+    <div style="max-width:960px;">
       <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Proyectos — Preventivo</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Mantenimiento preventivo programado.</p>
       <div class="pcards" id="gridPrev">
@@ -527,7 +526,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
   <!-- ═══ PÁGINA: PROYECTOS CORRECTIVO ═══ -->
   <div class="page" id="page-correctivo">
-    <div style="max-width:760px;margin:0 auto;">
+    <div style="max-width:960px;">
       <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Proyectos — Correctivo</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Selecciona el proyecto para registrar o ver informes correctivos.</p>
       <div class="pcards" id="gridCorr">
@@ -644,10 +643,12 @@ function renderProyectos(list) {
     slug:     p.slug || '',
     estado:   p.estado || 'activo',
     template: (p.template || '').toLowerCase(),
+    tipo:     (p.tipo || '').toLowerCase(),
   }));
-  // Sin un campo dedicado: 'preventivo' por template; el resto, correctivo (los ya creados).
-  fillCategoria('Prev', datos.filter(d => d.template === 'preventivo'));
-  fillCategoria('Corr', datos.filter(d => d.template !== 'preventivo'));
+  // El campo `tipo` manda; si falta (proyectos legacy) se infiere por template/slug.
+  const esPrev = d => d.tipo === 'preventivo' || (!d.tipo && (d.template === 'preventivo' || d.slug === 'preventivo'));
+  fillCategoria('Prev', datos.filter(esPrev));
+  fillCategoria('Corr', datos.filter(d => !esPrev(d)));
 }
 
 function fillCategoria(key, datos) {

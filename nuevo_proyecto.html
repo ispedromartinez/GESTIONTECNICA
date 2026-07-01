@@ -13,7 +13,7 @@ body{font-family:var(--font-body);background:#F0F2F8;color:#0F172A;min-height:10
 
 header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
 .h-brand{display:flex;align-items:center;gap:10px;}
-.h-gt{width:32px;height:32px;background:linear-gradient(135deg,#0073EA,#784BD1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;}
+.h-gt{width:32px;height:32px;background:#0073EA;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;}
 .h-title{font-size:14px;font-weight:700;color:#fff;}
 .h-back{color:rgba(255,255,255,.55);font-size:12px;font-weight:500;text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:6px 14px;border-radius:7px;transition:.15s;}
 .h-back:hover{background:rgba(255,255,255,.1);color:#fff;}
@@ -70,8 +70,8 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 .tpl-card.sel .tpl-check{display:flex;}
 .tpl-preview{margin-top:12px;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;background:#F8F9FC;}
 .tpl-preview-bar{height:4px;}
-.tpl-preview-bar.blue{background:linear-gradient(90deg,#0073EA,#0073EA);}
-.tpl-preview-bar.purple{background:linear-gradient(90deg,#784BD1,#784BD1);}
+.tpl-preview-bar.blue{background:#0073EA;}
+.tpl-preview-bar.purple{background:#784BD1;}
 .tpl-preview-rows{padding:10px 12px;display:flex;flex-direction:column;gap:5px;}
 .tpl-row{height:8px;border-radius:4px;background:#E2E8F0;}
 .tpl-row.w80{width:80%;}
@@ -95,8 +95,8 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 .fmt-modal-body{padding:18px;overflow-y:auto;}
 .fmt-head{border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;margin-bottom:16px;}
 .fmt-bar{height:5px;}
-.fmt-bar.blue{background:linear-gradient(90deg,#0073EA,#0073EA);}
-.fmt-bar.purple{background:linear-gradient(90deg,#784BD1,#784BD1);}
+.fmt-bar.blue{background:#0073EA;}
+.fmt-bar.purple{background:#784BD1;}
 .fmt-head-in{padding:13px 16px;}
 .fmt-sec{margin-bottom:14px;}
 .fmt-sec:last-child{margin-bottom:0;}
@@ -165,7 +165,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 .btn-next{background:#0073EA;color:#fff;border:none;border-radius:9px;padding:11px 28px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px;}
 .btn-next:hover{background:#005bb5;}
 .btn-next:disabled{opacity:.5;cursor:not-allowed;}
-.btn-crear{background:linear-gradient(135deg,#0073EA,#784BD1);color:#fff;border:none;border-radius:9px;padding:13px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn-crear{background:#0073EA;color:#fff;border:none;border-radius:9px;padding:13px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
 .btn-crear:hover{opacity:.88;}
 
 /* ERROR */
@@ -188,7 +188,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 </head>
 <body>
 
-<!-- Guard superadmin -->
+<!-- Guard: superadmin y admin_empresa pueden crear proyectos -->
 <script>
 (function(){
   const t = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -196,7 +196,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
   fetch('/auth/me', { headers: { Authorization: 'Bearer ' + t } })
     .then(r => r.json())
     .then(d => {
-      if (d.usuario?.rol !== 'superadmin') { window.location.replace('/dashboard'); throw ''; }
+      if (!['superadmin', 'admin_empresa'].includes(d.usuario?.rol)) { window.location.replace('/dashboard'); throw ''; }
     })
     .catch(() => window.location.replace('/login'));
 })();
@@ -204,7 +204,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 
 <header>
   <div style="display:flex;align-items:center;gap:14px;">
-    <a href="/dashboard" class="h-back">← Inicio</a>
+    <a href="/dashboard" class="ui-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</a>
     <div class="h-brand">
       <div class="h-gt">GT</div>
       <span class="h-title">Nuevo Proyecto</span>
@@ -240,6 +240,23 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
     <div class="field">
       <label>Nombre del proyecto *</label>
       <input type="text" id="pNombre" placeholder="Ej: Claro, Entel, Movistar..." oninput="autoSlug()">
+    </div>
+    <div class="field">
+      <label>Rama del proyecto *</label>
+      <select id="pTipo">
+        <option value="correctivo">Correctivo</option>
+        <option value="preventivo">Preventivo</option>
+        <option value="temporal">Temporal</option>
+      </select>
+      <div class="field-hint">Define cómo se agrupan sus informes y tareas (correctivo / preventivo).</div>
+    </div>
+    <div class="field">
+      <label>Categoría</label>
+      <select id="pCategoria">
+        <option value="clima">Clima</option>
+        <option value="energia">Energía</option>
+        <option value="obras_civiles">Obras civiles</option>
+      </select>
     </div>
     <div class="field">
       <label>Identificador (slug) *</label>
@@ -468,6 +485,7 @@ const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
 let state = {
   empresa_id:'', empresa_nombre:'',
   nombre:'', slug:'', color:'#0073EA', logo: null,
+  tipo:'correctivo', categoria:'clima',
   template: null, sitios: [], supervisores: [], tecnicos: []
 };
 let sitiosCSV = []; // sitios importados desde archivo
@@ -506,6 +524,8 @@ function validarPaso(n) {
     state.empresa_id = emp.value;
     state.empresa_nombre = emp.options[emp.selectedIndex].text;
     state.nombre = nom; state.slug = sl;
+    state.tipo = document.getElementById('pTipo').value;
+    state.categoria = document.getElementById('pCategoria').value;
     state.color  = document.getElementById('pColor').value;
   }
   if (n===3) {
@@ -730,6 +750,7 @@ async function crearProyecto() {
     const payload = {
       empresa_id: state.empresa_id,
       nombre: state.nombre, slug: state.slug, template: state.template,
+      tipo: state.tipo, categoria: state.categoria,
       color: state.color, logo: state.logo,
       sitios: state.sitios, supervisores: state.supervisores, tecnicos: state.tecnicos
     };
@@ -759,15 +780,24 @@ function toast(msg, type='ok') {
 async function cargarEmpresas() {
   const sel = document.getElementById('pEmpresa');
   try {
-    const r = await fetch('/auth/empresas', { headers: authH() });
+    const r = await fetch('/api/empresas', { headers: authH() });
     if (!r.ok) throw new Error('No se pudieron cargar las empresas');
     const empresas = await r.json();
     if (!empresas.length) {
       sel.innerHTML = '<option value="">No hay empresas — crea una primero</option>';
       return;
     }
-    sel.innerHTML = '<option value="">— Selecciona empresa —</option>' +
-      empresas.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+    // admin_empresa solo ve su empresa → la preseleccionamos (sin placeholder).
+    if (empresas.length === 1) {
+      sel.innerHTML = `<option value="${empresas[0].id}">${empresas[0].nombre}</option>`;
+      sel.value = empresas[0].id;
+    } else {
+      sel.innerHTML = '<option value="">— Selecciona empresa —</option>' +
+        empresas.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+      // Preselección al venir desde el detalle de una empresa (?empresa=<id>)
+      const pre = new URLSearchParams(location.search).get('empresa');
+      if (pre && empresas.some(e => e.id === pre)) sel.value = pre;
+    }
   } catch(e) {
     sel.innerHTML = '<option value="">Error al cargar empresas</option>';
     showErr(e.message);

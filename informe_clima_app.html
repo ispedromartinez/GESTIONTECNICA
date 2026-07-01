@@ -198,9 +198,8 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .act-perm:hover{background:#fee2e2;}
 
 /* ── NUEVO BANNER ── */
-.nuevo-banner{position:relative;overflow:hidden;background:linear-gradient(135deg,#EBF4FE 0%,#F0F8FF 100%);border:1px solid #cfe3fb;border-radius:14px;padding:30px 24px;margin-bottom:16px;text-align:center;box-shadow:0 1px 3px rgba(0,115,234,.06),0 10px 30px rgba(0,115,234,.08);}
-.nuevo-banner::before{content:'';position:absolute;width:200px;height:200px;border-radius:50%;top:-100px;right:-60px;background:radial-gradient(circle,rgba(0,115,234,.16),rgba(0,115,234,0) 70%);pointer-events:none;}
-.nb-badge{position:relative;z-index:1;width:54px;height:54px;border-radius:15px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,var(--blue),var(--blue-d));box-shadow:0 6px 16px rgba(0,115,234,.30);}
+.nuevo-banner{position:relative;overflow:hidden;background:#EBF4FE;border:1px solid #cfe3fb;border-radius:14px;padding:30px 24px;margin-bottom:16px;text-align:center;box-shadow:0 1px 3px rgba(0,115,234,.06),0 10px 30px rgba(0,115,234,.08);}
+.nb-badge{position:relative;z-index:1;width:54px;height:54px;border-radius:15px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--blue);box-shadow:0 6px 16px rgba(0,115,234,.30);}
 .nuevo-banner h2{position:relative;z-index:1;font-size:18px;font-weight:800;color:#0F2C52;margin-bottom:8px;}
 .nuevo-banner p{position:relative;z-index:1;font-size:13px;color:var(--muted);line-height:1.65;}
 .btn-nuevo-start{position:relative;z-index:1;width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:18px;box-shadow:0 4px 14px rgba(0,115,234,.25);transition:.2s;letter-spacing:.1px;font-family:inherit;}
@@ -335,7 +334,7 @@ function cerrarSesion(){
     </div>
     <div class="hdr-badges">
       <span class="srv-dot" id="srvBadge" title="Servidor inactivo"></span>
-      <a href="/dashboard" id="btnHome" class="back-btn" title="Área de gestión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></a>
+      <a href="/dashboard" id="btnHome" class="ui-home" title="Área de gestión"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</a>
     </div>
   </div>
 </header>

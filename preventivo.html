@@ -11,7 +11,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:var(--font-body);}
 body{background:#F1F5F9;min-height:100vh;}
-header{background:linear-gradient(135deg,#1C1F3B 0%,#1C1F3B 100%);padding:13px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,.18);}
+header{background:#1C1F3B;padding:13px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,.18);}
 header h1{color:#fff;font-size:15px;font-weight:700;letter-spacing:.02em;}
 header a{color:rgba(255,255,255,.55);font-size:12px;text-decoration:none;transition:color .2s;}
 header a:hover{color:#fff;}
@@ -88,9 +88,13 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 .modal h2{display:none;}
 
 /* top bar */
-.modal-topbar{padding:14px 20px;background:linear-gradient(135deg,#1C1F3B 0%,#0073EA 100%);border-radius:21px 21px 0 0;display:flex;align-items:center;justify-content:space-between;}
-.modal-topbar-title{font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55);}
-.modal-topbar .guardar-salir{background:linear-gradient(135deg,#3B82F6,#1d4ed8);color:#fff;border:none;border-radius:100px;padding:7px 18px;font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.02em;box-shadow:0 2px 8px rgba(59,130,246,.4);transition:transform .15s,box-shadow .15s;display:flex;align-items:center;gap:6px;}
+.modal-topbar{padding:16px 18px 16px 20px;background:#fff;border-bottom:1px solid #EEF1F6;border-radius:21px 21px 0 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-topbar-left{display:flex;align-items:center;gap:12px;}
+.modal-topbar-ico{flex:none;width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;background:#EFF6FF;}
+.modal-topbar-title{font-size:15px;font-weight:800;letter-spacing:-.01em;text-transform:none;color:#0F172A;}
+.modal-x{flex:none;width:30px;height:30px;border:none;border-radius:8px;background:transparent;color:#64748B;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
+.modal-x:hover{background:#F1F5F9;color:#0F172A;}
+.modal-topbar .guardar-salir{background:#0073EA;color:#fff;border:none;border-radius:100px;padding:7px 18px;font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.02em;box-shadow:0 2px 8px rgba(59,130,246,.4);transition:transform .15s,box-shadow .15s;display:flex;align-items:center;gap:6px;}
 .modal-topbar .guardar-salir:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(59,130,246,.5);}
 .modal-topbar .guardar-salir:active{transform:translateY(0);}
 
@@ -132,8 +136,8 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 .modal-actions button:active{transform:scale(.97);}
 .modal-actions .cancelar{background:#F1F5F9;color:#475569;}
 .modal-actions .cancelar:hover{background:#E2E8F0;}
-.modal-actions .guardar{background:linear-gradient(135deg,#3B82F6,#1d4ed8);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.3);}
-.modal-actions .guardar:hover{box-shadow:0 4px 14px rgba(59,130,246,.45);}
+.modal-actions .guardar{background:#059669;color:#fff;box-shadow:0 2px 8px rgba(5,150,105,.28);}
+.modal-actions .guardar:hover{background:#047857;box-shadow:0 4px 14px rgba(5,150,105,.4);}
 
 /* drop zone */
 .drop-zone{border:1.5px dashed #CBD5E1;border-radius:12px;padding:18px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-top:8px;}
@@ -146,7 +150,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 
 <header>
   <h1>Mantenimiento Preventivo</h1>
-  <a href="/dashboard">← Volver al panel</a>
+  <a href="/dashboard" class="ui-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</a>
 </header>
 
 <main>
@@ -185,8 +189,8 @@ tbody tr.destacada:hover{background:#FFF1C8;}
     <div class="modal-shell" style="width:440px;max-width:94vw;">
     <div class="modal">
       <div class="modal-topbar">
-        <span class="modal-topbar-title">Importar tareas</span>
-        <button class="guardar-salir" style="background:rgba(255,255,255,.12);box-shadow:none;font-size:11px;padding:5px 14px;" id="btnCancelarImportar">✕ Cerrar</button>
+        <div class="modal-topbar-left"><span class="modal-topbar-ico">📥</span><span class="modal-topbar-title">Importar tareas</span></div>
+        <button class="modal-x" id="btnCancelarImportar" title="Cerrar" aria-label="Cerrar">✕</button>
       </div>
 
       <!-- Estado: form -->
@@ -212,7 +216,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
         <div style="font-size:14px;font-weight:700;color:#0F172A;margin-bottom:6px;">Importando tareas...</div>
         <div style="font-size:12px;color:#64748B;" id="importarLoadingFile"></div>
         <div style="margin-top:18px;height:4px;background:#E2E8F0;border-radius:4px;overflow:hidden;">
-          <div style="height:100%;background:linear-gradient(90deg,#0073EA,#3B82F6);border-radius:4px;animation:importProgress 1.8s ease-in-out infinite;width:60%"></div>
+          <div style="height:100%;background:#0073EA;border-radius:4px;animation:importProgress 1.8s ease-in-out infinite;width:60%"></div>
         </div>
       </div>
 
@@ -281,8 +285,8 @@ tbody tr.destacada:hover{background:#FFF1C8;}
   <div class="modal-shell">
   <div class="modal">
     <div class="modal-topbar">
-      <span class="modal-topbar-title">Tarea</span>
-      <button class="guardar-salir" id="btnGuardarSalir">💾 Guardar y salir</button>
+      <div class="modal-topbar-left"><span class="modal-topbar-ico">🗓️</span><span class="modal-topbar-title">Tarea</span></div>
+      <button class="modal-x" id="btnCerrarTarea" title="Cerrar" aria-label="Cerrar">✕</button>
     </div>
     <div class="modal-tabs">
       <button class="tab-btn active" data-tab="detalles">Detalles</button>
@@ -316,7 +320,11 @@ tbody tr.destacada:hover{background:#FFF1C8;}
         <option>Cerrado</option>
       </select>
       <label>Sitio</label>
-      <input type="text" id="fSitio">
+      <div style="position:relative;">
+        <input type="text" id="fSitioBuscar" placeholder="Buscar sitio por nombre o dirección..." autocomplete="off">
+        <input type="hidden" id="fSitio">
+        <div id="fSitioDD" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #E2E8F0;border-radius:6px;max-height:240px;overflow-y:auto;z-index:30;box-shadow:0 4px 12px rgba(0,0,0,.1);"></div>
+      </div>
     </div>
 
     <div class="tab-panel" data-panel="personalizados" hidden>
@@ -389,6 +397,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 
     <div class="modal-actions">
       <button class="cancelar" id="btnCancelar">Cancelar</button>
+      <button class="guardar" id="btnGuardarSalir">Guardar</button>
     </div>
   </div>
   </div><!-- /modal-shell -->
@@ -525,7 +534,35 @@ function seleccionarSitioPreventivo(nombre){
   document.getElementById('fCriticidad').value = sitio ? sitio.criticidad : '';
   document.getElementById('fCategoriaSitio').value = sitio ? sitio.categoria : '';
   document.getElementById('sitioDD').style.display = 'none';
+  // Reflejar también en el buscador del campo "Sitio" (tab Detalles)
+  const sb = document.getElementById('fSitioBuscar'); if (sb) sb.value = nombre;
+  const sdd = document.getElementById('fSitioDD'); if (sdd) sdd.style.display = 'none';
 }
+// Buscador desplegable del campo "Sitio": lista sitios con su dirección.
+function filtrarSitiosDetalle(q){
+  const dd = document.getElementById('fSitioDD');
+  document.getElementById('fSitio').value = q;   // conserva lo tecleado (texto libre)
+  const nq = (q || '').toLowerCase();
+  const matches = (nq
+    ? SITIOS_PREVENTIVO.filter(s => s.nombre.toLowerCase().includes(nq) || (s.calle || '').toLowerCase().includes(nq))
+    : SITIOS_PREVENTIVO).slice(0, 30);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map(s =>
+    `<div class="sitio-opt" data-nombre="${s.nombre.replace(/"/g,'&quot;')}" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #F0F2F8;">
+      <div style="font-weight:600;font-size:13px;color:#0F172A;">${s.nombre}</div>
+      ${s.calle ? `<div style="font-size:11.5px;color:#64748B;margin-top:1px;">${s.calle}${s.ciudad ? ' · ' + s.ciudad : ''}</div>` : ''}
+    </div>`
+  ).join('');
+  dd.querySelectorAll('.sitio-opt').forEach(el => {
+    el.addEventListener('mousedown', e => { e.preventDefault(); seleccionarSitioPreventivo(el.dataset.nombre); });
+  });
+  dd.style.display = 'block';
+}
+document.getElementById('fSitioBuscar').addEventListener('input', e => filtrarSitiosDetalle(e.target.value));
+document.getElementById('fSitioBuscar').addEventListener('focus', e => filtrarSitiosDetalle(e.target.value));
+document.getElementById('fSitioBuscar').addEventListener('blur', () => {
+  setTimeout(() => { document.getElementById('fSitioDD').style.display = 'none'; }, 150);
+});
 function filtrarSitios(q){
   const dd = document.getElementById('sitioDD');
   document.getElementById('fNombreCliente').value = q;
@@ -683,7 +720,8 @@ function abrirModal(tarea){
   document.getElementById('fFechaInicio').value = tarea ? tarea.fechaInicio : isoFecha(semanaActual);
   document.getElementById('fFechaVencimiento').value = tarea ? tarea.fechaVencimiento : '';
   document.getElementById('fEstado').value = tarea ? tarea.estado : 'Nuevo';
-  document.getElementById('fSitio').value = tarea ? tarea.sitio : '';
+  document.getElementById('fSitio').value = tarea ? (tarea.sitio || '') : '';
+  document.getElementById('fSitioBuscar').value = tarea ? (tarea.sitio || '') : '';
   document.getElementById('fNombreCliente').value = tarea ? (tarea.nombreCliente || '') : '';
   document.getElementById('fNombreClienteInput').value = tarea ? (tarea.nombreCliente || '') : '';
   document.getElementById('fDireccion').value = tarea ? (tarea.direccion || '') : '';
@@ -811,6 +849,7 @@ document.getElementById('btnEditar').addEventListener('click', () => {
   if (t) abrirModal(t);
 });
 document.getElementById('btnCancelar').addEventListener('click', cerrarModal);
+document.getElementById('btnCerrarTarea').addEventListener('click', cerrarModal);
 document.getElementById('btnGuardarSalir').addEventListener('click', guardarTarea);
 
 const btnHerramientas = document.getElementById('btnHerramientas');

@@ -107,6 +107,11 @@ db.exec(`
 
 // ── Migraciones idempotentes (ADD COLUMN lanza error si ya existe) ──
 try { db.exec("ALTER TABLE empresas ADD COLUMN rut_empresa TEXT"); } catch {}
+// Datos comerciales de la empresa (opcionales)
+try { db.exec("ALTER TABLE empresas ADD COLUMN nombre_fantasia TEXT"); } catch {}
+try { db.exec("ALTER TABLE empresas ADD COLUMN contacto TEXT"); } catch {}
+try { db.exec("ALTER TABLE empresas ADD COLUMN correo TEXT"); } catch {}
+try { db.exec("ALTER TABLE empresas ADD COLUMN direccion TEXT"); } catch {}
 // Vínculo técnico → supervisor (carga masiva de usuarios)
 try { db.exec("ALTER TABLE usuarios ADD COLUMN supervisor_id TEXT"); } catch {}
 // Rama del proyecto: 'correctivo' | 'preventivo' (los informes heredan la rama de su proyecto)
@@ -120,6 +125,8 @@ try { db.exec("ALTER TABLE informes ADD COLUMN lpu TEXT"); } catch {}
 // Se rellena cuando el técnico realmente genera el documento desde el formulario.
 try { db.exec("ALTER TABLE informes ADD COLUMN doc_url TEXT"); } catch {}
 try { db.exec("ALTER TABLE informes ADD COLUMN doc_nombre TEXT"); } catch {}
+// Marca de la última actualización del informe (cambio de estado / documento generado).
+try { db.exec("ALTER TABLE informes ADD COLUMN actualizado_en TEXT"); } catch {}
 
 function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -180,13 +187,14 @@ const local = {
   empresas: {
     insert(e) {
       const id = uuid();
-      db.prepare('INSERT INTO empresas (id, nombre, slug, rut_empresa) VALUES (?, ?, ?, ?)')
-        .run(id, e.nombre, e.slug, e.rut_empresa || null);
+      db.prepare('INSERT INTO empresas (id, nombre, slug, rut_empresa, nombre_fantasia, contacto, correo, direccion) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(id, e.nombre, e.slug, e.rut_empresa || null,
+             e.nombre_fantasia || null, e.contacto || null, e.correo || null, e.direccion || null);
       return db.prepare('SELECT * FROM empresas WHERE id = ?').get(id);
     },
-    // Actualiza solo los campos provistos (nombre, slug, rut_empresa, activa)
+    // Actualiza solo los campos provistos
     update(id, f) {
-      const cols = ['nombre','slug','rut_empresa','activa'];
+      const cols = ['nombre','slug','rut_empresa','activa','nombre_fantasia','contacto','correo','direccion'];
       const sets = [], vals = [];
       cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(f[k]); } });
       if (sets.length) { vals.push(id); db.prepare('UPDATE empresas SET '+sets.join(', ')+' WHERE id = ?').run(...vals); }
@@ -356,7 +364,7 @@ const local = {
     },
     listByUsuario(usuario_id) {
       return db.prepare(`
-        SELECT a.*, p.nombre AS proyecto_nombre, p.slug, p.estado, p.color, p.logo, p.template
+        SELECT a.*, p.nombre AS proyecto_nombre, p.slug, p.estado, p.color, p.logo, p.template, p.tipo
         FROM asignaciones a JOIN proyectos p ON p.id = a.proyecto_id
         WHERE a.usuario_id = ?
       `).all(usuario_id);
@@ -382,8 +390,8 @@ const local = {
     insert(i) {
       const id = uuid();
       db.prepare(`
-        INSERT INTO informes (id, proyecto_id, tecnico_id, supervisor_id, titulo, contenido, estado, sitio, lpu)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO informes (id, proyecto_id, tecnico_id, supervisor_id, titulo, contenido, estado, sitio, lpu, actualizado_en)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `).run(id, i.proyecto_id, i.tecnico_id || null, i.supervisor_id || null,
              i.titulo, i.contenido || null, i.estado || 'borrador',
              i.sitio || null, i.lpu || null);
@@ -433,11 +441,11 @@ const local = {
       return db.prepare(base).all();
     },
     updateEstado(id, estado) {
-      db.prepare('UPDATE informes SET estado = ? WHERE id = ?').run(estado, id);
+      db.prepare("UPDATE informes SET estado = ?, actualizado_en = datetime('now') WHERE id = ?").run(estado, id);
     },
     // El documento real fue generado: pasa a 'enviado' y guarda el enlace.
     setDocumento(id, doc_url, doc_nombre) {
-      db.prepare("UPDATE informes SET estado = 'enviado', doc_url = ?, doc_nombre = ? WHERE id = ?")
+      db.prepare("UPDATE informes SET estado = 'enviado', doc_url = ?, doc_nombre = ?, actualizado_en = datetime('now') WHERE id = ?")
         .run(doc_url, doc_nombre, id);
     },
     delete(id) {

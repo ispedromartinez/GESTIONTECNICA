@@ -307,7 +307,16 @@ router.delete('/proyectos/:id/asignaciones/:usuario_id', cargarProyecto, require
 // GET /api/gestion/proyectos/:id/informes — REGLA 3: siempre por proyecto
 router.get('/proyectos/:id/informes', cargarProyecto, async (req, res) => {
   try {
-    res.json(await db.informesByProyecto(req.proyecto.id));
+    const informes = await db.informesByProyecto(req.proyecto.id);
+    // Enriquecer con el nombre del técnico/supervisor responsable (id → nombre).
+    const usuarios = await db.usuariosList(req.proyecto.empresa_id);
+    const nombrePorId = {};
+    (usuarios || []).forEach(u => { nombrePorId[u.id] = u.nombre; });
+    res.json((informes || []).map(i => ({
+      ...i,
+      tecnico_nombre: nombrePorId[i.tecnico_id] || null,
+      supervisor_nombre: nombrePorId[i.supervisor_id] || null
+    })));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

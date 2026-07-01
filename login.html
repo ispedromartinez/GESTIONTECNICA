@@ -11,7 +11,7 @@
 <script src="/searchable-select.js" defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Poppins',system-ui,sans-serif;min-height:100vh;display:flex;background:#F6F7FB;}
+body{font-family:var(--font-body);min-height:100vh;display:flex;background:#F6F7FB;}
 
 /* ══ PANEL IZQUIERDO ══ */
 .left{
@@ -42,7 +42,7 @@ body{font-family:'Poppins',system-ui,sans-serif;min-height:100vh;display:flex;ba
 .field input{
   width:100%;padding:12px 42px 12px 14px;
   border:1.5px solid #DDE1EC;border-radius:8px;
-  font-family:'Poppins',sans-serif;font-size:14px;color:#1C1F3B;
+  font-family:var(--font-body);font-size:14px;color:#1C1F3B;
   background:#FAFBFD;outline:none;
   transition:border-color .18s,box-shadow .18s;
 }
@@ -87,9 +87,9 @@ body{font-family:'Poppins',system-ui,sans-serif;min-height:100vh;display:flex;ba
 
 .btn-login{
   width:100%;padding:13px;
-  background:linear-gradient(90deg,#0073EA,#1565C0);
+  background:#0073EA;
   color:#fff;border:none;border-radius:8px;
-  font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;
+  font-family:var(--font-body);font-size:14px;font-weight:600;
   cursor:pointer;letter-spacing:.2px;
   transition:opacity .18s,transform .12s,box-shadow .18s;
   box-shadow:0 4px 16px rgba(0,115,234,.3);
@@ -131,7 +131,7 @@ body{font-family:'Poppins',system-ui,sans-serif;min-height:100vh;display:flex;ba
 /* ══ PANEL DERECHO ══ */
 .right{
   flex:1;
-  background:linear-gradient(135deg,#1C1F3B 0%,#2D3060 55%,#3B2070 100%);
+  background:#1C1F3B;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:60px 48px;
   position:relative;overflow:hidden;
@@ -160,8 +160,7 @@ body{font-family:'Poppins',system-ui,sans-serif;min-height:100vh;display:flex;ba
   line-height:1.22;letter-spacing:-.5px;margin-bottom:16px;
 }
 .right h2 span{
-  background:linear-gradient(90deg,#67B3FF,#A78BFA);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  color:#8FC0FF;
 }
 .right p{
   font-size:14px;color:rgba(255,255,255,.58);

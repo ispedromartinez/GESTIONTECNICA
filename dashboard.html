@@ -28,7 +28,7 @@ body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:10
   border-bottom:1px solid rgba(255,255,255,.07);
 }
 .sb-gt{
-  width:34px;height:34px;background:linear-gradient(135deg,#0073EA,#784BD1);
+  width:34px;height:34px;background:#0073EA;
   border-radius:9px;display:flex;align-items:center;justify-content:center;
   font-size:13px;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-.5px;
 }
@@ -38,6 +38,13 @@ body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:10
 .sb-nav{flex:1;padding:10px 8px;overflow-y:auto;}
 .sb-section{font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;
   letter-spacing:1.2px;padding:12px 10px 5px;}
+.sb-proy-empty{font-size:12px;color:rgba(255,255,255,.35);padding:6px 12px;}
+#sbProyList .sb-item{text-align:left;}
+.sb-proy-toggle .sb-proy-label{flex:1;text-align:left;}
+.sb-chevron{margin-left:auto;display:flex;align-items:center;opacity:.55;transition:transform .22s ease;}
+.sb-proy-toggle.open .sb-chevron{transform:rotate(90deg);}
+.sb-proy-group{overflow:hidden;max-height:0;transition:max-height .28s ease;}
+.sb-proy-group.open{max-height:70vh;overflow-y:auto;}
 .sb-item{
   display:flex;align-items:center;gap:10px;
   padding:9px 10px;border-radius:8px;cursor:pointer;
@@ -62,7 +69,7 @@ body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:10
   display:flex;align-items:center;gap:9px;
 }
 .sb-avatar{
-  width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0073EA,#784BD1);
+  width:32px;height:32px;border-radius:50%;background:#0073EA;
   display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;
 }
 .sb-user-info{flex:1;min-width:0;}
@@ -130,7 +137,6 @@ body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:10
 /* colored header strip → taller premium banner */
 .proj-top{width:100%;height:80px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;overflow:hidden;box-shadow:inset 0 -1px 0 rgba(0,0,0,.14);}
 /* capa de brillo + profundidad sobre el color sólido (sin tapar el logo, z-index:1) */
-.proj-top::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 90% at 50% -25%,rgba(255,255,255,.30),rgba(255,255,255,0) 62%),linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 48%,rgba(0,0,0,.12) 100%);}
 .proj-tigo .proj-top{background:#0073EA;}
 .proj-wom  .proj-top{background:#784BD1;}
 .proj-preventivo .proj-top{background:#059669;}
@@ -166,7 +172,7 @@ body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:10
   width:calc(100% - 44px);margin:14px 22px 0;
   padding:10px 20px;border-radius:100px;
   font-size:13px;font-weight:700;
-  font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+  font-family:var(--font-head);
   border:none;cursor:pointer;
   transition:transform .15s,box-shadow .15s;
   letter-spacing:.02em;
@@ -188,9 +194,9 @@ body{font-family:var(--font-body);background:#F1F5F9;color:#0F172A;min-height:10
 .stat-num{font-size:30px;font-weight:800;color:#0F172A;line-height:1;margin-bottom:4px;}
 .stat-label{font-size:12px;color:#64748B;font-weight:500;}
 .stat-bar{height:3px;border-radius:2px;margin-top:12px;}
-.bar-blue  {background:linear-gradient(90deg,#0073EA,#5aafff);}
-.bar-orange{background:linear-gradient(90deg,#FF8C00,#FFD060);}
-.bar-green {background:linear-gradient(90deg,#059669,#00E096);}
+.bar-blue  {background:#0073EA;}
+.bar-orange{background:#FF8C00;}
+.bar-green {background:#059669;}
 
 .section-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-md);border:1px solid var(--border);overflow:hidden;}
 .section-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid #F0F1F5;flex-wrap:wrap;gap:8px;}
@@ -239,7 +245,7 @@ tbody tr:hover{background:#F8FAFF;}
 /* VIEW TOGGLE */
 .view-toggle{display:none;background:#F0F2F8;border-radius:8px;padding:3px;gap:2px;}
 .view-toggle.visible{display:flex;}
-.vt-btn{padding:6px 15px;border-radius:6px;border:none;font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:#64748B;background:transparent;transition:.13s;white-space:nowrap;}
+.vt-btn{padding:6px 15px;border-radius:6px;border:none;font-family:var(--font-body);font-size:12px;font-weight:600;cursor:pointer;color:#64748B;background:transparent;transition:.13s;white-space:nowrap;}
 .vt-btn.active{background:#fff;color:#0F172A;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 
 /* OVERLAY mobile */
@@ -289,6 +295,7 @@ tbody tr:hover{background:#F8FAFF;}
 .ip-btn-prim{background:#059669;color:#fff;}
 .ip-btn-confirm{background:#0073EA;color:#fff;}
 .ip-btn-cancel{background:#F0F2F8;color:#475569;}
+.ip-btn-doc{background:#EFF6FF;color:#0073EA;border:1px solid #BFDBFE;}
 /* Modal */
 .ip-modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center;padding:20px;}
 .ip-modal-bg.open{display:flex;}
@@ -355,7 +362,7 @@ tbody tr:hover{background:#F8FAFF;}
     <div class="sb-section">Menú</div>
 
     <button class="sb-item active" id="nav-proyectos" onclick="showView('proyectos')">
-      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span> Proyectos
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> Inicio
     </button>
 
     <button class="sb-item" id="nav-informes" onclick="showView('informes')">
@@ -368,26 +375,23 @@ tbody tr:hover{background:#F8FAFF;}
     </button>
 
     <div class="sb-divider"></div>
-    <div class="sb-section">Proyectos</div>
-
-    <a class="sb-item" href="/tigo">
-      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></span> Nuevo – Tigo
-    </a>
-    <a class="sb-item" href="/wom">
-      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg></span> Nuevo – WOM
-    </a>
-    <a class="sb-item" href="/preventivo">
-      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Mantenimiento Preventivo
-    </a>
-    <a class="sb-item" id="nav-catalogo" href="/catalogo" style="display:none">
-      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span> Catálogo de sitios
-    </a>
+    <button class="sb-item sb-proy-toggle open" id="sbProyToggle" onclick="toggleProyectos()">
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+      <span class="sb-proy-label">Proyectos</span>
+      <span class="sb-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </button>
+    <div class="sb-proy-group open" id="sbProyGroup">
+      <div id="sbProyList"><div class="sb-proy-empty">Cargando proyectos…</div></div>
+    </div>
 
     <div class="sb-divider"></div>
 
     <button class="sb-item" id="nav-personal" onclick="window.location.href='/admin'" style="display:none">
-      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Personal
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span> Panel de control
     </button>
+    <a class="sb-item" id="nav-catalogo" href="/catalogo" style="display:none">
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span> Catálogo de sitios
+    </a>
 
     <button class="sb-item" id="nav-perfil" onclick="window.location.href='/perfil'" style="display:none">
       <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Mi Perfil
@@ -400,7 +404,9 @@ tbody tr:hover{background:#F8FAFF;}
       <div class="sb-user-name" id="sbUserName">Cargando...</div>
       <div class="sb-user-rol" id="sbUserRol">—</div>
     </div>
-    <button class="sb-logout" onclick="cerrarSesion()" title="Cerrar sesión"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+  </div>
+  <div style="padding:0 14px 14px;">
+    <button class="ui-logout" onclick="cerrarSesion()" title="Cerrar sesión" style="width:100%;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Cerrar sesión</button>
   </div>
 </aside>
 
@@ -499,12 +505,12 @@ tbody tr:hover{background:#F8FAFF;}
         <div class="bento" id="proyCustomGrid" style="margin-top:14px;"></div>
       </div>
 
-      <!-- Botón nuevo proyecto (solo superadmin) -->
+      <!-- Botón nuevo proyecto (superadmin y admin de empresa) -->
       <div id="wrapNuevoProyecto" style="display:none;margin-top:28px;max-width:300px;">
         <a href="/nuevo-proyecto" class="bento-tile is-soft" style="border-style:dashed;align-items:center;justify-content:center;text-align:center;min-height:150px;gap:6px;color:var(--muted);">
           <span style="font-size:30px;line-height:1;">＋</span>
           <span class="bento-title" style="color:var(--text);">Nuevo proyecto</span>
-          <span class="bento-desc">Solo superadmin</span>
+          <span class="bento-desc">Crear y asignar equipo</span>
         </a>
       </div>
 
@@ -741,12 +747,13 @@ async function init() {
     if (miRol === 'tecnico') {
       document.getElementById('cardTecnicos').style.display = 'none';
     }
-    if (miRol === 'superadmin') {
+    if (['superadmin', 'admin_empresa'].includes(miRol)) {
       document.getElementById('wrapNuevoProyecto').style.display = 'block';
     }
 
     // KPIs del hero + proyectos asignados/personalizados
     cargarHomeKpis();
+    renderSidebarProyectos();
     await cargarMisProyectos();
     await cargarProyectosCustom();
   } catch(e) { toast('Error de sesión: ' + e.message); }
@@ -847,7 +854,7 @@ async function cargarProyectosCustom() {
 }
 
 // ── Vistas ────────────────────────────────────────────────────────
-const viewTitles = { proyectos: 'Proyectos', informes: 'Panel de Control', informesproy: 'Informes' };
+const viewTitles = { proyectos: 'Inicio', informes: 'Panel de Control', informesproy: 'Informes' };
 let MIROL = '';
 
 function switchSubview(v) {
@@ -1138,8 +1145,6 @@ function irPag(p) {
 
 // ══════════ INFORMES POR PROYECTO (módulo portado de /admin) ══════════
 // supervisor → sus proyectos asignados · admin/superadmin → los de su empresa/todos.
-const IP_PREV_PILL = { 'Nuevo':'ip-enviado', 'En Progreso':'ip-borrador', 'Cerrado':'ip-aprobado' };
-const ipPillPrev = e => IP_PREV_PILL[e] || 'ip-planificado';
 const IP_ICO_DOC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
 const ipEmpty = (msg, icon) => `<div class="empty-tbl"><div class="ei">${icon||''}</div><p>${esc(msg)}</p></div>`;
 
@@ -1151,12 +1156,13 @@ async function cargarInformesProy() {
       fetch('/api/gestion/resumen', { headers: authH() }).then(r => r.ok ? r.json() : null).catch(() => null)
     ]);
     // Normaliza ambas formas (mis-proyectos: proyecto_id/proyecto_nombre · proyectos: id/nombre)
+    // Solo proyectos correctivos: "Informes por proyecto" no maneja preventivo.
     const norm = (Array.isArray(proyectos) ? proyectos : []).map(p => ({
       id: p.proyecto_id || p.id,
       nombre: p.proyecto_nombre || p.nombre || 'Proyecto',
       tipo: p.tipo || p.proyecto_tipo || '',
       empresa_nombre: p.empresa_nombre || ''
-    })).filter(p => p.id);
+    })).filter(p => p.id && p.tipo !== 'preventivo');
     window._ipProyectos = norm;
     window._ipTipos = {};
     norm.forEach(p => { window._ipTipos[p.id] = p.tipo; });
@@ -1188,40 +1194,79 @@ function ipQuick(pid) {
   ipLoad();
 }
 
+// Desplegable "Proyectos" del sidebar (acordeón).
+function toggleProyectos() {
+  document.getElementById('sbProyToggle').classList.toggle('open');
+  document.getElementById('sbProyGroup').classList.toggle('open');
+}
+
+// ── Lista de proyectos en el sidebar (reemplaza los accesos de "generar") ──
+async function renderSidebarProyectos() {
+  const cont = document.getElementById('sbProyList');
+  if (!cont) return;
+  try {
+    const ruta = MIROL === 'supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos';
+    const proyectos = await fetch(ruta, { headers: authH() }).then(r => r.ok ? r.json() : []);
+    const norm = (Array.isArray(proyectos) ? proyectos : []).map(p => ({
+      id: p.proyecto_id || p.id,
+      nombre: p.proyecto_nombre || p.nombre || 'Proyecto',
+      tipo: (p.tipo || p.proyecto_tipo || '').toLowerCase()
+    })).filter(p => p.id);
+    if (!norm.length) { cont.innerHTML = '<div class="sb-proy-empty">Sin proyectos.</div>'; return; }
+    const icoPrev = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    const icoCorr = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+    cont.innerHTML = norm.map(p =>
+      `<button class="sb-item" onclick="abrirProyecto('${esc(p.id)}','${esc(p.tipo)}')"><span class="sb-icon">${p.tipo === 'preventivo' ? icoPrev : icoCorr}</span> ${esc(p.nombre)}</button>`
+    ).join('');
+  } catch { cont.innerHTML = '<div class="sb-proy-empty">No se pudieron cargar.</div>'; }
+}
+// Abre un proyecto desde el sidebar: preventivo → módulo de tareas; correctivo → sus informes.
+async function abrirProyecto(pid, tipo) {
+  if (tipo === 'preventivo') { window.location.href = '/preventivo'; return; }
+  showView('informesproy');
+  await cargarInformesProy();
+  ipQuick(pid);
+}
+
 async function ipLoad() {
   const pid = document.getElementById('ipProy').value;
   document.querySelectorAll('#ipChipsWrap .ip-chip').forEach(c => c.classList.toggle('active', c.dataset.pid === pid));
   const body = document.getElementById('ipBody');
   if (!pid) { body.innerHTML = ipEmpty('Selecciona un proyecto.', IP_ICO_DOC); return; }
-  // Proyecto preventivo → sus ítems son tareas del módulo de mantenimiento.
-  if ((window._ipTipos || {})[pid] === 'preventivo') return ipLoadTareas(pid);
   try {
     const r = await fetch('/api/gestion/proyectos/' + pid + '/informes', { headers: authH() });
     if (!r.ok) throw new Error('No se pudieron cargar los informes');
     const list = await r.json();
     body.innerHTML = `<div class="ip-toolbar"><button class="ip-btn ip-btn-prim ip-btn-sm" onclick="ipModalInforme('${esc(pid)}')">+ Nuevo informe</button></div>
-      ${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Título</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+      ${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Título</th><th>Técnico</th><th>Estado</th><th>Documento</th><th>Última actualización</th></tr></thead><tbody>
         ${list.map(i => `<tr><td class="td-sitio">${esc(i.titulo)}</td>
+          <td class="td-tec">${esc(i.tecnico_nombre || '—')}</td>
           <td><span class="ip-pill ip-${esc(i.estado)}">${esc(i.estado)}</span></td>
-          <td class="td-fecha">${esc((i.fecha_creacion || '').slice(0, 10) || '—')}</td></tr>`).join('')}
+          <td>${i.doc_url
+            ? `<button class="ip-btn ip-btn-sm ip-btn-doc" onclick="ipVerDoc('${encodeURIComponent(i.doc_url)}','${encodeURIComponent(i.doc_nombre || '')}')">⬇ Descargar</button>`
+            : '<span style="color:#94A3B8">Sin documento</span>'}</td>
+          <td class="td-fecha">${ipFechaHora(i.actualizado_en || i.fecha_creacion)}</td></tr>`).join('')}
         </tbody></table></div>` : ipEmpty('Este proyecto no tiene informes.', IP_ICO_DOC)}`;
   } catch (e) { body.innerHTML = ipEmpty(e.message, IP_ICO_DOC); }
 }
 
-async function ipLoadTareas(pid) {
-  const body = document.getElementById('ipBody');
+// Última actualización: "YYYY-MM-DD HH:MM" (formato uniforme para local y Supabase).
+function ipFechaHora(s) {
+  if (!s) return '—';
+  return esc(String(s).replace('T', ' ').slice(0, 16));
+}
+
+// Ver/descargar el documento generado (con el token JWT, vía fetch + blob).
+async function ipVerDoc(url, nombre) {
+  url = decodeURIComponent(url); nombre = decodeURIComponent(nombre || '');
   try {
-    const r = await fetch('/tareas', { headers: authH() });
-    const tareas = r.ok ? await r.json() : [];
-    body.innerHTML = `<div class="ip-toolbar"><a class="ip-btn ip-btn-prim ip-btn-sm" href="/preventivo">+ Nueva tarea</a></div>
-      ${tareas.length ? `<div class="tbl-wrap"><table><thead><tr><th>Tarea</th><th>Sitio</th><th>Técnico</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
-        ${tareas.map(t => `<tr><td class="td-sitio">${esc(t.descripcion || t.tareaNumero || '—')}</td>
-          <td class="td-tec">${esc(t.sitio || '—')}</td>
-          <td class="td-tec">${esc(t.tecnico || '—')}</td>
-          <td><span class="ip-pill ${ipPillPrev(t.estado)}">${esc(t.estado || 'Nuevo')}</span></td>
-          <td class="td-fecha">${esc((t.fechaInicio || '').slice(0, 10) || '—')}</td></tr>`).join('')}
-        </tbody></table></div>` : ipEmpty('Este proyecto no tiene tareas registradas.', IP_ICO_DOC)}`;
-  } catch (e) { body.innerHTML = ipEmpty(e.message, IP_ICO_DOC); }
+    const r = await fetch(url, { headers: authH() });
+    if (!r.ok) throw new Error('No se pudo abrir el documento');
+    const blob = await r.blob();
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = u; a.download = nombre || 'informe'; a.click();
+    URL.revokeObjectURL(u);
+  } catch (e) { toast('Error: ' + e.message); }
 }
 
 // ── Modal: crear informe ──

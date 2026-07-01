@@ -54,8 +54,10 @@ router.get('/empresas', adminEmpresa, async (req, res) => {
 // POST /api/empresas — nueva empresa (solo superadmin: crear clientes)
 router.post('/empresas', soloSuper, async (req, res) => {
   try {
-    let { nombre, slug, rut_empresa } = req.body;
+    let { nombre, slug, rut_empresa, nombre_fantasia, contacto, correo, direccion } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
+    if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim()))
+      return res.status(400).json({ error: 'Correo inválido' });
     // El RUT es el identificador único de la empresa: obligatorio.
     if (!rut_empresa) return res.status(400).json({ error: 'El RUT de empresa es obligatorio (identificador único)' });
     slug = (slug || nombre).toLowerCase().trim()
@@ -71,7 +73,13 @@ router.post('/empresas', soloSuper, async (req, res) => {
     const dupSlug = (await db.empresasListAll()).find(e => e.slug === slug);
     if (dupSlug) return res.status(409).json({ error: 'Ya existe una empresa con ese identificador' });
 
-    const empresa = await db.empresaInsert({ nombre, slug, rut_empresa: rutNorm });
+    const empresa = await db.empresaInsert({
+      nombre, slug, rut_empresa: rutNorm,
+      nombre_fantasia: (nombre_fantasia || '').trim() || null,
+      contacto: (contacto || '').trim() || null,
+      correo: (correo || '').trim() || null,
+      direccion: (direccion || '').trim() || null
+    });
     res.json({ ok: true, empresa });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
@@ -91,9 +99,19 @@ router.put('/empresas/:id', adminEmpresa, scopeEmpresa, async (req, res) => {
     const empresa = await db.empresaById(req.params.id);
     if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
     const esSuper = req.user.rol === 'superadmin';
-    const { nombre, slug, rut_empresa, activa } = req.body;
+    const { nombre, slug, rut_empresa, activa, nombre_fantasia, contacto, correo, direccion } = req.body;
     const fields = {};
     if (nombre !== undefined) fields.nombre = nombre.trim();
+    // Datos comerciales (los puede editar admin_empresa también)
+    if (nombre_fantasia !== undefined) fields.nombre_fantasia = (nombre_fantasia || '').trim() || null;
+    if (contacto !== undefined) fields.contacto = (contacto || '').trim() || null;
+    if (direccion !== undefined) fields.direccion = (direccion || '').trim() || null;
+    if (correo !== undefined) {
+      const c = (correo || '').trim();
+      if (c && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c))
+        return res.status(400).json({ error: 'Correo inválido' });
+      fields.correo = c || null;
+    }
     // slug y estado (activa) son potestad de la plataforma (superadmin)
     if (slug !== undefined && esSuper) fields.slug = slug.toLowerCase().trim();
     if (activa !== undefined && esSuper) fields.activa = activa ? 1 : 0;
