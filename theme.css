@@ -90,9 +90,34 @@ html, body {
   font-size: var(--fs-base);
   line-height: var(--lh);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; }
+
+/* ── Selección de texto con color de marca ───────────────────────── */
+::selection { background: rgba(0,115,234,.18); }
+
+/* ── Foco visible SOLO con teclado (accesibilidad sin ruido al clic) ─ */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Scrollbars discretos y consistentes en toda la app ──────────── */
+* { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1; border-radius: var(--r-pill);
+  border: 2px solid transparent; background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+  border: 2px solid transparent; background-clip: content-box;
+}
 
 /* ════════════════════════════════════════════════════════════════
    COMPONENTES BASE (opcionales) — disponibles para todas las páginas.
@@ -170,7 +195,7 @@ a.bento-tile{text-decoration:none;color:inherit;cursor:pointer;}
   background:var(--info-soft);color:var(--primary);margin-bottom:var(--sp-3);flex:none;}
 .bento-ico svg{width:22px;height:22px;}
 .bento-tile.is-accent .bento-ico,.bento-tile.is-violet .bento-ico,.bento-tile.is-green .bento-ico,.bento-tile.is-dark .bento-ico{background:rgba(255,255,255,.18);color:#fff;}
-.bento-kpi{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em;font-family:var(--font-head);}
+.bento-kpi{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em;font-family:var(--font-head);font-variant-numeric:tabular-nums;}
 .bento-label{font-size:var(--fs-sm);color:var(--muted);font-weight:600;margin-top:6px;}
 .bento-tile.is-accent .bento-label,.bento-tile.is-violet .bento-label,.bento-tile.is-green .bento-label,.bento-tile.is-dark .bento-label{color:rgba(255,255,255,.82);}
 .bento-title{font-size:var(--fs-md);font-weight:700;font-family:var(--font-head);letter-spacing:-.01em;}
