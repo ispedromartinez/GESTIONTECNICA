@@ -130,6 +130,27 @@ try { db.exec("ALTER TABLE informes ADD COLUMN doc_nombre TEXT"); } catch {}
 // Marca de la última actualización del informe (cambio de estado / documento generado).
 try { db.exec("ALTER TABLE informes ADD COLUMN actualizado_en TEXT"); } catch {}
 
+// Equipos (hoja de vida de activos): tabla resumen, clave natural sitio+numero por tenant
+db.exec(`
+  CREATE TABLE IF NOT EXISTS equipos (
+    id                   TEXT PRIMARY KEY,
+    empresa_id           TEXT,
+    sitio                TEXT NOT NULL,
+    numero               TEXT NOT NULL,
+    clave                TEXT NOT NULL,
+    tipo                 TEXT,
+    marca                TEXT,
+    modelo               TEXT,
+    total_intervenciones INTEGER DEFAULT 0,
+    primera_intervencion TEXT,
+    ultima_intervencion  TEXT,
+    creado_en            TEXT DEFAULT (datetime('now')),
+    actualizado_en       TEXT DEFAULT (datetime('now')),
+    UNIQUE(empresa_id, clave)
+  );
+  CREATE INDEX IF NOT EXISTS idx_equipos_empresa ON equipos(empresa_id);
+`);
+
 function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = Math.random() * 16 | 0;
@@ -453,6 +474,46 @@ const local = {
     },
     delete(id) {
       db.prepare('DELETE FROM informes WHERE id = ?').run(id);
+    }
+  },
+
+  // Equipos (hoja de vida)
+  equipos: {
+    findByClave(empresa_id, clave) {
+      if (empresa_id) return db.prepare('SELECT * FROM equipos WHERE empresa_id = ? AND clave = ?').get(empresa_id, clave);
+      return db.prepare('SELECT * FROM equipos WHERE empresa_id IS NULL AND clave = ?').get(clave);
+    },
+    findById(id) {
+      return db.prepare('SELECT * FROM equipos WHERE id = ?').get(id);
+    },
+    insert(e) {
+      const id = uuid();
+      db.prepare(`
+        INSERT INTO equipos (id, empresa_id, sitio, numero, clave, tipo, marca, modelo,
+                             total_intervenciones, primera_intervencion, ultima_intervencion)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, e.empresa_id || null, e.sitio, e.numero, e.clave, e.tipo || null,
+             e.marca || null, e.modelo || null, e.total_intervenciones || 1,
+             e.primera_intervencion || null, e.ultima_intervencion || null);
+      return db.prepare('SELECT * FROM equipos WHERE id = ?').get(id);
+    },
+    update(id, f) {
+      const cols = ['sitio','numero','tipo','marca','modelo','total_intervenciones','primera_intervencion','ultima_intervencion'];
+      const sets = [], vals = [];
+      cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(f[k]); } });
+      if (sets.length) {
+        sets.push("actualizado_en = datetime('now')");
+        vals.push(id);
+        db.prepare('UPDATE equipos SET '+sets.join(', ')+' WHERE id = ?').run(...vals);
+      }
+      return db.prepare('SELECT * FROM equipos WHERE id = ?').get(id);
+    },
+    list(empresa_id) {
+      if (empresa_id) return db.prepare('SELECT * FROM equipos WHERE empresa_id = ? ORDER BY ultima_intervencion DESC').all(empresa_id);
+      return db.prepare('SELECT * FROM equipos ORDER BY ultima_intervencion DESC').all();
+    },
+    deleteAll() {
+      db.prepare('DELETE FROM equipos').run();
     }
   }
 };
