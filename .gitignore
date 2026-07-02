@@ -16,6 +16,8 @@ registro_prev.json
 papelera_prev.json
 tareas_informes.json
 tracker_prev.json
+contactos.json
+registro_*.json
 server.log
 server_err.log
 .claude/

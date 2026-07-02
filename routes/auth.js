@@ -400,7 +400,8 @@ router.get('/areas', authMiddleware, async (req, res) => {
     const { rol, empresa_id } = req.user;
     if (!empresa_id && rol !== 'superadmin')
       return res.status(400).json({ error: 'empresa_id requerido' });
-    const empId = req.query.empresa_id || empresa_id;
+    // Solo superadmin puede consultar áreas de otra empresa vía query param.
+    const empId = rol === 'superadmin' ? (req.query.empresa_id || empresa_id) : empresa_id;
     res.json(await db.listAreasByEmpresa(empId));
   } catch (err) {
     res.status(500).json({ error: err.message });

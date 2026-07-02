@@ -519,9 +519,9 @@ async function poblarTecnicos(){
     }
   } catch {}
   const filtro = document.getElementById('filtroTecnico');
-  if (filtro) filtro.innerHTML = '<option>Todos</option>' + TECNICOS.map(t=>`<option>${t}</option>`).join('');
+  if (filtro) filtro.innerHTML = '<option>Todos</option>' + TECNICOS.map(t=>`<option>${esc(t)}</option>`).join('');
   const fTecnico = document.getElementById('fTecnico');
-  if (fTecnico) fTecnico.innerHTML = TECNICOS.map(t=>`<option>${t}</option>`).join('');
+  if (fTecnico) fTecnico.innerHTML = TECNICOS.map(t=>`<option>${esc(t)}</option>`).join('');
 }
 function seleccionarSitioPreventivo(nombre){
   const sitio = SITIOS_PREVENTIVO.find(s => s.nombre === nombre);
@@ -618,6 +618,10 @@ function tiempoRelativo(iso) {
   return `<span class="tiempo-valor ${cls}">${txt}</span>`;
 }
 
+// Escape HTML: las tareas vienen de imports XLSX y de otros usuarios —
+// inyectarlas sin escapar en innerHTML permite XSS almacenado.
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
 function renderTabla(){
   const totalPaginas = Math.max(1, Math.ceil(tareas.length / tareasPorPagina));
   if (paginaActual > totalPaginas) paginaActual = totalPaginas;
@@ -636,14 +640,14 @@ function renderTabla(){
     return `
     <tr data-id="${t.id}" class="${clases}">
       <td><input type="checkbox" class="rowCheck" data-check="${t.id}" ${seleccionMultiple.has(t.id)?'checked':''}></td>
-      <td>${t.tecnico||''}</td>
-      <td>${t.sitio||''}</td>
-      <td class="col-sala">${t.sala||''}</td>
-      <td class="col-crq">${t.crqInc||''}</td>
-      <td class="col-desc">${t.descripcion||''}</td>
-      <td class="col-fecha-i">${t.fechaInicio||''}</td>
-      <td class="col-fecha-v">${t.fechaVencimiento||''}</td>
-      <td><div class="estado-cell"><span class="estado-badge estado-${est.replace(' ','-')}">${est}</span>${!esCerrada?`<button class="btn-gen-informe" data-gen="${t.id}">📄 Generar informe</button>`:informesMap[t.id]?`<a class="btn-dl-informe" data-dl-id="${informesMap[t.id].informeId}" data-dl-name="${informesMap[t.id].filename}" data-dl-tipo="${informesMap[t.id].tipo||'prev'}">⬇ Descargar PDF</a>`:''}</div></td>
+      <td>${esc(t.tecnico)}</td>
+      <td>${esc(t.sitio)}</td>
+      <td class="col-sala">${esc(t.sala)}</td>
+      <td class="col-crq">${esc(t.crqInc)}</td>
+      <td class="col-desc">${esc(t.descripcion)}</td>
+      <td class="col-fecha-i">${esc(t.fechaInicio)}</td>
+      <td class="col-fecha-v">${esc(t.fechaVencimiento)}</td>
+      <td><div class="estado-cell"><span class="estado-badge estado-${esc(est.replace(' ','-'))}">${esc(est)}</span>${!esCerrada?`<button class="btn-gen-informe" data-gen="${t.id}">📄 Generar informe</button>`:informesMap[t.id]?`<a class="btn-dl-informe" data-dl-id="${informesMap[t.id].informeId}" data-dl-name="${esc(informesMap[t.id].filename)}" data-dl-tipo="${esc(informesMap[t.id].tipo||'prev')}">⬇ Descargar PDF</a>`:''}</div></td>
       <td class="col-tiempo">${tiempoRelativo(t.estadoCambiadoEn)}</td>
     </tr>`;
   }).join('');
@@ -714,7 +718,7 @@ function abrirModal(tarea){
   const selTec = document.getElementById('fTecnico');
   // Si se edita una tarea cuyo técnico ya no está en la lista, lo añadimos para no perderlo.
   if (tarea && tarea.tecnico && !TECNICOS.includes(tarea.tecnico)) {
-    selTec.insertAdjacentHTML('afterbegin', `<option>${tarea.tecnico}</option>`);
+    selTec.insertAdjacentHTML('afterbegin', `<option>${esc(tarea.tecnico)}</option>`);
   }
   selTec.value = tarea ? tarea.tecnico : (TECNICOS[0] || '');
   document.getElementById('fFechaInicio').value = tarea ? tarea.fechaInicio : isoFecha(semanaActual);

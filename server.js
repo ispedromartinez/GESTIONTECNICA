@@ -40,6 +40,24 @@ if (supabase) {
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '80mb' }));
+
+// ── Seguridad: la raíz del proyecto se sirve estática, pero JAMÁS deben
+// salir por ahí datos ni código del servidor. Sin este guard, cualquiera
+// sin login podía descargar auth.db (hashes de contraseñas), registro*.json,
+// contactos.json, los .docx/.pdf de informes y el código fuente completo.
+const STATIC_DIR_BLOCK = /^\/(db|middleware|routes|templates|utils|schema|react|node_modules|documentos_md|informes(_wom|_prev)?|papelera(_wom|_prev)?)(\/|$)/i;
+const STATIC_EXT_BLOCK = /\.(json|xlsx|xls|docx|pdf|db|db-shm|db-wal|md|txt|env|log|sqlite)$/i;
+const STATIC_FILE_BLOCK = new Set(['/server.js', '/ecosystem.config.js']);
+app.use((req, res, next) => {
+  let p;
+  try { p = decodeURIComponent(req.path); } catch { return res.status(400).json({ error: 'Ruta inválida' }); }
+  p = p.replace(/\\/g, '/');
+  if (STATIC_DIR_BLOCK.test(p) || STATIC_EXT_BLOCK.test(p) || STATIC_FILE_BLOCK.has(p.toLowerCase())) {
+    return res.status(404).json({ error: 'No encontrado' });
+  }
+  next();
+});
+
 // No cachear los HTML: el navegador siempre carga la última versión
 // (evita ver pantallas viejas tras un cambio). El resto de assets sí se cachea.
 app.use(express.static(__dirname, {
@@ -96,8 +114,14 @@ const contactoLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 5, message: '
 app.post('/api/contacto', contactoLimiter, express.json(), (req, res) => {
   const { nombre, empresa, email, tel, mensaje, fecha } = req.body || {};
   if (!nombre || !email) return res.status(400).json({ error: 'nombre y email requeridos' });
+  // Campos acotados: es un endpoint público, sin tope alguien podía llenar el disco.
+  const cap = (s, n) => String(s == null ? '' : s).slice(0, n);
   const lista = loadContactos();
-  lista.push({ nombre, empresa, email, tel, mensaje, fecha: fecha || new Date().toISOString() });
+  lista.push({
+    nombre: cap(nombre, 120), empresa: cap(empresa, 120), email: cap(email, 160),
+    tel: cap(tel, 40), mensaje: cap(mensaje, 2000),
+    fecha: new Date().toISOString()
+  });
   fs.writeFileSync(CONTACTO_FILE, JSON.stringify(lista, null, 2));
   console.log(`📬 Nuevo contacto: ${nombre} <${email}>`);
   res.json({ ok: true });
@@ -118,6 +142,9 @@ app.get('/api/proyectos', authMiddleware, (req, res) => {
 app.get('/api/proyectos/:slug', authMiddleware, (req, res) => {
   const p = loadProyectos().find(x => x.slug === req.params.slug);
   if (!p) return res.status(404).json({ error: 'Proyecto no encontrado' });
+  // Aislamiento por tenant: sin esto cualquier usuario autenticado leía
+  // proyectos (sitios, técnicos, supervisores) de otras empresas.
+  if (!canAccessTenant(req, p.empresa_id)) return res.status(403).json({ error: 'Proyecto de otra empresa' });
   res.json(p);
 });
 
@@ -1021,7 +1048,10 @@ app.post('/generar', authMiddleware, async (req,res) => {
     const d = req.body;
     const buffer = await buildDocx(d);
     const sitePart = (d.nombreSitio||'Clima').replace(/[^a-zA-Z0-9]/g,'_').slice(0,25);
-    const fname = `${d.codInforme||'Informe'}_${sitePart}.docx`;
+    // El código viaja al nombre de archivo: solo caracteres seguros (evita
+    // path traversal con ../ y roturas del header Content-Disposition).
+    const codPart = (d.codInforme||'Informe').replace(/[^a-zA-Z0-9\-_]/g,'_').slice(0,40);
+    const fname = `${codPart}_${sitePart}.docx`;
     fs.writeFileSync(path.join(DOCS_DIR, fname), buffer);
     await storageUpload(buffer, `clima/${fname}`);
 
@@ -1868,11 +1898,11 @@ app.delete('/registro-wom/:id', authMiddleware, async (req, res) => {
 app.get('/api/sitios-preventivos', authMiddleware, (_req, res) => {
   res.json(sitiosPrevData);
 });
-app.post('/api/sitios-preventivos/reload', authMiddleware, (_req, res) => {
+app.post('/api/sitios-preventivos/reload', authMiddleware, requireNivel(3), (_req, res) => {
   sitiosPrevData = loadSitiosPrev();
   res.json({ ok: true, count: sitiosPrevData.length });
 });
-app.post('/api/sitios-preventivos/upload', authMiddleware, (req, res) => {
+app.post('/api/sitios-preventivos/upload', authMiddleware, requireNivel(3), (req, res) => {
   try {
     const { dataBase64 } = req.body;
     if (!dataBase64) return res.status(400).json({ error: 'dataBase64 requerido' });

@@ -1113,8 +1113,8 @@ function renderTabla() {
     tbody.innerHTML = slice.map(r => `
       <tr>
         <td><span class="pbadge ${r.proyecto==='TIGO'?'pb-tigo':'pb-wom'}">${r.proyecto}</span></td>
-        <td class="td-sitio">${r.sitio}</td>
-        <td class="td-tec">${r.tecnico}</td>
+        <td class="td-sitio">${esc(r.sitio)}</td>
+        <td class="td-tec">${esc(r.tecnico)}</td>
         <td class="td-fecha">${fmtFecha(r.fecha)}</td>
         <td><span class="estado-badge est-ok">Completado</span></td>
       </tr>`).join('');
