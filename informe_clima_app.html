@@ -122,6 +122,8 @@ textarea{resize:vertical;min-height:88px;line-height:1.6;}
 .tec-dd{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--bm);border-radius:10px;box-shadow:var(--sh-lg);max-height:220px;overflow-y:auto;z-index:999;display:none;}
 .tec-dd.open{display:block;}
 .dd-otros{padding:9px 14px;font-size:12px;color:var(--muted);cursor:pointer;border-top:1px dashed #e2e8f0;font-style:italic;}
+.combo-wrap{position:relative;}
+.combo-wrap input{padding-right:32px;}
 .dd-otros:hover{background:#f8fafc;color:var(--blue);}
 .req{color:#ef4444;font-weight:700;margin-left:2px;}
 input.has-error,textarea.has-error{border-color:#ef4444!important;background:#fff5f5;}
@@ -659,6 +661,32 @@ const TECHNICIANS=[
   'Yoscar Garcia','Elias Alburto','Diego Riquelme','Rodrigo Guerrero',
   'Armin Yaitul','Jairo Alarcon','Jean Marasi'
 ];
+// ══ SALAS list ══
+const SALAS=[
+  'CX PISO 2','DATOS','HUAWEI','IDF','M8','SDH','TIWS','TRANSMISIÓN CX-1','TX',
+  'NUEVA CHILOE','CCI','DOMSAT','DOMSAT SHELTER','DOMSAT UPS','IPTV','STANDAR (A)','UPS',
+  'CX PISO 1','DATOS PISO 1','PISO 3','LTE PISO 2','M8 PISO 1','SDH PISO 1','CX 2',
+  'CX ALCATEL','CX ALCATEL 2','SALA PCM','PISO 1°','PISO 2°','SUBTERRANEO','CROSS-CONNET',
+  'CX','CX ERICSSON','CX-SUBT','DX-1','NUEVA DATOS','PCM','ZONA(A) P4° MOVIL',
+  'ZONA(A) P4°MOVIL','ZONA(B) P4° MOVIL','ZONA(C) P4° MOVIL','CROSS CONNECT','HOUSING',
+  'M8 P2°','MOVIL P2°','CONTENEDOR','MOVIL','ERICSSON','CX NEC','HOUSING SUBTERRANEO',
+  'HOUSING-MOVIL','MDF','CX-TX','SUBT','SALA ERICSON','CX PISO3','CX PISO6','SDH PISO 5',
+  'TX SUBTERRANEO','SDH SUBTERRARENO','TX-M8','TPC','BATERIAS','CX-TX-MOVIL',
+  'SALA CONMUTACION 1ºPISO','TX-SOBRE CIELO','SALA MDF','RADIO ENLACES','SALA CONMUTACION',
+  'HALL ACCESO','PISO 6','ZONA B','PISO 4','TIC 5','TIC 4','TIC 3','ALCATEL','TIC 2','TIC 1'
+];
+// ══ MARCAS list ══
+const MARCAS=[
+  'TECNAIR','LIEBERT','HUAWEI','CARRIER','UNIFLAIR','STULZ','VERTIV','AIRBLUE','AIR DATA',
+  'EMERSON','YORK','DATA AIRE','CLIMAVENETA','GOODMAN','AMICO','AIRFLOW','BARD',
+  'AMERICAN PRIDE','FLOWTECH UMA','LENNOX','GEYCOAIR','MIDEA','WESTRIC','DAIKIN',
+  'SAMSUNG','LG','HAIER','PANASONIC'
+];
+// ══ TIPOS DE EQUIPO list ══
+const TIPOS_EQUIPO=[
+  'PRECISIÓN','TIPO MOCHILA','CONFORT','INROW','MULTIPOSICION','PORTATIL',
+  'TIPO DUCTO','TIPO CASSETE','PISO CIELO'
+];
 
 // ══ SITES ══
 const SITES=[
@@ -1014,6 +1042,56 @@ function selectOtrosTec(){
   tecInput.classList.remove('sel');closeTecDD();tecInput.focus();
 }
 function closeTecDD(){tecDD.classList.remove('open');tecDD.innerHTML='';tecHiIdx=-1;}
+
+// ══ COMBO GENÉRICO (seleccionar o escribir) ══
+// Convierte un input de texto en combo editable con lista de sugerencias.
+// Reusa las clases .tec-dd / .sup-di / .dd-otros del resto de la página.
+function initCombo(id, list){
+  const inp=document.getElementById(id);
+  if(!inp) return;
+  const wrap=document.createElement('div');wrap.className='combo-wrap';
+  inp.parentNode.insertBefore(wrap,inp);wrap.appendChild(inp);
+  const arr=document.createElement('span');arr.className='tec-arr';arr.textContent='▾';wrap.appendChild(arr);
+  const dd=document.createElement('div');dd.className='tec-dd';wrap.appendChild(dd);
+  inp.placeholder='Seleccionar o escribir...';
+  let hi=-1;
+  const close=()=>{dd.classList.remove('open');dd.innerHTML='';hi=-1;};
+  const pick=v=>{
+    inp.value=v;close();
+    inp.dispatchEvent(new Event('input',{bubbles:true}));
+  };
+  const render=(matches,q)=>{
+    hi=-1;
+    dd.innerHTML=matches.length
+      ? matches.map((s,i)=>`<div class="sup-di" data-name="${s.replace(/"/g,'&quot;')}" data-i="${i}">${hl(s,q)}</div>`).join('')
+      : '<div class="sup-di" style="color:#90a4ae;cursor:default">Sin resultados — se usará lo escrito</div>';
+    dd.querySelectorAll('.sup-di[data-name]').forEach(el=>{
+      el.addEventListener('click',()=>pick(el.dataset.name));
+      el.addEventListener('mouseenter',function(){hi=+this.dataset.i;hilite();});
+    });
+    dd.classList.add('open');
+  };
+  const hilite=()=>dd.querySelectorAll('.sup-di').forEach((el,i)=>el.classList.toggle('hi',i===hi));
+  const filter=()=>{
+    const q=inp.value,nq=norm(q);
+    render(q?list.filter(s=>norm(s).includes(nq)):list,q);
+  };
+  inp.addEventListener('focus',filter);
+  inp.addEventListener('input',filter);
+  inp.addEventListener('keydown',e=>{
+    const items=dd.querySelectorAll('.sup-di[data-name]');
+    if(!dd.classList.contains('open'))return;
+    if(e.key==='ArrowDown'){e.preventDefault();hi=Math.min(hi+1,items.length-1);hilite();}
+    else if(e.key==='ArrowUp'){e.preventDefault();hi=Math.max(hi-1,0);hilite();}
+    else if(e.key==='Enter'){if(hi>=0&&items[hi]){e.preventDefault();pick(items[hi].dataset.name);}else close();}
+    else if(e.key==='Escape'){close();}
+  });
+  document.addEventListener('click',e=>{if(!wrap.contains(e.target))close();});
+}
+initCombo('sala',SALAS);
+initCombo('eqSala',SALAS);
+initCombo('eqTipo',TIPOS_EQUIPO);
+initCombo('eqMarca',MARCAS);
 tecInput.addEventListener('mousedown',()=>{
   if(tecInput.readOnly){
     tecInput.readOnly=false;tecInput.value='';
