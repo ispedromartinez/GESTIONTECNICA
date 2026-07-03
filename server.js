@@ -16,6 +16,7 @@ const gestionRoutes = require('./routes/gestion');
 const empresasRoutes = require('./routes/empresas');
 const preventivoRoutes = require('./routes/preventivo');
 const gestionDb = require('./db/gestion');
+const equiposDb = require('./db/equipos');
 const { authMiddleware } = require('./middleware/auth');
 const { requireRol, requireNivel } = require('./middleware/roles');
 const { canAccessTenant, scopeToTenant } = require('./middleware/tenant');
@@ -387,6 +388,7 @@ const fromClima = r => ({
   codigoSitio: r.codigo_sitio, tecnico: r.tecnico,
   supervisor: r.supervisor, numOT: r.num_ot,
   photoCount: r.photo_count, filename: r.filename,
+  eqNumero: r.eq_numero || null,
   empresaId: r.empresa_id || null
 });
 const toClima = e => ({
@@ -395,6 +397,7 @@ const toClima = e => ({
   codigo_sitio: e.codigoSitio, tecnico: e.tecnico,
   supervisor: e.supervisor, num_ot: e.numOT,
   photo_count: e.photoCount, filename: e.filename,
+  eq_numero: e.eqNumero || null,
   empresa_id: e.empresaId || null
 });
 
@@ -1062,11 +1065,22 @@ app.post('/generar', authMiddleware, async (req,res) => {
       codInforme: d.codInforme, nombreSitio: d.nombreSitio,
       codigoSitio: d.codigoSitio, tecnico: d.tecnico,
       supervisor: d.supervisor, numOT: d.numOT,
+      eqNumero: d.eqNumero || null,
       photoCount: (photos||[]).filter(Boolean).length,
       filename: fname,
       empresaId: req.user.empresa_id || null
     };
     await dbClimaInsert(entry);
+
+    // Hoja de vida: registra/actualiza el equipo. Nunca rompe la generación.
+    try {
+      await equiposDb.upsertDesdeInforme({
+        empresaId: req.user.empresa_id || null,
+        sitio: d.nombreSitio, numero: d.eqNumero,
+        tipo: d.eqTipo, marca: d.eqMarca, modelo: d.eqModelo,
+        fecha: d.fecha
+      });
+    } catch (e) { console.error('equipos upsert (clima):', e.message); }
 
     if (d.tareaId) {
       const mapa = loadTareasInformes();
@@ -1215,6 +1229,7 @@ const fromWom = r => ({
   fechaInicio: r.fecha_inicio, instalacion: r.instalacion,
   tipoActividad: r.tipo_actividad, tecnicos: r.tecnicos,
   photoCount: r.photo_count, filename: r.filename,
+  equipo: r.equipo || null,
   empresaId: r.empresa_id || null
 });
 const toWom = e => ({
@@ -1223,6 +1238,7 @@ const toWom = e => ({
   fecha_inicio: e.fechaInicio, instalacion: e.instalacion,
   tipo_actividad: e.tipoActividad, tecnicos: e.tecnicos,
   photo_count: e.photoCount, filename: e.filename,
+  equipo: e.equipo || null,
   empresa_id: e.empresaId || null
 });
 
@@ -1844,12 +1860,23 @@ app.post('/generar-wom', authMiddleware, async (req, res) => {
       ticket: d.ticket, codInterno: d.codInterno,
       fechaInicio: d.fechaInicio, instalacion: d.instalacion,
       tipoActividad: d.tipoActividad,
+      equipo: d.equipo || null,
       tecnicos: (d.tecnicos||[]).filter(Boolean).join(', '),
       photoCount: (photos||[]).filter(Boolean).length,
       filename: fname,
       empresaId: req.user.empresa_id || null
     };
     await dbWomInsert(entry);
+
+    // Hoja de vida: registra/actualiza el equipo. Nunca rompe la generación.
+    try {
+      await equiposDb.upsertDesdeInforme({
+        empresaId: req.user.empresa_id || null,
+        sitio: d.instalacion, numero: d.equipo,
+        marca: d.marca, modelo: d.modelo,
+        fecha: d.fechaInicio
+      });
+    } catch (e) { console.error('equipos upsert (wom):', e.message); }
     // Informe de gestión asignado al técnico → marcar generado + enlazar doc.
     await vincularInformeGestion(req, d.gestionInformeId, `/descargar-wom/${entry.id}`, fname);
 
