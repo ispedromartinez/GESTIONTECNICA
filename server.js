@@ -271,6 +271,87 @@ app.post('/api/proyectos/sitios/asignar', authMiddleware, requireNivel(3), (req,
   res.json({ ok: true, asignados, omitidos });
 });
 
+// ── Equipos (hoja de vida de activos) ─────────────────────────
+app.get('/api/equipos', authMiddleware, async (req, res) => {
+  try {
+    let equipos = scopeToTenant(req, await equiposDb.list());
+    const sitio = (req.query.sitio || '').trim().toLowerCase();
+    if (sitio) equipos = equipos.filter(e => (e.sitio || '').toLowerCase() === sitio);
+    const q = (req.query.q || '').trim().toLowerCase();
+    if (q) equipos = equipos.filter(e =>
+      ['sitio','numero','tipo','marca','modelo'].some(k => (e[k] || '').toLowerCase().includes(q)));
+    res.json(equipos);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Historial en vivo: informes TIGO/WOM que corresponden a este equipo.
+// Los informes antiguos sin nº de equipo van aparte (delSitio) como contexto.
+app.get('/api/equipos/:id/historial', authMiddleware, async (req, res) => {
+  try {
+    const eq = await equiposDb.findById(req.params.id);
+    if (!eq) return res.status(404).json({ error: 'Equipo no encontrado' });
+    if (!canAccessTenant(req, eq.empresaId)) return res.status(403).json({ error: 'Equipo de otra empresa' });
+
+    const clave = equiposDb.claveEquipo(eq.sitio, eq.numero);
+    const sitioNorm = equiposDb.norm(eq.sitio).toLowerCase();
+    const [tigo, wom] = await Promise.all([dbClimaList(null), dbWomList(null)]);
+    // Solo informes del mismo tenant que el equipo
+    const mismoTenant = r => (r.empresaId || null) === (eq.empresaId || null);
+
+    const historial = [], delSitio = [];
+    for (const r of tigo.filter(mismoTenant)) {
+      if (equiposDb.norm(r.nombreSitio).toLowerCase() !== sitioNorm) continue;
+      const item = {
+        tipo: 'TIGO', id: r.id, fecha: r.fecha || (r.fechaCreacion || '').slice(0, 10),
+        codigo: r.codInforme || '—', tecnico: r.tecnico || '—',
+        filename: r.filename, urlDescarga: `/descargar/${r.id}`
+      };
+      if (r.eqNumero && equiposDb.claveEquipo(r.nombreSitio, r.eqNumero) === clave) historial.push(item);
+      else if (!r.eqNumero) delSitio.push(item);
+    }
+    for (const r of wom.filter(mismoTenant)) {
+      if (equiposDb.norm(r.instalacion).toLowerCase() !== sitioNorm) continue;
+      const item = {
+        tipo: 'WOM', id: r.id, fecha: (r.fechaInicio || r.fechaCreacion || '').slice(0, 10),
+        codigo: r.ticket || r.codInterno || '—', tecnico: r.tecnicos || '—',
+        filename: r.filename, urlDescarga: `/descargar-wom/${r.id}`
+      };
+      if (r.equipo && equiposDb.claveEquipo(r.instalacion, r.equipo) === clave) historial.push(item);
+      else if (!r.equipo) delSitio.push(item);
+    }
+    const porFecha = (a, b) => (b.fecha || '').localeCompare(a.fecha || '');
+    historial.sort(porFecha); delSitio.sort(porFecha);
+    res.json({ equipo: eq, historial, delSitio });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Reconstruye la tabla equipos desde los informes existentes (idempotente).
+app.post('/api/equipos/backfill', authMiddleware, requireRol('superadmin'), async (req, res) => {
+  try {
+    await equiposDb.resetAll();
+    const [tigo, wom] = await Promise.all([dbClimaList(null), dbWomList(null)]);
+    let procesados = 0;
+    for (const r of tigo) {
+      if (!r.eqNumero) continue;
+      await equiposDb.upsertDesdeInforme({
+        empresaId: r.empresaId || null, sitio: r.nombreSitio, numero: r.eqNumero,
+        fecha: r.fecha || (r.fechaCreacion || '').slice(0, 10)
+      });
+      procesados++;
+    }
+    for (const r of wom) {
+      if (!r.equipo) continue;
+      await equiposDb.upsertDesdeInforme({
+        empresaId: r.empresaId || null, sitio: r.instalacion, numero: r.equipo,
+        fecha: (r.fechaInicio || r.fechaCreacion || '').slice(0, 10)
+      });
+      procesados++;
+    }
+    const equipos = (await equiposDb.list()).length;
+    res.json({ ok: true, procesados, equipos });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── GET /api/dashboard – datos unificados por rol ─────────────
 app.get('/api/dashboard', authMiddleware, async (req, res) => {
   try {
