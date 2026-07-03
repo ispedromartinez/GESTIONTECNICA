@@ -409,12 +409,30 @@ const PAPELERA_DIR  = path.join(__dirname, 'papelera');
 const DB_FILE       = path.join(__dirname, 'registro.json');
 const PAPELERA_FILE = path.join(__dirname, 'papelera.json');
 const TAREAS_INFORMES_FILE = path.join(__dirname, 'tareas_informes.json');
+const PDFS_DIR      = path.join(DOCS_DIR, 'pdf_tmp');
 
 if (!fs.existsSync(DOCS_DIR))     fs.mkdirSync(DOCS_DIR);
 if (!fs.existsSync(PAPELERA_DIR)) fs.mkdirSync(PAPELERA_DIR);
 if (!fs.existsSync(DB_FILE))      fs.writeFileSync(DB_FILE, '[]');
 if (!fs.existsSync(PAPELERA_FILE))fs.writeFileSync(PAPELERA_FILE, '[]');
 if (!fs.existsSync(TAREAS_INFORMES_FILE)) fs.writeFileSync(TAREAS_INFORMES_FILE, '{}');
+if (!fs.existsSync(PDFS_DIR))     fs.mkdirSync(PDFS_DIR, { recursive: true });
+
+// ── DOCX → PDF con LibreOffice (para "Ver PDF" inline) ────────
+const { execFile } = require('child_process');
+function convertDocxToPdf(docxPath) {
+  return new Promise((resolve, reject) => {
+    const winSoffice = 'C:/Program Files/LibreOffice/program/soffice.exe';
+    const soffice = process.env.LIBREOFFICE_PATH || (fs.existsSync(winSoffice) ? winSoffice : 'soffice');
+    execFile(soffice, ['--headless', '--convert-to', 'pdf', '--outdir', PDFS_DIR, docxPath], (err) => {
+      const pdfPath = path.join(PDFS_DIR, path.basename(docxPath, '.docx') + '.pdf');
+      if (err || !fs.existsSync(pdfPath)) {
+        return reject(new Error('LibreOffice no instalado o no encontrado. Instala LibreOffice o configura LIBREOFFICE_PATH.'));
+      }
+      resolve(pdfPath);
+    });
+  });
+}
 
 function loadTareasInformes() { try { return JSON.parse(fs.readFileSync(TAREAS_INFORMES_FILE,'utf8')); } catch { return {}; } }
 function saveTareasInformes(m) { fs.writeFileSync(TAREAS_INFORMES_FILE, JSON.stringify(m, null, 2)); }
@@ -922,8 +940,10 @@ async function buildDocx(d) {
     HC('Sala',w_eq1,1), HC('N° Equipo',w_eq2,4), HC('Tipo',w_eq3,2),
     HC('Marca',w_eq4,4), HC('Modelo / Serie',w_eq5,3)
   ]});
+  // N° Equipo con circuito: "E1 C5" (E = equipo, C = circuito); sin circuito, solo el número.
+  const eqConCircuito = d.circuito ? `E${v(d.eqNumero)} C${v(d.circuito)}` : v(d.eqNumero);
   const row_eq_d = new TableRow({ height:{value:280}, children:[
-    VC(v(d.eqSala),w_eq1,1), VC(v(d.eqNumero),w_eq2,4),
+    VC(v(d.eqSala),w_eq1,1), VC(eqConCircuito,w_eq2,4),
     VC(v(d.eqTipo),w_eq3,2), VC(v(d.eqMarca),w_eq4,4), VC(v(d.eqModelo),w_eq5,3)
   ]});
 
@@ -1181,6 +1201,28 @@ app.get('/descargar/:id', authMiddleware, async (req,res) => {
   res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   res.setHeader('Content-Disposition',`attachment; filename="${entry.filename}"`);
   res.send(buffer);
+});
+
+// Ver el informe como PDF inline (convierte el DOCX con LibreOffice).
+app.get('/ver-pdf/:id', authMiddleware, async (req, res) => {
+  const entry = await dbClimaFind(req.params.id);
+  if (!entry) return res.status(404).json({ error: 'No encontrado' });
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({ error: 'Sin acceso a este informe' });
+  const docxPath = path.join(DOCS_DIR, entry.filename);
+  if (!fs.existsSync(docxPath)) {
+    const buffer = await storageDownload(`clima/${entry.filename}`);
+    if (!buffer) return res.status(404).json({ error: 'Archivo no existe' });
+    fs.writeFileSync(docxPath, buffer);
+  }
+  try {
+    const pdfPath = await convertDocxToPdf(docxPath);
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${entry.filename.replace(/\.docx$/, '.pdf')}"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/enviar/:id', authMiddleware, async (req,res) => {
@@ -1971,6 +2013,28 @@ app.get('/descargar-wom/:id', authMiddleware, async (req, res) => {
   res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   res.setHeader('Content-Disposition',`attachment; filename="${entry.filename}"`);
   res.send(buffer);
+});
+
+// Ver el informe WOM como PDF inline (convierte el DOCX con LibreOffice).
+app.get('/ver-pdf-wom/:id', authMiddleware, async (req, res) => {
+  const entry = await dbWomFind(req.params.id);
+  if (!entry) return res.status(404).json({ error: 'No encontrado' });
+  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({ error: 'Sin acceso a este informe' });
+  const docxPath = path.join(DOCS_DIR_WOM, entry.filename);
+  if (!fs.existsSync(docxPath)) {
+    const buffer = await storageDownload(`wom/${entry.filename}`);
+    if (!buffer) return res.status(404).json({ error: 'Archivo no existe' });
+    fs.writeFileSync(docxPath, buffer);
+  }
+  try {
+    const pdfPath = await convertDocxToPdf(docxPath);
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${entry.filename.replace(/\.docx$/, '.pdf')}"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/registro-wom/:id', authMiddleware, async (req, res) => {

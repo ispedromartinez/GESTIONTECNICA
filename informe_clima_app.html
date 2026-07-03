@@ -459,7 +459,10 @@ function cerrarSesion(){
       <div class="field"><label>Sala<span class="req"> *</span></label><input type="text" id="eqSala" placeholder="TX"></div>
       <div class="field"><label>N° Equipo<span class="req"> *</span></label><input type="text" id="eqNumero" placeholder="01" oninput="previewCod()"></div>
     </div>
-    <div class="field"><label>Circuito</label><input type="text" id="eqCircuito" placeholder="Ej: 5" oninput="previewCod()"></div>
+    <div class="row2">
+      <div class="field" style="max-width:140px"><label>Circuito</label><input type="text" id="eqCircuito" placeholder="Ej: 5" inputmode="numeric" oninput="previewCod()"></div>
+      <div class="field"></div>
+    </div>
     <div class="field"><label>Tipo de Equipo<span class="req"> *</span></label><input type="text" id="eqTipo" placeholder="Ej: Aire Acondicionado Precision"></div>
     <div class="field"><label>Marca</label><input type="text" id="eqMarca" placeholder="Ej: Liebert, Stulz, Emerson"></div>
     <div class="field"><label>Modelo / N° de Serie</label><input type="text" id="eqModelo" placeholder="Modelo y número de serie"></div>
@@ -1603,6 +1606,7 @@ function renderHist(records){
         </div>
         <div class="inf-actions">
           <button class="act-btn act-dl" onclick="downloadRecord('${r.id}')">⬇ Descargar</button>
+          <button class="act-btn act-dl" onclick="verPdf('${r.id}')">👁 Ver PDF</button>
           <button class="act-btn act-em" onclick="openEmailModal('${r.id}','${escArg(r.nombreSitio)}','${escArg(r.codInforme)}')">✉️ Enviar</button>
           <button class="act-btn act-del" onclick="openConfirm('${r.id}','${escArg(r.nombreSitio)}')">🗑️ Borrar</button>
         </div>
@@ -1621,6 +1625,16 @@ async function downloadRecord(id){
     const url=URL.createObjectURL(blob);const a=document.createElement('a');
     a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url);
   }catch(e){alert('Error al descargar: '+e.message);}
+}
+async function verPdf(id){
+  try{
+    const r=await fetch(`${SERVER}/ver-pdf/${id}`,{headers:authH()});
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||'Error al generar PDF');}
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    window.open(url,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(e){alert('Error al ver PDF: '+e.message);}
 }
 function openConfirm(id,sitio){pendingDeleteId=id;document.getElementById('confirmMsg').textContent=`Se eliminará el informe de "${sitio}". Esta acción no se puede deshacer.`;document.getElementById('confirmDel').classList.add('open');}
 function closeConfirm(){document.getElementById('confirmDel').classList.remove('open');pendingDeleteId=null;}

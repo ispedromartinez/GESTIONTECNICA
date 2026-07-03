@@ -860,6 +860,7 @@ async function loadHistorial() {
         </div>
         <div class="hist-actions">
           <button class="btn-dl" onclick="descargar('${e.id}')">↓ Descargar</button>
+          <button class="btn-dl" onclick="verPdf('${e.id}')">👁 PDF</button>
           <button class="btn-del" onclick="eliminar('${e.id}',this)">🗑</button>
         </div>
       </div>`).join('');
@@ -878,6 +879,17 @@ async function descargar(id) {
     a.href = url; a.download = name; a.click();
     URL.revokeObjectURL(url);
   } catch(e) { toast('Error al descargar: '+e.message,'err'); }
+}
+
+async function verPdf(id) {
+  try {
+    const r = await fetch(`/ver-pdf-wom/${id}`, {headers:authH()});
+    if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.error||'Error al generar PDF'); }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  } catch(e) { toast('Error al ver PDF: '+e.message,'err'); }
 }
 
 async function eliminar(id, btn) {
