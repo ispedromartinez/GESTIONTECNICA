@@ -1,7 +1,7 @@
 -- Hoja de vida de equipos: tabla resumen poblada automáticamente al generar informes.
 CREATE TABLE IF NOT EXISTS equipos (
   id                   TEXT PRIMARY KEY,
-  empresa_id           TEXT,
+  empresa_id           UUID REFERENCES empresas(id) ON DELETE CASCADE,
   sitio                TEXT NOT NULL,
   numero               TEXT NOT NULL,
   clave                TEXT NOT NULL,

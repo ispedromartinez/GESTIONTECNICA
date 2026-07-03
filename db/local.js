@@ -131,10 +131,17 @@ try { db.exec("ALTER TABLE informes ADD COLUMN doc_nombre TEXT"); } catch {}
 try { db.exec("ALTER TABLE informes ADD COLUMN actualizado_en TEXT"); } catch {}
 
 // Equipos (hoja de vida de activos): tabla resumen, clave natural sitio+numero por tenant
+// Migración: empresa_id era TEXT y SQLite convertía el número del JWT a '1.0',
+// rompiendo el aislamiento por tenant (=== estricto). La tabla es derivada:
+// se recrea y el backfill la repuebla.
+{
+  const col = db.prepare("SELECT type FROM pragma_table_info('equipos') WHERE name='empresa_id'").get();
+  if (col && col.type === 'TEXT') db.exec('DROP TABLE equipos');
+}
 db.exec(`
   CREATE TABLE IF NOT EXISTS equipos (
     id                   TEXT PRIMARY KEY,
-    empresa_id           TEXT,
+    empresa_id           INTEGER,
     sitio                TEXT NOT NULL,
     numero               TEXT NOT NULL,
     clave                TEXT NOT NULL,
