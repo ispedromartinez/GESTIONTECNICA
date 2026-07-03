@@ -427,7 +427,10 @@ function cerrarSesion(){
         <input type="hidden" id="supervisor">
       </div>
     </div>
-    <div class="field"><label>Número de OT</label><input type="text" id="numOT" placeholder="OT-0000"></div>
+    <div class="row2">
+      <div class="field"><label>Número de OT</label><input type="text" id="numOT" placeholder="OT-0000"></div>
+      <div class="field"><label>LPU</label><input type="text" id="lpu" placeholder="LPU-0000"></div>
+    </div>
     <div class="field">
       <label>Código de Informe <small style="text-transform:none;letter-spacing:0;color:#aaa">(se genera automáticamente)</small></label>
       <div class="cod-auto" id="codPreview">— <small>Completa los campos para previsualizar</small></div>
@@ -456,6 +459,7 @@ function cerrarSesion(){
       <div class="field"><label>Sala<span class="req"> *</span></label><input type="text" id="eqSala" placeholder="TX"></div>
       <div class="field"><label>N° Equipo<span class="req"> *</span></label><input type="text" id="eqNumero" placeholder="01" oninput="previewCod()"></div>
     </div>
+    <div class="field"><label>Circuito</label><input type="text" id="eqCircuito" placeholder="Ej: 5" oninput="previewCod()"></div>
     <div class="field"><label>Tipo de Equipo<span class="req"> *</span></label><input type="text" id="eqTipo" placeholder="Ej: Aire Acondicionado Precision"></div>
     <div class="field"><label>Marca</label><input type="text" id="eqMarca" placeholder="Ej: Liebert, Stulz, Emerson"></div>
     <div class="field"><label>Modelo / N° de Serie</label><input type="text" id="eqModelo" placeholder="Modelo y número de serie"></div>
@@ -1146,7 +1150,8 @@ function buildCodigo(){
   const equipo=document.getElementById('eqNumero').value.trim();
   if(!f||!tec)return null;
   const[,m,d]=f.split('-');
-  const base=`${getInitials(tec)}${d}${m}${slugify(sitio)}${slugify(sala)}${slugify(equipo)}`;
+  const circuito=document.getElementById('eqCircuito').value.trim();
+  const base=`${getInitials(tec)}${d}${m}${slugify(sitio)}${slugify(sala)}${slugify(equipo)}${circuito?'C'+slugify(circuito):''}`;
   return base;
 }
 // Check correlativo against server records (async)
@@ -1182,9 +1187,9 @@ function previewCod(){
 // ══ NUEVO INFORME ══
 function nuevoInforme(){
   // Clear all fields
-  const ids=['codigoSitio','fechaEjecucion','sala','tecnico','numOT',
+  const ids=['codigoSitio','fechaEjecucion','sala','tecnico','numOT','lpu',
     'ticketInc','ticketTE','ticketTI','ticketRED','resumen','observaciones',
-    'eqSala','eqNumero','eqTipo','eqMarca','eqModelo',
+    'eqSala','eqNumero','eqCircuito','eqTipo','eqMarca','eqModelo',
     'm_cv','m_ca','m_ev','m_ea','m_condv','m_conda','m_tinj','m_tret'];
   ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   // Clear site
@@ -1472,8 +1477,8 @@ function buildSummary(){
     ['Fecha',fmtDate(g('fechaEjecucion'))],['Sala',g('sala')],
     ['Técnico',g('tecnico')],
     ['Supervisor',document.getElementById('supervisor').value||supInput.value],
-    ['Equipo N°',g('eqNumero')],['Marca',g('eqMarca')],
-    ['OT',g('numOT')],['Fotos',`${pc} / 30`]
+    ['Equipo N°',g('eqCircuito')?`${g('eqNumero')} C${g('eqCircuito')}`:g('eqNumero')],['Marca',g('eqMarca')],
+    ['OT',g('numOT')],['LPU',g('lpu')],['Fotos',`${pc} / 30`]
   ];
   let html=`<div class="cod-badge">📄 ${cod} <span style="font-size:10px;opacity:.7">(+correlativo si duplicado)</span></div>`;
   html+='<table class="summary-table">';
@@ -1504,7 +1509,7 @@ async function generateDocx(){
     codigoSitio:g('codigoSitio'),direccion:g('direccion'),sala:g('sala'),
     tecnico:g('tecnico'),
     supervisor:document.getElementById('supervisor').value||supInput.value,
-    numOT:g('numOT'),
+    numOT:g('numOT'),lpu:g('lpu'),circuito:g('eqCircuito'),
     ticketInc:g('ticketInc'),ticketTE:g('ticketTE'),ticketTI:g('ticketTI'),ticketRED:g('ticketRED'),
     resumen:g('resumen'),observaciones:g('observaciones'),
     eqSala:g('eqSala'),eqNumero:g('eqNumero'),eqTipo:g('eqTipo'),eqMarca:g('eqMarca'),eqModelo:g('eqModelo'),

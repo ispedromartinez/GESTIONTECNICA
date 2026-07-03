@@ -20,3 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_equipos_empresa ON equipos(empresa_id);
 -- Columnas nuevas en los registros de informes para ligar informe→equipo:
 ALTER TABLE informes_clima ADD COLUMN IF NOT EXISTS eq_numero TEXT;
 ALTER TABLE informes_wom   ADD COLUMN IF NOT EXISTS equipo   TEXT;
+
+-- LPU y circuito del informe TIGO (portados de INFORMECORRECTIVOS):
+ALTER TABLE informes_clima ADD COLUMN IF NOT EXISTS lpu      TEXT;
+ALTER TABLE informes_clima ADD COLUMN IF NOT EXISTS circuito TEXT;
