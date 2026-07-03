@@ -67,6 +67,15 @@ Both TIGO and WOM follow the same pattern:
 
 `codInforme` is the primary user-visible identifier (e.g. `YG0806ANTONITX01`). It is used as part of the filename and is **not sanitized** before being embedded in HTML attributes — escape it before innerHTML interpolation.
 
+## Equipos (hoja de vida)
+
+`db/equipos.js` mantiene la tabla resumen `equipos` (clave natural empresa+sitio+numero,
+normalizada con `claveEquipo`). Se puebla con upsert automático (no bloqueante) en
+POST `/generar` y `/generar-wom`; el historial se consulta en vivo contra los registros
+de informes usando las columnas `eq_numero` (clima) y `equipo` (wom).
+API: GET `/api/equipos`, GET `/api/equipos/:id/historial`, POST `/api/equipos/backfill`
+(superadmin). UI: pestaña Equipos en `catalogo.html`.
+
 ## Preventivo module
 
 `routes/preventivo.js` manages `tareas_preventivo` (Supabase table or `tareas_preventivo.json`). The `fromTarea`/`toTarea` mapper translates the camelCase app model to snake_case Supabase columns. When the XLSX import route (`POST /tareas/importar`) runs, `TAREAS_COLUMNAS` defines the header labels; `TAREAS_COLUMNAS_INV` is the reverse map built from it.
