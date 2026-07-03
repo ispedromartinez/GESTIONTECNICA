@@ -72,6 +72,12 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 .field textarea{resize:vertical;min-height:90px;line-height:1.5;}
 .field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+/* Los selects mejorados (searchable-select) se miden con el tab oculto y
+   pueden fijar un min-width mayor que la columna → se montan sobre el campo
+   vecino. Dentro de .field siempre fluidos. */
+.field{min-width:0;}
+.field .ss-wrap{width:100% !important;min-width:0 !important;}
+.field .ss-wrap .ss-disp{width:100%;box-sizing:border-box;}
 .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 .row-dt{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;}
 
