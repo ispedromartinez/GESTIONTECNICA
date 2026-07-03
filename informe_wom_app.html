@@ -76,8 +76,8 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
    pueden fijar un min-width mayor que la columna → se montan sobre el campo
    vecino. Dentro de .field siempre fluidos. */
 .field{min-width:0;}
-.field .ss-wrap{width:100% !important;min-width:0 !important;}
-.field .ss-wrap .ss-disp{width:100%;box-sizing:border-box;}
+.field .ss-wrap{width:100% !important;min-width:0 !important;max-width:100%;}
+.field .ss-wrap .ss-disp{width:100% !important;box-sizing:border-box !important;height:auto !important;}
 .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 .row-dt{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;}
 
