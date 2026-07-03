@@ -455,13 +455,10 @@ function cerrarSesion(){
 <div class="section" id="tab2">
   <div class="card">
     <div class="card-title">Datos del Equipamiento</div>
-    <div class="row2">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
       <div class="field"><label>Sala<span class="req"> *</span></label><input type="text" id="eqSala" placeholder="TX"></div>
       <div class="field"><label>N° Equipo<span class="req"> *</span></label><input type="text" id="eqNumero" placeholder="01" oninput="previewCod()"></div>
-    </div>
-    <div class="row2">
-      <div class="field" style="max-width:140px"><label>Circuito</label><input type="text" id="eqCircuito" placeholder="Ej: 5" inputmode="numeric" oninput="previewCod()"></div>
-      <div class="field"></div>
+      <div class="field"><label>Circuito</label><input type="text" id="eqCircuito" placeholder="Ej: 5" inputmode="numeric" oninput="previewCod()"></div>
     </div>
     <div class="field"><label>Tipo de Equipo<span class="req"> *</span></label><input type="text" id="eqTipo" placeholder="Ej: Aire Acondicionado Precision"></div>
     <div class="field"><label>Marca</label><input type="text" id="eqMarca" placeholder="Ej: Liebert, Stulz, Emerson"></div>
