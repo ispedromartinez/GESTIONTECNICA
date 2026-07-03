@@ -74,6 +74,12 @@ tbody tr:hover{background:#FAFBFF;}
 .dup-d{font-size:11px;color:#64748B;margin-top:2px;}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#0F172A;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.view-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.vtab{border:1.5px solid #E2E8F0;background:#fff;color:#64748B;border-radius:9px;
+  padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.vtab:hover{border-color:#CBD5E1;color:#0F172A;}
+.vtab.active{background:#0073EA;border-color:#0073EA;color:#fff;}
 </style>
 </head>
 <body>
@@ -103,7 +109,11 @@ const NIVEL = { superadmin:4, admin_empresa:3, supervisor:2, tecnico:1 };
 </header>
 
 <div class="main">
-  <div class="card">
+  <div class="view-tabs">
+    <button class="vtab active" id="tabSitios" onclick="cambiarVista('sitios')">📍 Sitios</button>
+    <button class="vtab" id="tabEquipos" onclick="cambiarVista('equipos')">❄️ Equipos</button>
+  </div>
+  <div class="card" id="cardSitios">
     <div class="toolbar">
       <div class="search"><input id="q" type="text" placeholder="Buscar por sitio, comuna o dirección…" oninput="render()"></div>
       <span class="count" id="count">0 sitios</span>
@@ -120,6 +130,23 @@ const NIVEL = { superadmin:4, admin_empresa:3, supervisor:2, tecnico:1 };
         <tbody id="tbody"></tbody>
       </table>
       <div class="empty" id="empty" style="display:none">No hay sitios que coincidan.</div>
+    </div>
+  </div>
+
+  <div class="card" id="cardEquipos" style="display:none">
+    <div class="toolbar">
+      <div class="search"><input id="eqSearch" placeholder="Buscar equipo, sitio, marca…" oninput="filtrarEquipos()"></div>
+      <span class="count" id="eqCount">0 equipos</span>
+      <button class="btn btn-ghost" id="btnBackfill" onclick="backfillEquipos()" style="display:none">↻ Recalcular</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Sitio</th><th>N° Equipo</th><th>Tipo</th><th>Marca / Modelo</th>
+          <th>Intervenciones</th><th>Última</th>
+        </tr></thead>
+        <tbody id="tbodyEquipos"><tr><td colspan="6" class="empty">Cargando…</td></tr></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -139,6 +166,15 @@ const NIVEL = { superadmin:4, admin_empresa:3, supervisor:2, tecnico:1 };
 <!-- Modal genérico (nuevo sitio / carga masiva / duplicados) -->
 <div class="modal-bg" id="modal2"><div class="modal" id="modal2box"></div></div>
 
+<!-- Modal ficha del equipo -->
+<div class="modal-bg" id="modalEquipo">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head" id="eqModalTitle">Equipo</div>
+    <div class="modal-body" id="eqModalBody"></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="cerrarModalEquipo()">Cerrar</button></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -146,6 +182,7 @@ let SITIOS = [];        // catálogo completo
 let PROYECTOS = [];     // proyectos del usuario
 let seleccion = new Set(); // índices seleccionados (sobre SITIOS)
 let puedeAsignar = false;
+let USUARIO_ROL = null;
 
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.className='show'; clearTimeout(el._t); el._t=setTimeout(()=>el.className='',2600); }
 
@@ -154,6 +191,7 @@ async function init(){
     const me = await fetch('/auth/me', { headers: authH() });
     if(!me.ok){ window.location.replace('/login'); return; }
     const { usuario } = await me.json();
+    USUARIO_ROL = usuario.rol;
     puedeAsignar = (NIVEL[usuario.rol]||0) >= 3;
     if(puedeAsignar){
       document.getElementById('btnAsignar').style.display='inline-flex';
@@ -354,6 +392,109 @@ async function resolverDuplicados(btn){
     toast(d.reemplazados ? `${d.reemplazados} sitio(s) reemplazado(s)` : 'Sin cambios');
     closeM2(); await recargarSitios();
   }catch(e){ toast('Error: '+e.message); btn.disabled=false; }
+}
+
+// ══ EQUIPOS (hoja de vida) ══
+let allEquipos = [], equiposCargados = false;
+
+function cambiarVista(v){
+  document.getElementById('tabSitios').classList.toggle('active', v==='sitios');
+  document.getElementById('tabEquipos').classList.toggle('active', v==='equipos');
+  document.getElementById('cardSitios').style.display = v==='sitios' ? '' : 'none';
+  document.getElementById('cardEquipos').style.display = v==='equipos' ? '' : 'none';
+  if (v==='equipos' && !equiposCargados) cargarEquipos();
+}
+
+async function cargarEquipos(){
+  try{
+    const r = await fetch('/api/equipos', { headers: authH() });
+    allEquipos = await r.json();
+    if(!r.ok) throw new Error(allEquipos.error||'Error');
+    equiposCargados = true;
+    if (USUARIO_ROL === 'superadmin') document.getElementById('btnBackfill').style.display='';
+    renderEquipos(allEquipos);
+  }catch(e){
+    document.getElementById('tbodyEquipos').innerHTML = '<tr><td colspan="6" class="empty">No se pudo cargar.</td></tr>';
+  }
+}
+
+function filtrarEquipos(){
+  const q = (document.getElementById('eqSearch').value||'').toLowerCase();
+  renderEquipos(!q ? allEquipos : allEquipos.filter(e =>
+    ['sitio','numero','tipo','marca','modelo'].some(k => (e[k]||'').toLowerCase().includes(q))));
+}
+
+function renderEquipos(list){
+  document.getElementById('eqCount').textContent = `${list.length} equipo${list.length===1?'':'s'}`;
+  const tb = document.getElementById('tbodyEquipos');
+  if (!list.length){ tb.innerHTML = '<tr><td colspan="6" class="empty">Sin equipos registrados. Se crean automáticamente al generar informes con N° de equipo.</td></tr>'; return; }
+  tb.innerHTML = list.map(e => `
+    <tr style="cursor:pointer" onclick="abrirEquipo('${esc(e.id)}')">
+      <td class="td-sitio">${esc(e.sitio)}</td>
+      <td><strong>${esc(e.numero)}</strong></td>
+      <td>${esc(e.tipo)||'—'}</td>
+      <td class="td-dir">${esc([e.marca,e.modelo].filter(Boolean).join(' / '))||'—'}</td>
+      <td><span class="badge badge--info">${e.totalIntervenciones||0}</span></td>
+      <td class="td-dir">${esc(e.ultimaIntervencion)||'—'}</td>
+    </tr>`).join('');
+}
+
+async function abrirEquipo(id){
+  const bg = document.getElementById('modalEquipo');
+  document.getElementById('eqModalBody').innerHTML = '<div class="empty">Cargando…</div>';
+  bg.classList.add('show');
+  try{
+    const r = await fetch(`/api/equipos/${encodeURIComponent(id)}/historial`, { headers: authH() });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Error');
+    const eq = d.equipo;
+    document.getElementById('eqModalTitle').textContent = `${eq.sitio} · ${eq.numero}`;
+    const fila = i => `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #F1F5F9;font-size:13px">
+        <span class="badge ${i.tipo==='TIGO'?'badge--info':'badge--warning'}">${esc(i.tipo)}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600">${esc(i.codigo)}</div>
+          <div style="font-size:11px;color:#64748B">${esc(i.fecha)||'—'} · ${esc(i.tecnico)}</div>
+        </div>
+        <button class="btn btn-ghost" style="padding:6px 10px" onclick="descargarInforme('${esc(i.urlDescarga)}','${esc(i.filename||'informe')}')">⬇</button>
+      </div>`;
+    document.getElementById('eqModalBody').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">
+        <div><span style="color:#64748B;font-size:11px">TIPO</span><br>${esc(eq.tipo)||'—'}</div>
+        <div><span style="color:#64748B;font-size:11px">MARCA / MODELO</span><br>${esc([eq.marca,eq.modelo].filter(Boolean).join(' / '))||'—'}</div>
+        <div><span style="color:#64748B;font-size:11px">INTERVENCIONES</span><br>${eq.totalIntervenciones||0}</div>
+        <div><span style="color:#64748B;font-size:11px">PRIMERA / ÚLTIMA</span><br>${esc(eq.primeraIntervencion)||'—'} → ${esc(eq.ultimaIntervencion)||'—'}</div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Historial (${d.historial.length})</div>
+      ${d.historial.map(fila).join('') || '<div class="empty" style="padding:14px">Sin informes ligados a este equipo aún.</div>'}
+      ${d.delSitio.length ? `
+        <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 4px">Otros informes del sitio sin N° de equipo (${d.delSitio.length})</div>
+        ${d.delSitio.map(fila).join('')}` : ''}`;
+  }catch(e){
+    document.getElementById('eqModalBody').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  }
+}
+function cerrarModalEquipo(){ document.getElementById('modalEquipo').classList.remove('show'); }
+
+async function descargarInforme(url, fn){
+  try{
+    const r = await fetch(url, { headers: authH() });
+    if(!r.ok) throw new Error('Error al descargar');
+    const blob = await r.blob();
+    const u = URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href=u; a.download=fn; a.click(); URL.revokeObjectURL(u);
+  }catch(e){ toast(e.message); }
+}
+
+async function backfillEquipos(){
+  const b = document.getElementById('btnBackfill'); b.disabled = true;
+  try{
+    const r = await fetch('/api/equipos/backfill', { method:'POST', headers: authH() });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Error');
+    equiposCargados = false; await cargarEquipos();
+    toast(`Recalculado: ${d.procesados} informes → ${d.equipos} equipos`);
+  }catch(e){ toast(e.message); } finally { b.disabled = false; }
 }
 
 init();
