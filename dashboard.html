@@ -274,6 +274,9 @@ tbody tr:hover{background:#F8FAFF;}
 
 /* ═══════════ INFORMES POR PROYECTO (módulo portado de /admin) ═══════════ */
 .ip-tools{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-right:12px;}
+.ip-cal-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex:none;border-radius:8px;border:1.5px solid #E2E8F0;background:#F6F7FB;color:#64748B;cursor:pointer;transition:.15s;}
+.ip-cal-btn:hover{border-color:#0073EA;color:#0073EA;background:#EFF6FF;}
+.ip-cal-btn svg{width:17px;height:17px;}
 .ip-select{border:1.5px solid #E2E8F0;border-radius:8px;padding:7px 14px;font-size:13px;font-family:inherit;color:#0F172A;background:#F6F7FB;outline:none;width:300px;max-width:100%;}
 .ip-select:focus{border-color:#0073EA;background:#fff;}
 .ip-chips{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:12px 22px;border-bottom:1px solid #F0F1F5;}
@@ -304,6 +307,35 @@ tbody tr:hover{background:#F8FAFF;}
 .ip-modal{background:#fff;border:1px solid #E2E8F0;border-radius:14px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(15,23,42,.2);padding:24px 24px 20px;max-height:90vh;overflow-y:auto;}
 .ip-modal h3{font-size:18px;font-weight:800;margin-bottom:4px;color:#0F172A;letter-spacing:-.01em;}
 .ip-modal-sub{font-size:12.5px;color:#64748B;margin-bottom:18px;line-height:1.5;padding-bottom:16px;border-bottom:1px solid #EEF1F6;}
+/* Calendario de trabajos (ejecutados/pendientes) por proyecto */
+.ip-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.ip-cal-title{font-size:14px;font-weight:800;color:#0F172A;text-transform:capitalize;}
+.ip-cal-nav{display:flex;align-items:center;gap:6px;}
+.ip-cal-navbtn{width:28px;height:28px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B;font-size:14px;font-family:inherit;}
+.ip-cal-navbtn:hover{border-color:#0073EA;color:#0073EA;}
+.ip-cal-close{margin-left:8px;font-size:11px;}
+.ip-cal-close:hover{border-color:#DC2626;color:#DC2626;}
+.ip-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
+.ip-cal-wd{font-size:10px;font-weight:700;color:#94A3B8;text-align:center;text-transform:uppercase;padding-bottom:4px;}
+.ip-cal-day{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#F8FAFC;}
+.ip-cal-day.empty{background:transparent;}
+.ip-cal-day.has-data{cursor:pointer;}
+.ip-cal-day.has-data:hover .ip-cal-num{filter:brightness(.94);}
+.ip-cal-day.today{box-shadow:inset 0 0 0 1.5px #94A3B8;}
+.ip-cal-day.sel{background:#EFF6FF;box-shadow:inset 0 0 0 1.5px #0073EA;}
+.ip-cal-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#334155;}
+.ip-cal-day.done .ip-cal-num{background:#059669;color:#fff;}
+.ip-cal-day.pend .ip-cal-num{background:#D97706;color:#fff;}
+.ip-cal-legend{display:flex;gap:14px;font-size:11px;color:#64748B;margin:10px 0 16px;}
+.ip-cal-legend span{display:inline-flex;align-items:center;gap:5px;}
+.ip-cal-legend i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+.ip-cal-detail{border-top:1px solid #EEF1F6;padding-top:14px;}
+.ip-cal-detail-empty{font-size:12.5px;color:#94A3B8;text-align:center;padding:14px 0;}
+.ip-cal-item{border:1px solid #E2E8F0;border-radius:10px;padding:11px 13px;margin-bottom:8px;}
+.ip-cal-item:last-child{margin-bottom:0;}
+.ip-cal-item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.ip-cal-item-tit{font-size:13px;font-weight:700;color:#0F172A;}
+.ip-cal-item-meta{font-size:11.5px;color:#64748B;}
 .ip-field{margin-bottom:14px;}
 .ip-field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:5px;}
 .ip-field input,.ip-field select,.ip-field textarea{width:100%;border:1.5px solid #E2E8F0;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:#0F172A;background:#F8F9FC;outline:none;}
@@ -664,6 +696,9 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
         <div class="section-head">
           <span class="section-head-title">Informes por proyecto</span>
           <div class="ip-tools">
+            <button class="ip-cal-btn" onclick="ipAbrirCalendario()" title="Calendario: trabajos ejecutados y pendientes">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </button>
             <select class="ip-select" id="ipProy" onchange="ipLoad()">
               <option value="">— Selecciona proyecto —</option>
             </select>
@@ -714,10 +749,13 @@ async function init() {
     const miRol = usuario.rol;
     MIROL = miRol;
 
-    const initials = usuario.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    // El perfil (si está completo) trae el nombre de pila ya separado del
+    // apellido; usarlo evita duplicar el apellido al armar "nombre completo".
+    const nombrePila = perfil.nombre || usuario.nombre;
+    const initials = nombrePila.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     document.getElementById('sbAvatar').textContent    = initials;
     document.getElementById('sbUserName').textContent  = usuario.nombre;
-    document.getElementById('welcomeMsg').textContent  = 'Bienvenido, ' + usuario.nombre.split(' ')[0];
+    document.getElementById('welcomeMsg').textContent  = 'Bienvenido, ' + nombrePila.split(' ')[0];
     const rolLabel = { superadmin:'Superadmin', admin_empresa:'Administrador', supervisor:'Supervisor', tecnico:'Técnico' };
     document.getElementById('sbUserRol').textContent   = rolLabel[miRol] || miRol;
 
@@ -729,7 +767,7 @@ async function init() {
       document.getElementById('heroKpis').style.display = 'none';
       document.getElementById('heroPersona').style.display = 'none';
     } else {
-      const nombreCompleto = [usuario.nombre, perfil.apellidos].filter(Boolean).join(' ');
+      const nombreCompleto = [nombrePila, perfil.apellidos].filter(Boolean).join(' ');
       const areasTxt = (areas || []).map(a => a.nombre).filter(Boolean).join(', ');
       const filas = [];
       filas.push(`<div style="color:#fff;font-weight:600;">${esc(nombreCompleto)}</div>`);
@@ -1276,6 +1314,101 @@ async function ipVerDoc(url, nombre) {
     const a = document.createElement('a'); a.href = u; a.download = nombre || 'informe'; a.click();
     URL.revokeObjectURL(u);
   } catch (e) { toast('Error: ' + e.message); }
+}
+
+// ── Calendario de trabajos ejecutados/pendientes (por proyecto) ──
+let _ipCalYear, _ipCalMonth, _ipCalInformes = [], _ipCalSelDate = null;
+const IP_CAL_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+async function ipAbrirCalendario() {
+  const pid = document.getElementById('ipProy').value;
+  if (!pid) { toast('Selecciona un proyecto primero'); return; }
+  try {
+    const r = await fetch('/api/gestion/proyectos/' + pid + '/informes', { headers: authH() });
+    if (!r.ok) throw new Error('No se pudieron cargar los informes');
+    _ipCalInformes = await r.json();
+  } catch (e) { toast('Error: ' + e.message); return; }
+  const hoy = new Date();
+  _ipCalYear = hoy.getFullYear(); _ipCalMonth = hoy.getMonth(); _ipCalSelDate = null;
+  ipOpenModal(ipCalRender());
+}
+
+function ipCalMes(delta) {
+  _ipCalMonth += delta;
+  if (_ipCalMonth < 0) { _ipCalMonth = 11; _ipCalYear--; }
+  if (_ipCalMonth > 11) { _ipCalMonth = 0; _ipCalYear++; }
+  _ipCalSelDate = null;
+  document.getElementById('ipModalBox').innerHTML = ipCalRender();
+}
+
+function ipCalVerDia(fstr) {
+  _ipCalSelDate = fstr;
+  document.getElementById('ipModalBox').innerHTML = ipCalRender();
+}
+
+// Fecha (YYYY-MM-DD) que representa el informe en el calendario: un informe
+// "aprobado" (ejecutado/cerrado) usa la fecha en que se cerró; el resto
+// (pendiente de ejecutar) usa su fecha de creación — el modelo de informes
+// correctivos no tiene un campo de fecha programada/vencimiento.
+function ipCalFechaInforme(i) {
+  const s = i.estado === 'aprobado' ? (i.actualizado_en || i.fecha_creacion) : i.fecha_creacion;
+  return s ? String(s).slice(0, 10) : null;
+}
+function ipCalAgrupar() {
+  const porDia = {};
+  _ipCalInformes.forEach(i => { const f = ipCalFechaInforme(i); if (f) (porDia[f] = porDia[f] || []).push(i); });
+  return porDia;
+}
+
+function ipCalRender() {
+  const porDia = ipCalAgrupar();
+  const primerDia = new Date(_ipCalYear, _ipCalMonth, 1);
+  const offset = (primerDia.getDay() + 6) % 7; // semana empieza en lunes
+  const diasEnMes = new Date(_ipCalYear, _ipCalMonth + 1, 0).getDate();
+  const hoyStr = new Date().toISOString().slice(0, 10);
+
+  let celdas = '';
+  for (let k = 0; k < offset; k++) celdas += `<div class="ip-cal-day empty"></div>`;
+  for (let d = 1; d <= diasEnMes; d++) {
+    const fstr = `${_ipCalYear}-${String(_ipCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const items = porDia[fstr] || [];
+    const hayDone = items.some(i => i.estado === 'aprobado');
+    const hayPend = items.some(i => i.estado !== 'aprobado');
+    const cls = ['ip-cal-day'];
+    if (items.length) cls.push('has-data', hayDone ? 'done' : 'pend'); // el círculo prioriza "ejecutado" si el día tiene ambos
+    if (fstr === hoyStr) cls.push('today');
+    if (fstr === _ipCalSelDate) cls.push('sel');
+    celdas += `<div class="${cls.join(' ')}" ${items.length ? `onclick="ipCalVerDia('${fstr}')"` : ''}><span class="ip-cal-num">${d}</span></div>`;
+  }
+
+  return `<div class="ip-cal-head">
+      <div class="ip-cal-title">${IP_CAL_MESES[_ipCalMonth]} ${_ipCalYear}</div>
+      <div class="ip-cal-nav">
+        <button class="ip-cal-navbtn" onclick="ipCalMes(-1)">‹</button>
+        <button class="ip-cal-navbtn" onclick="ipCalMes(1)">›</button>
+        <button class="ip-cal-navbtn ip-cal-close" onclick="ipCloseModal()" title="Cerrar">✕</button>
+      </div>
+    </div>
+    <div class="ip-cal-grid">
+      ${['L','M','X','J','V','S','D'].map(d => `<div class="ip-cal-wd">${d}</div>`).join('')}
+      ${celdas}
+    </div>
+    <div class="ip-cal-legend">
+      <span><i style="background:#059669"></i> Ejecutado</span>
+      <span><i style="background:#D97706"></i> Pendiente</span>
+    </div>
+    <div class="ip-cal-detail">${ipCalDetalleHtml()}</div>`;
+}
+
+function ipCalDetalleHtml() {
+  if (!_ipCalSelDate) return '<div class="ip-cal-detail-empty">Haz clic en un día marcado para ver el detalle.</div>';
+  const items = ipCalAgrupar()[_ipCalSelDate] || [];
+  if (!items.length) return '<div class="ip-cal-detail-empty">Sin trabajos ese día.</div>';
+  return items.map(i => `<div class="ip-cal-item">
+      <div class="ip-cal-item-top"><span class="ip-cal-item-tit">${esc(i.titulo)}</span><span class="ip-pill ip-${esc(i.estado)}">${esc(i.estado)}</span></div>
+      <div class="ip-cal-item-meta">${i.sitio ? esc(i.sitio) + ' · ' : ''}${esc(i.tecnico_nombre || 'Sin técnico asignado')}</div>
+      ${i.doc_url ? `<button class="ip-btn ip-btn-sm ip-btn-doc" style="margin-top:8px" onclick="ipVerDoc('${encodeURIComponent(i.doc_url)}','${encodeURIComponent(i.doc_nombre || '')}')">⬇ Descargar informe</button>` : ''}
+    </div>`).join('');
 }
 
 // ── Modal: crear informe ──

@@ -29,6 +29,18 @@ const db = {
     return localDB.usuarios.findByEmail(email) || null;
   },
 
+  async findUserById(id) {
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient
+        .from('usuarios')
+        .select('id,nombre,email,password_hash,rol,empresa_id,activo')
+        .eq('id', id)
+        .single();
+      if (!error) return data;
+    }
+    return localDB.usuarios.findById(id) || null;
+  },
+
   async findEmpresaBySlug(slug) {
     if (supabaseClient) {
       const { data } = await supabaseClient
@@ -476,6 +488,32 @@ router.delete('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (
   }
 });
 
+// ── PUT /auth/password ────────────────────────────────────────
+// Autoservicio: cualquier usuario autenticado cambia su propia contraseña
+// (a diferencia de PATCH /auth/usuarios/:id, que es un admin reseteando la
+// de otra persona). Exige la contraseña actual para confirmar identidad.
+router.put('/password', authMiddleware, async (req, res) => {
+  try {
+    const { password_actual, password_nueva } = req.body;
+    if (!password_actual || !password_nueva)
+      return res.status(400).json({ error: 'Contraseña actual y nueva son requeridas' });
+    if (password_nueva.length < 6)
+      return res.status(400).json({ error: 'La nueva contraseña debe tener 6+ caracteres' });
+
+    const usuario = await db.findUserById(req.user.usuario_id);
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const ok = await bcrypt.compare(password_actual, usuario.password_hash);
+    if (!ok) return res.status(401).json({ error: 'La contraseña actual no es correcta' });
+
+    const password_hash = await bcrypt.hash(password_nueva, 12);
+    await db.updateUsuario(usuario.id, { password_hash });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── GET /auth/me ──────────────────────────────────────────────
 // Devuelve el usuario del token + datos de presentación (cargo y áreas).
 // El dashboard los usa para mostrar "información de la persona" a
@@ -483,11 +521,11 @@ router.delete('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const u = req.user;
-    let cargo = null, apellidos = null, areas = [];
+    let cargo = null, nombre = null, apellidos = null, areas = [];
 
     try {
       const perfil = await gestionDB.perfilByUsuario(u.usuario_id);
-      if (perfil) { cargo = perfil.cargo || null; apellidos = perfil.apellidos || null; }
+      if (perfil) { cargo = perfil.cargo || null; nombre = perfil.nombre || null; apellidos = perfil.apellidos || null; }
     } catch { /* perfil opcional */ }
 
     const ids = Array.isArray(u.areas_permitidas) ? u.areas_permitidas : [];
@@ -496,10 +534,10 @@ router.get('/me', authMiddleware, async (req, res) => {
       areas = list.filter(Boolean).map(a => ({ id: a.id, nombre: a.nombre }));
     }
 
-    res.json({ usuario: u, perfil: { cargo, apellidos }, areas });
+    res.json({ usuario: u, perfil: { cargo, nombre, apellidos }, areas });
   } catch (err) {
     // Ante cualquier fallo, no romper la sesión: devolver al menos el usuario.
-    res.json({ usuario: req.user, perfil: { cargo: null, apellidos: null }, areas: [] });
+    res.json({ usuario: req.user, perfil: { cargo: null, nombre: null, apellidos: null }, areas: [] });
   }
 });
 

@@ -704,12 +704,39 @@ VIEWS['mis-informes'] = async () => {
 VIEWS.config = async () => {
   $('content').innerHTML = `<div class="section">
     <div class="sec-head"><div><div class="sec-name">Configuración</div><div class="sec-sub">Ajustes generales</div></div></div>
-    <div style="padding:22px">
+    <div style="padding:22px;max-width:420px">
       <div class="field"><label>Sesión</label><div style="font-size:13px;color:var(--p-muted)">Conectado como <b>${esc(ME.nombre)}</b> (${ROL_LABEL[ME.rol]||ME.rol}).</div></div>
       <div class="field"><label>Fuente de datos</label><div style="font-size:13px;color:var(--p-muted)">El backend decide entre Supabase y SQLite local automáticamente.</div></div>
       <a class="btn btn-ghost" href="/dashboard">← Ir al inicio</a>
+    </div>
+    <div class="sec-head" style="border-top:1px solid var(--p-border)"><div><div class="sec-name" style="font-size:14px">Cambiar contraseña</div><div class="sec-sub">Requiere tu contraseña actual</div></div></div>
+    <div style="padding:22px;max-width:420px">
+      <div class="field"><label>Contraseña actual</label>
+        <div class="pw-wrap"><input id="cpActual" type="password" placeholder="Tu contraseña actual">
+          <button type="button" class="pw-eye" onclick="togglePw('cpActual',this)" title="Mostrar/ocultar">👁</button></div></div>
+      <div class="field"><label>Nueva contraseña</label>
+        <div class="pw-wrap"><input id="cpNueva" type="password" placeholder="Mínimo 6 caracteres">
+          <button type="button" class="pw-eye" onclick="togglePw('cpNueva',this)" title="Mostrar/ocultar">👁</button></div></div>
+      <div class="field"><label>Repetir nueva contraseña</label>
+        <div class="pw-wrap"><input id="cpNueva2" type="password" placeholder="Repite la nueva contraseña">
+          <button type="button" class="pw-eye" onclick="togglePw('cpNueva2',this)" title="Mostrar/ocultar">👁</button></div></div>
+      <button class="btn btn-blue" id="btnCambiarPw" onclick="cambiarMiPassword(this)">Actualizar contraseña</button>
     </div></div>`;
 };
+
+async function cambiarMiPassword(btn){
+  const actual = $('cpActual').value, nueva = $('cpNueva').value, nueva2 = $('cpNueva2').value;
+  if(!actual || !nueva) return toast('Completa ambas contraseñas','err');
+  if(nueva.length < 6) return toast('La nueva contraseña debe tener 6+ caracteres','err');
+  if(nueva !== nueva2) return toast('Las contraseñas nuevas no coinciden','err');
+  btn.disabled = true;
+  try{
+    await api('/auth/password', {method:'PUT', body:JSON.stringify({password_actual:actual, password_nueva:nueva})});
+    $('cpActual').value = ''; $('cpNueva').value = ''; $('cpNueva2').value = '';
+    toast('Contraseña actualizada','ok');
+  }catch(e){ toast(e.message,'err'); }
+  btn.disabled = false;
+}
 
 // ── Helper de tabla genérica ──
 function sectionTable({name,sub,tools='',addBtn='',head,rows,emptyIcon,emptyMsg}){
