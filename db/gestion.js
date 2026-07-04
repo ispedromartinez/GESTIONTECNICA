@@ -211,6 +211,17 @@ const db = {
     local.informes.updateEstado(id, estado);
   },
 
+  // Reasigna el técnico responsable: lo quita del anterior y lo pone en el nuevo.
+  async informeUpdateTecnico(id, tecnico_id) {
+    if (supa) {
+      const { error } = await supa.from('informes')
+        .update({ tecnico_id, actualizado_en: new Date().toISOString() }).eq('id', id);
+      if (error) throw new Error(error.message);
+      return;
+    }
+    local.informes.updateTecnico(id, tecnico_id);
+  },
+
   // Adjunta el documento generado y marca el informe como 'enviado' (generado).
   async informeSetDocumento(id, doc_url, doc_nombre) {
     if (supa) {

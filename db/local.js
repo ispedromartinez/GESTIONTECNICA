@@ -474,6 +474,9 @@ const local = {
     updateEstado(id, estado) {
       db.prepare("UPDATE informes SET estado = ?, actualizado_en = datetime('now') WHERE id = ?").run(estado, id);
     },
+    updateTecnico(id, tecnico_id) {
+      db.prepare("UPDATE informes SET tecnico_id = ?, actualizado_en = datetime('now') WHERE id = ?").run(tecnico_id || null, id);
+    },
     // El documento real fue generado: pasa a 'enviado' y guarda el enlace.
     setDocumento(id, doc_url, doc_nombre) {
       db.prepare("UPDATE informes SET estado = 'enviado', doc_url = ?, doc_nombre = ?, actualizado_en = datetime('now') WHERE id = ?")

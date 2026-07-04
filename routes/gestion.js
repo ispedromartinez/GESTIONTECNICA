@@ -393,4 +393,28 @@ router.patch('/informes/:id/estado', async (req, res) => {
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
+// PATCH /api/gestion/informes/:id/tecnico — reasignar el técnico responsable
+// (lo saca del anterior y lo pone en el nuevo). Igual que crear un informe,
+// el nuevo técnico debe ser personal asignado al proyecto (Regla 2). No lo
+// puede hacer un técnico (solo quien gestiona el proyecto: supervisor+).
+router.patch('/informes/:id/tecnico', async (req, res) => {
+  try {
+    if (req.user.rol === 'tecnico')
+      return res.status(403).json({ error: 'No puedes reasignar informes' });
+    const { tecnico_id } = req.body;
+    const informe = await db.informeById(req.params.id);
+    if (!informe) return res.status(404).json({ error: 'Informe no encontrado' });
+    const proyecto = await db.proyectoById(informe.proyecto_id);
+    if (!canAccessTenant(req, proyecto && proyecto.empresa_id))
+      return res.status(403).json({ error: 'Informe fuera de tu empresa' });
+    if (tecnico_id) {
+      const personal = await db.personalDeProyecto(informe.proyecto_id, proyecto.empresa_id);
+      if (!personal.some(p => p.id === tecnico_id))
+        return res.status(400).json({ error: 'El técnico no está asignado a este proyecto / empresa' });
+    }
+    await db.informeUpdateTecnico(informe.id, tecnico_id || null);
+    res.json({ ok: true });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
 module.exports = router;

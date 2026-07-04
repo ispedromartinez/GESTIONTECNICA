@@ -163,6 +163,7 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 </head>
 <body>
 <script>
+let HOME_URL = '/dashboard';
 (function(){
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (!token) { window.location.replace('/login'); throw ''; }
@@ -171,8 +172,21 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
     .then(d => {
       if (!d || !d.usuario) return;
       // Casa → área de gestión según rol: técnico → /panel, resto → /dashboard
+      HOME_URL = d.usuario.rol === 'tecnico' ? '/panel' : '/dashboard';
       const home = document.getElementById('btnHome');
-      if (home) home.href = d.usuario.rol === 'tecnico' ? '/panel' : '/dashboard';
+      if (home) home.href = HOME_URL;
+
+      // Informe ya asignado a este técnico (llegó con ?informeId= desde
+      // "Generar informe" en /panel): precargar su nombre en Técnico(s)
+      // responsable(s) si el formulario todavía está en blanco.
+      const informeId = new URLSearchParams(location.search).get('informeId');
+      if (informeId && d.usuario.rol === 'tecnico') {
+        const inputs = document.querySelectorAll('.tec-input');
+        if (inputs.length === 1 && !inputs[0].value.trim()) {
+          const nombreCompleto = [ (d.perfil && d.perfil.nombre) || d.usuario.nombre, d.perfil && d.perfil.apellidos ].filter(Boolean).join(' ');
+          inputs[0].value = nombreCompleto;
+        }
+      }
     })
     .catch(() => window.location.replace('/login'));
 })();
@@ -837,6 +851,9 @@ async function generarInforme() {
 
     toast(`✓ Informe "${name}" generado`, 'ok');
     clearState();
+    // Actividad asignada (venía con ?informeId=): ya cumplió su propósito,
+    // se vuelve sola a inicio en vez de dejar el formulario abierto.
+    if (payload.gestionInformeId) { setTimeout(() => { window.location.href = HOME_URL; }, 1400); return; }
   } catch(err) {
     toast(`Error: ${err.message}`, 'err');
   } finally {

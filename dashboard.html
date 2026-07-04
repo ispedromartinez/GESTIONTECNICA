@@ -225,6 +225,9 @@ tbody tr:hover{background:#F8FAFF;}
 .td-fecha{color:#64748B;font-size:12px;white-space:nowrap;}
 .td-tec{font-weight:500;}
 .td-sitio{font-weight:600;}
+.ip-reassign-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;border:none;background:transparent;color:#94A3B8;cursor:pointer;vertical-align:middle;margin-left:4px;}
+.ip-reassign-btn:hover{background:#EFF6FF;color:#0073EA;}
+.ip-reassign-btn svg{width:13px;height:13px;}
 
 .empty-tbl{text-align:center;padding:52px 20px;color:#64748B;}
 .empty-tbl .ei{font-size:38px;margin-bottom:8px;}
@@ -1287,7 +1290,10 @@ async function ipLoad() {
     body.innerHTML = `<div class="ip-toolbar"><button class="ip-btn ip-btn-prim ip-btn-sm" onclick="ipModalInforme('${esc(pid)}')">+ Nuevo informe</button></div>
       ${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Título</th><th>Técnico</th><th>Estado</th><th>Documento</th><th>Última actualización</th></tr></thead><tbody>
         ${list.map(i => `<tr><td class="td-sitio">${esc(i.titulo)}</td>
-          <td class="td-tec">${esc(i.tecnico_nombre || '—')}</td>
+          <td class="td-tec">${esc(i.tecnico_nombre || '—')}
+            <button class="ip-reassign-btn" onclick="ipReasignar('${esc(i.id)}','${esc(i.tecnico_id || '')}','${esc(pid)}')" title="Reasignar técnico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button></td>
           <td><span class="ip-pill ip-${esc(i.estado)}">${esc(i.estado)}</span></td>
           <td>${i.doc_url
             ? `<button class="ip-btn ip-btn-sm ip-btn-doc" onclick="ipVerDoc('${encodeURIComponent(i.doc_url)}','${encodeURIComponent(i.doc_nombre || '')}')">⬇ Descargar</button>`
@@ -1295,6 +1301,35 @@ async function ipLoad() {
           <td class="td-fecha">${ipFechaHora(i.actualizado_en || i.fecha_creacion)}</td></tr>`).join('')}
         </tbody></table></div>` : ipEmpty('Este proyecto no tiene informes.', IP_ICO_DOC)}`;
   } catch (e) { body.innerHTML = ipEmpty(e.message, IP_ICO_DOC); }
+}
+
+// ── Reasignar técnico responsable de un informe ──
+async function ipReasignar(informeId, tecnicoActualId, pid) {
+  let personal = [];
+  try { personal = await fetch('/api/gestion/proyectos/' + pid + '/personal', { headers: authH() }).then(r => r.ok ? r.json() : []); }
+  catch { personal = []; }
+  const tecnicos = personal.filter(p => p.rol === 'tecnico');
+  if (!tecnicos.length) { toast('Este proyecto no tiene técnicos asignados.'); return; }
+  ipOpenModal(`<h3>Reasignar técnico</h3>
+    <p class="ip-modal-sub">Se lo quita al técnico actual y queda asignado al que elijas.</p>
+    <div class="ip-field"><label>Técnico responsable</label>
+      <select id="ipReasignSel">
+        ${tecnicos.map(t => `<option value="${esc(t.id)}" ${t.id === tecnicoActualId ? 'selected' : ''}>${esc(t.nombre)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="ip-actions"><button class="ip-btn ip-btn-cancel" onclick="ipCloseModal()">Cancelar</button>
+      <button class="ip-btn ip-btn-confirm" onclick="ipConfirmarReasignar('${esc(informeId)}')">Guardar</button></div>`);
+}
+async function ipConfirmarReasignar(informeId) {
+  const tecnico_id = document.getElementById('ipReasignSel').value;
+  try {
+    const r = await fetch('/api/gestion/informes/' + informeId + '/tecnico', {
+      method: 'PATCH', headers: authH({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ tecnico_id })
+    });
+    if (!r.ok) { const d = await r.json().catch(() => null); throw new Error((d && d.error) || 'No se pudo reasignar'); }
+    ipCloseModal(); toast('Técnico reasignado'); ipLoad();
+  } catch (e) { toast('Error: ' + e.message); }
 }
 
 // Última actualización: "YYYY-MM-DD HH:MM" (formato uniforme para local y Supabase).
@@ -1346,12 +1381,17 @@ function ipCalVerDia(fstr) {
   document.getElementById('ipModalBox').innerHTML = ipCalRender();
 }
 
+// "Ejecutado" = ya tiene informe generado (el técnico ya hizo la visita),
+// sin importar si un supervisor lo cerró formalmente después.
+// "Pendiente de ejecutar" = borrador, todavía sin documento.
+function ipCalEjecutado(i) { return i.estado !== 'borrador'; }
+
 // Fecha (YYYY-MM-DD) que representa el informe en el calendario: un informe
-// "aprobado" (ejecutado/cerrado) usa la fecha en que se cerró; el resto
-// (pendiente de ejecutar) usa su fecha de creación — el modelo de informes
-// correctivos no tiene un campo de fecha programada/vencimiento.
+// ejecutado usa la fecha en que se generó/actualizó su documento; el
+// pendiente usa su fecha de creación — el modelo de informes correctivos
+// no tiene un campo de fecha programada/vencimiento.
 function ipCalFechaInforme(i) {
-  const s = i.estado === 'aprobado' ? (i.actualizado_en || i.fecha_creacion) : i.fecha_creacion;
+  const s = ipCalEjecutado(i) ? (i.actualizado_en || i.fecha_creacion) : i.fecha_creacion;
   return s ? String(s).slice(0, 10) : null;
 }
 function ipCalAgrupar() {
@@ -1372,8 +1412,8 @@ function ipCalRender() {
   for (let d = 1; d <= diasEnMes; d++) {
     const fstr = `${_ipCalYear}-${String(_ipCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const items = porDia[fstr] || [];
-    const hayDone = items.some(i => i.estado === 'aprobado');
-    const hayPend = items.some(i => i.estado !== 'aprobado');
+    const hayDone = items.some(ipCalEjecutado);
+    const hayPend = items.some(i => !ipCalEjecutado(i));
     const cls = ['ip-cal-day'];
     if (items.length) cls.push('has-data', hayDone ? 'done' : 'pend'); // el círculo prioriza "ejecutado" si el día tiene ambos
     if (fstr === hoyStr) cls.push('today');

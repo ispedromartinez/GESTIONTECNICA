@@ -304,6 +304,7 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 </head>
 <body>
 <script>
+let HOME_URL = '/dashboard';
 (function(){
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (!token) { window.location.replace('/login'); throw ''; }
@@ -312,8 +313,21 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
     .then(d => {
       if (!d || !d.usuario) return;
       // Casa → área de gestión según rol: técnico → /panel, resto → /dashboard
+      HOME_URL = d.usuario.rol === 'tecnico' ? '/panel' : '/dashboard';
       const home = document.getElementById('btnHome');
-      if (home) home.href = d.usuario.rol === 'tecnico' ? '/panel' : '/dashboard';
+      if (home) home.href = HOME_URL;
+
+      // Informe ya asignado a este técnico (llegó con ?informeId= desde
+      // "Generar informe" en /panel): precargar y bloquear su nombre en
+      // Técnico Ejecutante si el formulario todavía está en blanco.
+      const informeId = new URLSearchParams(location.search).get('informeId');
+      if (informeId && d.usuario.rol === 'tecnico') {
+        const tecHidden = document.getElementById('tecnico');
+        if (tecHidden && !tecHidden.value.trim() && typeof selectTec === 'function') {
+          const nombreCompleto = [ (d.perfil && d.perfil.nombre) || d.usuario.nombre, d.perfil && d.perfil.apellidos ].filter(Boolean).join(' ');
+          selectTec(nombreCompleto);
+        }
+      }
     })
     .catch(() => window.location.replace('/login'));
 })();
@@ -1540,6 +1554,9 @@ async function generateDocx(){
       }catch(e){console.error('No se pudo cerrar la tarea preventiva:',e);}
     }
     setTimeout(()=>loadHist(true),800);
+    // Actividad asignada (venía con ?informeId=): ya cumplió su propósito,
+    // se vuelve sola a inicio en vez de dejar el formulario abierto.
+    if(payload.gestionInformeId){ setTimeout(()=>{ window.location.href = HOME_URL; }, 1400); }
   }catch(err){
     status.className='status err';status.textContent='❌ '+err.message;
   }finally{btn.disabled=false;}
