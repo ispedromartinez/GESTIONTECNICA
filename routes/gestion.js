@@ -247,13 +247,16 @@ router.post('/proyectos', requireRol(...ROLES_ADMIN), async (req, res) => {
 // Reasignar empresa (empresa_id) queda reservado a superadmin.
 router.put('/proyectos/:id', cargarProyecto, requireRol(...ROLES_ADMIN), async (req, res) => {
   try {
-    const { nombre, slug, estado, fecha_inicio, empresa_id, tipo, categoria, oculto } = req.body;
+    // El slug es la clave usada para el archivo de registro y el logo del
+    // proyecto en el flujo legado (server.js) — no se puede reasignar una
+    // vez creado el proyecto para no desincronizar esas referencias.
+    const { nombre, estado, fecha_inicio, empresa_id, tipo, categoria, oculto, logo } = req.body;
     const fields = {};
     if (nombre !== undefined) fields.nombre = nombre;
     if (oculto !== undefined) fields.oculto = oculto ? 1 : 0;
-    if (slug !== undefined) fields.slug = slug || null;
     if (estado !== undefined) fields.estado = estado;
     if (fecha_inicio !== undefined) fields.fecha_inicio = fecha_inicio || null;
+    if (logo !== undefined) fields.logo = logo || null;
     if (tipo !== undefined) {
       if (tipo !== null && !TIPOS_PROYECTO.includes(tipo))
         return res.status(400).json({ error: 'tipo inválido' });

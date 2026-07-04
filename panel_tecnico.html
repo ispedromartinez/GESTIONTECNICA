@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Preview – Sidebar Monday.com</title>
+<title>Panel Técnico — ICETEL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -70,6 +70,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   padding:0 10px;margin-bottom:4px;
 }
 .nav-item{
+  position:relative;
   display:flex;align-items:center;gap:9px;
   padding:9px 10px;border-radius:8px;
   cursor:pointer;color:rgba(255,255,255,.6);
@@ -80,9 +81,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .nav-item svg{flex-shrink:0;opacity:.8;}
 .nav-item:hover{background:var(--sb-hover);color:rgba(255,255,255,.9);}
 .nav-item:hover svg{opacity:1;}
-.nav-item.active{background:var(--sb-active);color:#fff;font-weight:600;}
+/* Activo: fondo translúcido + barra indicadora al borde (igual que /dashboard) */
+.nav-item.active{background:rgba(0,115,234,.22);color:#fff;font-weight:600;}
+.nav-item.active::before{content:'';position:absolute;left:-8px;top:7px;bottom:7px;width:3px;border-radius:0 3px 3px 0;background:var(--sb-active);}
 .nav-item.active svg{opacity:1;}
-.nav-item.active-wom{background:var(--sb-active-wom);color:#fff;font-weight:600;}
+.nav-item.active-wom{background:rgba(120,75,209,.25);color:#fff;font-weight:600;}
+.nav-item.active-wom::before{content:'';position:absolute;left:-8px;top:7px;bottom:7px;width:3px;border-radius:0 3px 3px 0;background:var(--sb-active-wom);}
 .nav-badge{
   margin-left:auto;background:rgba(255,255,255,.15);
   border-radius:20px;font-size:10px;font-weight:700;
@@ -110,7 +114,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   margin-bottom:1px;position:relative;
 }
 .nav-sub-item:hover{background:var(--sb-hover);color:rgba(255,255,255,.92);}
-.nav-sub-item.active{background:var(--sb-active);color:#fff;font-weight:600;}
+.nav-sub-item.active{background:rgba(0,115,234,.22);color:#fff;font-weight:600;}
 .nav-sub-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,.4);}
 .nav-sub-msg{
   padding:8px 10px 8px 30px;font-size:11.5px;
@@ -142,9 +146,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   padding:14px 24px;display:flex;align-items:center;
   justify-content:space-between;
   position:sticky;top:0;z-index:100;
-  box-shadow:0 1px 3px rgba(15,23,42,.05);
 }
-.topbar-left h1{font-size:17px;font-weight:800;color:var(--text);}
+.topbar-left h1{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.01em;}
 .topbar-left p{font-size:11px;color:var(--muted);margin-top:1px;font-weight:400;}
 .topbar-right{display:flex;align-items:center;gap:10px;}
 .srv-pill{
@@ -200,10 +203,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .page{padding:22px 24px;display:none;flex:1;}
 .page.active{display:block;}
 
-/* CARDS */
+/* CARDS — planas: borde y fondo, sin sombra (la elevación se reserva
+   para elementos interactivos como las tarjetas de proyecto) */
 .card{
   background:var(--white);border-radius:var(--r-lg);
-  border:1px solid var(--border);box-shadow:var(--sh);
+  border:1px solid var(--border);
   margin-bottom:14px;overflow:hidden;
 }
 .card-header{
@@ -262,7 +266,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
   box-shadow:var(--sh);margin-top:4px;
 }
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--font-body);transition:.14s;}
-.btn-primary{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(0,115,234,.25);}
+.btn-primary{background:var(--blue);color:#fff;}
 .btn-primary:hover{background:#005bb5;}
 .btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
 .btn-ghost:hover{border-color:var(--blue);color:var(--blue);}
@@ -342,11 +346,11 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 .pcard{
   flex:1 1 260px;max-width:320px;background:#fff;border-radius:16px;
   padding:0 0 28px;display:flex;flex-direction:column;align-items:center;
-  box-shadow:0 2px 12px rgba(0,0,0,.07),0 1px 4px rgba(0,0,0,.04);
+  box-shadow:var(--sh-sm);
   cursor:pointer;text-decoration:none;position:relative;overflow:hidden;
   border:1.5px solid #E8EAED;transition:transform .2s,box-shadow .2s,border-color .2s;
 }
-.pcard:hover{transform:translateY(-5px);box-shadow:0 14px 44px rgba(0,0,0,.14),0 4px 14px rgba(0,0,0,.07);border-color:transparent;}
+.pcard:hover{transform:translateY(-4px);box-shadow:var(--sh-lg);}
 .pcard:active{transform:translateY(-1px);}
 .pcard-top{width:100%;height:6px;border-radius:14px 14px 0 0;flex-shrink:0;background:#059669;}
 .pcard.tigo .pcard-top{background:#0073EA;}

@@ -239,7 +239,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
     </div>
     <div class="field">
       <label>Nombre del proyecto *</label>
-      <input type="text" id="pNombre" placeholder="Ej: Claro, Entel, Movistar..." oninput="autoSlug()">
+      <input type="text" id="pNombre" placeholder="Ej: Claro, Entel, Movistar...">
     </div>
     <div class="field">
       <label>Rama del proyecto *</label>
@@ -259,9 +259,8 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
       </select>
     </div>
     <div class="field">
-      <label>Identificador (slug) *</label>
-      <input type="text" id="pSlug" placeholder="claro" oninput="cleanSlug()">
-      <div class="slug-preview">URL del proyecto: <strong>/proyecto/<span id="slugPreview">—</span></strong></div>
+      <label>Identificador (slug)</label>
+      <div class="slug-preview">Se genera automáticamente al crear el proyecto — es un código interno, no necesitas escribirlo.</div>
     </div>
     <div class="field">
       <label>Color principal</label>
@@ -484,7 +483,7 @@ const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
 // ── Estado ──────────────────────────────────────────────────────
 let state = {
   empresa_id:'', empresa_nombre:'',
-  nombre:'', slug:'', color:'#0073EA', logo: null,
+  nombre:'', color:'#0073EA', logo: null,
   tipo:'correctivo', categoria:'clima',
   template: null, sitios: [], supervisores: [], tecnicos: []
 };
@@ -516,14 +515,11 @@ function validarPaso(n) {
   if (n===1) {
     const emp = document.getElementById('pEmpresa');
     const nom = document.getElementById('pNombre').value.trim();
-    const sl  = document.getElementById('pSlug').value.trim();
     if (!emp.value) { showErr('Selecciona la empresa del proyecto.'); return false; }
     if (!nom) { showErr('El nombre del proyecto es requerido.'); return false; }
-    if (!sl)  { showErr('El identificador es requerido.'); return false; }
-    if (!/^[a-z0-9-]+$/.test(sl)) { showErr('El identificador solo puede contener letras minúsculas, números y guiones.'); return false; }
     state.empresa_id = emp.value;
     state.empresa_nombre = emp.options[emp.selectedIndex].text;
-    state.nombre = nom; state.slug = sl;
+    state.nombre = nom;
     state.tipo = document.getElementById('pTipo').value;
     state.categoria = document.getElementById('pCategoria').value;
     state.color  = document.getElementById('pColor').value;
@@ -535,20 +531,6 @@ function validarPaso(n) {
 }
 
 // ── Paso 1 helpers ──────────────────────────────────────────────
-function autoSlug() {
-  const val = document.getElementById('pNombre').value
-    .toLowerCase().trim()
-    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i')
-    .replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n')
-    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-  document.getElementById('pSlug').value = val;
-  document.getElementById('slugPreview').textContent = val || '—';
-}
-function cleanSlug() {
-  const v = document.getElementById('pSlug').value.toLowerCase().replace(/[^a-z0-9-]/g,'');
-  document.getElementById('pSlug').value = v;
-  document.getElementById('slugPreview').textContent = v || '—';
-}
 function syncColorText() { document.getElementById('pColorText').value = document.getElementById('pColor').value; }
 function syncColorPicker() {
   const v = document.getElementById('pColorText').value;
@@ -703,12 +685,11 @@ function addPersona(tipo, val='') {
 // ── Paso 6: Review ───────────────────────────────────────────────
 function buildReview() {
   state.nombre = document.getElementById('pNombre').value.trim();
-  state.slug   = document.getElementById('pSlug').value.trim();
   state.color  = document.getElementById('pColor').value;
 
   document.getElementById('rv-empresa').textContent = state.empresa_nombre || '—';
   document.getElementById('rv-nombre').textContent = state.nombre;
-  document.getElementById('rv-slug').textContent   = state.slug;
+  document.getElementById('rv-slug').textContent   = 'Se genera automáticamente';
 
   const colorEl = document.getElementById('rv-color');
   colorEl.innerHTML = `<span class="color-dot" style="background:${state.color}"></span>${state.color}`;
@@ -749,7 +730,7 @@ async function crearProyecto() {
   try {
     const payload = {
       empresa_id: state.empresa_id,
-      nombre: state.nombre, slug: state.slug, template: state.template,
+      nombre: state.nombre, template: state.template,
       tipo: state.tipo, categoria: state.categoria,
       color: state.color, logo: state.logo,
       sitios: state.sitios, supervisores: state.supervisores, tecnicos: state.tecnicos

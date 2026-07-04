@@ -109,6 +109,18 @@ function loadProyectos() { try { return JSON.parse(fs.readFileSync(PROYECTOS_FIL
 function saveProyectos(d) { fs.writeFileSync(PROYECTOS_FILE, JSON.stringify(d, null, 2)); }
 function uuidSimple() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r=Math.random()*16|0; return(c==='x'?r:(r&0x3|0x8)).toString(16); }); }
 
+// Slug de proyecto: código corto alfanumérico en minúsculas (no legible a
+// propósito — es una clave interna, no algo que el usuario deba escribir).
+// Se reintenta hasta que no choque con ninguno de los slugs existentes.
+function generarSlugProyecto(existentes) {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let slug;
+  do {
+    slug = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  } while (existentes.includes(slug));
+  return slug;
+}
+
 const CONTACTO_FILE = path.join(__dirname, 'contactos.json');
 function loadContactos() { try { return JSON.parse(fs.readFileSync(CONTACTO_FILE,'utf8')); } catch(e) { return []; } }
 const contactoLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 5, message: 'Has enviado demasiados mensajes. Inténtalo más tarde.' });
@@ -151,8 +163,8 @@ app.get('/api/proyectos/:slug', authMiddleware, (req, res) => {
 
 app.post('/api/proyectos', authMiddleware, requireRol('superadmin', 'admin_empresa'), async (req, res) => {
   try {
-    const { nombre, slug, template, color, sitios, tecnicos, supervisores, logo, tipo, categoria } = req.body;
-    if (!nombre || !slug || !template) return res.status(400).json({ error: 'nombre, slug y template requeridos' });
+    const { nombre, template, color, sitios, tecnicos, supervisores, logo, tipo, categoria } = req.body;
+    if (!nombre || !template) return res.status(400).json({ error: 'nombre y template requeridos' });
     // admin_empresa solo puede crear en SU empresa; superadmin elige la empresa del cuerpo.
     const empresa_id = req.user.rol === 'superadmin' ? req.body.empresa_id : req.user.empresa_id;
     if (!empresa_id) return res.status(400).json({ error: 'Debes seleccionar la empresa del proyecto' });
@@ -160,7 +172,8 @@ app.post('/api/proyectos', authMiddleware, requireRol('superadmin', 'admin_empre
     const empresa = (await gestionDb.empresasList()).find(e => e.id === empresa_id);
     if (!empresa) return res.status(400).json({ error: 'Empresa no válida' });
     const proyectos = loadProyectos();
-    if (proyectos.find(p => p.slug === slug)) return res.status(409).json({ error: 'Ya existe un proyecto con ese identificador' });
+    // El slug ya no lo escribe el usuario: se asigna un código corto único.
+    const slug = generarSlugProyecto(proyectos.map(p => p.slug));
     let logoPath = null;
     if (logo && logo.startsWith('data:image/')) {
       const ext = (logo.match(/data:image\/(\w+);/)||[])[1]||'png';
@@ -169,7 +182,7 @@ app.post('/api/proyectos', authMiddleware, requireRol('superadmin', 'admin_empre
       logoPath = `/logos/${fname}`;
     }
     const proyecto = {
-      id: uuidSimple(), slug: slug.toLowerCase().replace(/\s+/g,'-'),
+      id: uuidSimple(), slug,
       nombre, logo: logoPath, template,
       empresa_id, empresa_nombre: empresa.nombre,
       color: color || (template==='tigo'?'#0073EA':'#6161FF'),
