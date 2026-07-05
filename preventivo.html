@@ -18,13 +18,20 @@ header a:hover{color:#fff;}
 main{padding:22px 28px;max-width:1280px;margin:0 auto;}
 
 /* FILTROS */
-.filtros{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;
-  background:#fff;border-radius:14px;padding:10px 14px;
+.filtros{display:flex;gap:16px;align-items:center;justify-content:center;margin-bottom:14px;flex-wrap:wrap;
+  background:#fff;border-radius:14px;padding:12px 16px;
   box-shadow:0 1px 4px rgba(15,23,42,.06);border:1px solid rgba(15,23,42,.06)}
+/* El wrapper de searchable-select mide 100% por defecto: acotado aquí para
+   que no se encime sobre las etiquetas vecinas de la barra de filtros. */
+.filtros > *{flex:0 0 auto;}
+.filtros .ss-wrap{width:auto!important;min-width:150px!important;max-width:230px!important;}
+/* El script pone el botón en content-box (inline): con width:100% desbordaba
+   ~24px sobre el elemento vecino. border-box lo encaja EXACTO en su wrapper. */
+.filtros .ss-disp{width:100%;box-sizing:border-box!important;height:auto!important;}
 .filtros button{background:#F1F5F9;border:1px solid rgba(15,23,42,.1);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;color:#334155;transition:background .15s}
 .filtros button:hover{background:#E2E8F0;}
 .filtros select,.filtros input[type=date]{padding:5px 10px;border:1px solid rgba(15,23,42,.1);border-radius:8px;font-size:12px;font-family:inherit;color:#334155;background:#F8FAFC;}
-.filtros label{font-size:11px;font-weight:600;color:#94A3B8;}
+.filtros label{font-size:11px;font-weight:600;color:var(--faint);}
 
 /* TOOLBAR */
 .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
@@ -50,6 +57,12 @@ table{width:100%;border-collapse:collapse;}
 th,td{padding:10px 14px;text-align:left;font-size:12.5px;border-bottom:1px solid rgba(15,23,42,.09);border-right:1px solid rgba(15,23,42,.05);}
 th:last-child,td:last-child{border-right:none;}
 th{background:#F8FAFC;color:#64748B;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;}
+/* Cabeceras ordenables: clic alterna asc/desc; la flecha marca la activa */
+th[data-sort]{cursor:pointer;user-select:none;transition:color .15s,background .15s;}
+th[data-sort]:hover{color:#0F172A;background:#EFF3F8;}
+th[data-sort]::after{content:'↕';margin-left:5px;opacity:.35;font-size:10px;}
+th[data-sort].sort-asc::after{content:'▲';opacity:1;color:#0073EA;}
+th[data-sort].sort-desc::after{content:'▼';opacity:1;color:#0073EA;}
 tbody tr{cursor:pointer;transition:background 200ms;}
 tbody tr:hover{background:#F1F5FB;}
 tbody tr.selected{background:#EBF2FF !important;}
@@ -101,14 +114,14 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 /* tabs */
 .modal-tabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid #F1F5F9;overflow-x:auto;scrollbar-width:none;background:#FAFBFF;}
 .modal-tabs::-webkit-scrollbar{display:none;}
-.tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:11px 14px;font-size:11.5px;font-weight:700;color:#94A3B8;cursor:pointer;white-space:nowrap;letter-spacing:.03em;transition:color .15s,border-color .15s;}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:11px 14px;font-size:11.5px;font-weight:700;color:var(--faint);cursor:pointer;white-space:nowrap;letter-spacing:.03em;transition:color .15s,border-color .15s;}
 .tab-btn:hover{color:#0073EA;}
 .tab-btn.active{color:#0073EA;border-bottom-color:#0073EA;}
 
 /* form */
 .tab-panel{padding:18px 22px;overflow-y:auto;flex:1;}
 .tab-panel[hidden]{display:none;}
-.tab-placeholder{font-size:13px;color:#9699A6;padding:20px 0;}
+.tab-placeholder{font-size:13px;color:var(--faint);padding:20px 0;}
 
 .modal label{display:block;font-size:10.5px;font-weight:700;color:#64748B;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.07em;}
 .modal label:first-child{margin-top:0;}
@@ -127,7 +140,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 }
 .modal input:hover,.modal select:hover{border-color:#CBD5E1;}
 .modal textarea{resize:vertical;}
-.modal input[readonly]{background:#F8FAFC;color:#94A3B8;border-color:#E2E8F0;cursor:default;}
+.modal input[readonly]{background:#F8FAFC;color:var(--faint);border-color:#E2E8F0;cursor:default;}
 .modal select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;}
 
 /* actions */
@@ -142,7 +155,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 /* drop zone */
 .drop-zone{border:1.5px dashed #CBD5E1;border-radius:12px;padding:18px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-top:8px;}
 .drop-zone:hover,.drop-zone.drag-over{border-color:#3B82F6;background:#EFF6FF;}
-.drop-zone .drop-hint{font-size:11.5px;color:#94A3B8;margin-top:6px;pointer-events:none;}
+.drop-zone .drop-hint{font-size:11.5px;color:var(--faint);margin-top:6px;pointer-events:none;}
 .drop-zone .drop-row{display:flex;gap:8px;align-items:center;justify-content:center;}
 </style>
 </head>
@@ -156,12 +169,9 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 <main>
   <div class="filtros">
     <select id="filtroTecnico"></select>
-    <span style="color:#E2E8F0;">|</span>
-    <label style="font-size:12px;color:#64748B;">Semana</label>
     <select id="filtroSemanaSel" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
       <option value="">Elegir semana...</option>
     </select>
-    <span style="color:#E2E8F0;">|</span>
     <label style="font-size:12px;color:#64748B;">Desde</label>
     <input type="date" id="filtroDesde" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
     <label style="font-size:12px;color:#64748B;">Hasta</label>
@@ -254,9 +264,9 @@ tbody tr.destacada:hover{background:#FFF1C8;}
     <thead>
       <tr>
         <th style="width:36px"><input type="checkbox" id="checkTodos"></th>
-        <th>Técnico</th><th>Sitio</th><th class="col-sala">Sala</th><th class="col-crq">N° CRQ / INC</th><th class="col-desc">Descripción</th>
-        <th class="col-fecha-i">Fecha inicio</th><th class="col-fecha-v">Fecha venc.</th><th>Estado</th>
-        <th class="col-tiempo">Tiempo en estado actual</th>
+        <th data-sort="tecnico">Técnico</th><th data-sort="sitio">Sitio</th><th class="col-sala" data-sort="sala">Sala</th><th class="col-crq" data-sort="crqInc">N° CRQ / INC</th><th class="col-desc" data-sort="descripcion">Descripción</th>
+        <th class="col-fecha-i" data-sort="fechaInicio">Fecha inicio</th><th class="col-fecha-v" data-sort="fechaVencimiento">Fecha venc.</th><th data-sort="estado">Estado</th>
+        <th class="col-tiempo" data-sort="estadoCambiadoEn">Tiempo en estado actual</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -449,6 +459,34 @@ let seleccionMultiple = new Set();
 let paginaActual = 1;
 let tareasPorPagina = 20;
 
+// ── Orden por columna (clic en la cabecera alterna asc/desc) ──
+let ordenCampo = null, ordenAsc = true;
+function ordenarTareas(){
+  if (!ordenCampo) return;
+  const dir = ordenAsc ? 1 : -1;
+  tareas.sort((a, b) => {
+    const va = String(a[ordenCampo] == null ? '' : a[ordenCampo]).trim();
+    const vb = String(b[ordenCampo] == null ? '' : b[ordenCampo]).trim();
+    // Vacíos siempre al final, sin importar la dirección
+    if (!va && !vb) return 0;
+    if (!va) return 1;
+    if (!vb) return -1;
+    return va.localeCompare(vb, 'es', { numeric: true, sensitivity: 'base' }) * dir;
+  });
+}
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const campo = th.dataset.sort;
+    if (ordenCampo === campo) { ordenAsc = !ordenAsc; }
+    else { ordenCampo = campo; ordenAsc = true; }
+    document.querySelectorAll('th[data-sort]').forEach(h => h.classList.remove('sort-asc','sort-desc'));
+    th.classList.add(ordenAsc ? 'sort-asc' : 'sort-desc');
+    ordenarTareas();
+    paginaActual = 1;
+    renderTabla();
+  });
+});
+
 function lunesDeEstaSemana(d){
   const dia = d.getDay();
   const offset = dia === 0 ? -6 : 1 - dia;
@@ -599,6 +637,7 @@ async function cargarTareas(){
   ]);
   tareas = await resTareas.json();
   informesMap = await resMap.json().catch(() => ({}));
+  ordenarTareas(); // conserva el orden elegido al refiltrar/recargar
   paginaActual = 1;
   seleccionMultiple.clear();
   renderTabla();

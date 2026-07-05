@@ -167,7 +167,7 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
           </tr></thead>
           <tbody id="catBody"></tbody>
         </table>
-        <div id="catEmpty" style="display:none;padding:30px;text-align:center;color:#9ba1b0;">No hay sitios que coincidan.</div>
+        <div id="catEmpty" style="display:none;padding:30px;text-align:center;color:var(--faint);">No hay sitios que coincidan.</div>
       </div>
       <div style="padding:14px 22px;border-top:1px solid #F0F1F5;display:flex;justify-content:space-between;align-items:center;gap:10px;">
         <span id="catCount" style="font-size:12px;color:#64748B;">0 seleccionados</span>
@@ -285,10 +285,10 @@ function sitioTupla(s){ return Array.isArray(s) ? [s[0]||'', s[1]||'', s[2]||'']
 function renderSitios(sitios){
   document.getElementById('sitiosTotal').textContent = sitios.length + ' sitios';
   const tb = document.getElementById('tblSitios');
-  if(!sitios.length){ tb.innerHTML = '<tr><td colspan="4" style="padding:18px;text-align:center;color:#9ba1b0;font-size:12px;">Sin sitios asignados todavía.</td></tr>'; return; }
+  if(!sitios.length){ tb.innerHTML = '<tr><td colspan="4" style="padding:18px;text-align:center;color:var(--faint);font-size:12px;">Sin sitios asignados todavía.</td></tr>'; return; }
   tb.innerHTML = sitios.map((s,i)=>{ const [n,d,c]=sitioTupla(s); return `
     <tr style="border-bottom:1px solid #F6F7FB;">
-      <td style="padding:9px 18px;color:#9ba1b0;font-size:12px;">${i+1}</td>
+      <td style="padding:9px 18px;color:var(--faint);font-size:12px;">${i+1}</td>
       <td style="padding:9px 18px;font-weight:600;">${esc(n)}</td>
       <td style="padding:9px 18px;color:#64748B;font-size:12px;">${esc(c||'—')}</td>
       <td style="padding:9px 18px;color:#64748B;font-size:12px;">${esc(d||'—')}</td>

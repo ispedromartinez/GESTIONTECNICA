@@ -333,6 +333,31 @@ router.put('/:id', requireNivel(2), async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
+// PATCH /tareas/:id/estado — cambia SOLO el estado de la tarea.
+// A diferencia del PUT (nivel 2), aquí el técnico asignado también puede
+// cerrar SU propia tarea: es el paso final al generar el informe preventivo
+// desde su panel. Cualquier otro campo sigue requiriendo nivel 2 (PUT).
+router.patch('/:id/estado', async (req, res) => {
+  try {
+    const tarea = await dbTareasFind(req.params.id);
+    if (!tarea) return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (!puedeTocar(tarea, req.user)) return res.status(403).json({ error: 'Sin acceso a esta tarea' });
+    if (req.user.rol === 'tecnico') {
+      const yo = (req.user.nombre || '').trim().toLowerCase();
+      if ((tarea.tecnico || '').trim().toLowerCase() !== yo) {
+        return res.status(403).json({ error: 'Solo puedes cambiar el estado de tareas asignadas a ti' });
+      }
+    }
+    const estado = req.body && req.body.estado;
+    if (!estado) return res.status(400).json({ error: 'estado requerido' });
+    const result = await dbTareasUpdate(req.params.id, {
+      estado, estadoCambiadoEn: new Date().toISOString()
+    });
+    if (result && result.error) return res.status(500).json({ error: result.error });
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
 router.delete('/:id', requireNivel(2), async (req, res) => {
   try {
     const tarea = await dbTareasFind(req.params.id);

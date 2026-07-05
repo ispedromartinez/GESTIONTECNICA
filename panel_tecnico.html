@@ -6,7 +6,6 @@
 <title>Panel Técnico — ICETEL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/theme.css">
 <script src="/searchable-select.js" defer></script>
 <style>
@@ -469,7 +468,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
   <!-- ═══ PÁGINA: HISTORIAL DE ACTIVIDADES ═══ -->
   <div class="page" id="page-informes">
-    <div style="max-width:960px;">
+    <div style="max-width:960px;margin:0 auto;">
       <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Historial de actividades</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Registro de tus informes y su estado.</p>
 
@@ -487,7 +486,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
   <!-- ═══ PÁGINA: TAREAS PENDIENTES (correctivos + preventivos) ═══ -->
   <div class="page active" id="page-tareas">
-    <div style="max-width:960px;">
+    <div style="max-width:960px;margin:0 auto;">
       <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Tareas pendientes</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Tus tareas asignadas, divididas por tipo.</p>
 
@@ -519,7 +518,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
   <!-- ═══ PÁGINA: PROYECTOS PREVENTIVO ═══ -->
   <div class="page" id="page-preventivo">
-    <div style="max-width:960px;">
+    <div style="max-width:960px;margin:0 auto;">
       <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Proyectos — Preventivo</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Mantenimiento preventivo programado.</p>
       <div class="pcards" id="gridPrev">
@@ -530,7 +529,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
   <!-- ═══ PÁGINA: PROYECTOS CORRECTIVO ═══ -->
   <div class="page" id="page-correctivo">
-    <div style="max-width:960px;">
+    <div style="max-width:960px;margin:0 auto;">
       <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">Proyectos — Correctivo</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Selecciona el proyecto para registrar o ver informes correctivos.</p>
       <div class="pcards" id="gridCorr">
@@ -714,7 +713,12 @@ function formUrlFor(i){
   return slug ? '/' + slug : '/dashboard';
 }
 
-async function loadTareasPendientes(){
+// Las dos secciones cargan EN PARALELO (antes preventivos esperaba a correctivos).
+function loadTareasPendientes(){
+  return Promise.all([loadTareasCorrectivas(), loadTareasPreventivas()]);
+}
+
+async function loadTareasCorrectivas(){
   // ── Correctivos: informes de gestión asignados al técnico ──
   const corrEl = document.getElementById('tareasCorrBody');
   if (corrEl) try {
@@ -744,7 +748,9 @@ async function loadTareasPendientes(){
         }</tbody></table>`
       : '<p style="font-size:13px;color:var(--muted)">No tienes tareas correctivas pendientes. 🎉</p>';
   } catch (err) { corrEl.innerHTML = '<p style="font-size:13px;color:var(--red)">Error: ' + err.message + '</p>'; }
+}
 
+async function loadTareasPreventivas(){
   // ── Preventivos: tareas del módulo de mantenimiento (/tareas) ──
   const prevEl = document.getElementById('tareasPrevBody');
   if (prevEl) try {
@@ -759,7 +765,7 @@ async function loadTareasPendientes(){
             <td data-label="Descripción">${esc(t.descripcion || '—')}</td>
             <td class="col-date" data-label="Vence">${esc((t.fechaVencimiento || '').slice(0, 10) || '—')}</td>
             <td data-label="Estado"><span class="status-tag tag-ok">${esc(t.estado || 'Nuevo')}</span></td>
-            <td data-label="Acción"><a class="btn btn-ghost btn-sm" href="/preventivo">Abrir</a></td></tr>`).join('')
+            <td data-label="Acción"><a class="btn btn-primary btn-sm" href="/informe-preventivo.html?tareaId=${esc(t.id)}&volver=%2Fpanel">Generar informe</a></td></tr>`).join('')
         }</tbody></table>`
       : '<p style="font-size:13px;color:var(--muted)">No tienes tareas preventivas pendientes. 🎉</p>';
   } catch (err) { prevEl.innerHTML = '<p style="font-size:13px;color:var(--red)">Error: ' + err.message + '</p>'; }

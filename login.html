@@ -50,12 +50,12 @@ body{font-family:var(--font-body);min-height:100vh;display:flex;background:#F6F7
   border-color:#0073EA;background:#fff;
   box-shadow:0 0 0 3px rgba(0,115,234,.1);
 }
-.field input::placeholder{color:#B0B3C0;font-size:13px;}
+.field input::placeholder{color:var(--faint);font-size:13px;}
 
 .eye-btn{
   position:absolute;right:12px;top:50%;transform:translateY(-50%);
   background:none;border:none;cursor:pointer;padding:2px;
-  color:#B0B3C0;display:flex;align-items:center;
+  color:var(--faint);display:flex;align-items:center;
   transition:color .15s;
 }
 .eye-btn:hover{color:#0073EA;}
@@ -64,7 +64,7 @@ body{font-family:var(--font-body);min-height:100vh;display:flex;background:#F6F7
   display:flex;align-items:center;pointer-events:none;
 }
 .field-hint{
-  display:block;font-size:11px;color:#B0B3C0;margin-top:4px;
+  display:block;font-size:11px;color:var(--faint);margin-top:4px;
   font-weight:400;
 }
 
@@ -118,13 +118,13 @@ body{font-family:var(--font-body);min-height:100vh;display:flex;background:#F6F7
 
 .divider{
   display:flex;align-items:center;gap:12px;
-  margin:22px 0;color:#B0B3C0;font-size:12px;
+  margin:22px 0;color:var(--faint);font-size:12px;
 }
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:#E8EAED;}
 
 .footer-left{
   margin-top:32px;text-align:center;
-  font-size:12px;color:#B0B3C0;
+  font-size:12px;color:var(--faint);
 }
 .footer-left a{color:#0073EA;font-weight:500;text-decoration:none;}
 

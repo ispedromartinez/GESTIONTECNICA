@@ -75,7 +75,7 @@ h3{font-size:.92rem;font-weight:700;color:#0073EA;margin-bottom:.65rem}
 #qrCanvas{width:90px!important;height:90px!important;border-radius:8px;display:block}
 #qrCanvas img,#qrCanvas canvas{width:90px!important;height:90px!important;border-radius:8px}
 .qr-num{font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:#94A3B8;font-family:monospace}
+  color:var(--faint);font-family:monospace}
 #trackerDisplay{font-size:.75rem;font-weight:800;color:#0073EA;
   font-family:monospace;letter-spacing:.04em;font-variant-numeric:tabular-nums}
 
@@ -101,7 +101,7 @@ textarea{resize:vertical;min-height:96px}
 input[readonly],input[readonly]:focus{background:#F8FAFC;border-color:rgba(15,23,42,.07);color:#64748B;cursor:not-allowed;box-shadow:none}
 select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,.07);color:#64748B;cursor:not-allowed;pointer-events:none;box-shadow:none}
 .field-locked-wrap{position:relative}
-.field-locked-wrap .lock-icon{position:absolute;right:.65rem;top:50%;transform:translateY(-50%);font-size:.68rem;color:#94A3B8;pointer-events:none}
+.field-locked-wrap .lock-icon{position:absolute;right:.65rem;top:50%;transform:translateY(-50%);font-size:.68rem;color:var(--faint);pointer-events:none}
 
 /* EQUIPO BLOCK */
 .equipo-block{border:1px solid rgba(15,23,42,.08);border-radius:18px;margin-bottom:1rem;overflow:hidden;
@@ -164,7 +164,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
 .pslot.filled .ph-pl{display:none}
 .ph-ic{font-size:22px;opacity:.28}
 .ph-fg{font-size:.68rem;font-weight:800;color:#0073EA;opacity:.55;letter-spacing:.05em}
-.ph-ht{font-size:.6rem;color:#94A3B8}
+.ph-ht{font-size:.6rem;color:var(--faint)}
 .rm-btn{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;
   width:24px;height:24px;font-size:11px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:4;
   transition:background 200ms}
@@ -213,7 +213,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
   font-size:.95rem;flex-shrink:0;
   transition:transform 400ms cubic-bezier(.32,.72,0,1)}
 .btn-generate:hover #btnIcon{transform:rotate(10deg) scale(1.12)}
-.generate-hint{font-size:.7rem;color:#94A3B8;text-align:center;letter-spacing:.01em}
+.generate-hint{font-size:.7rem;color:var(--faint);text-align:center;letter-spacing:.01em}
 
 /* STATUS */
 .status{border-radius:12px;padding:.68rem 1rem;font-size:.84rem;display:none;width:100%;max-width:500px}
@@ -1209,14 +1209,19 @@ async function generarInforme() {
     const tareaId = g('tareaId');
     if (tareaId) {
       try {
-        await fetch(`/tareas/${tareaId}`, {
-          method: 'PUT',
+        // Endpoint de solo-estado: el técnico asignado también puede cerrar.
+        await fetch(`/tareas/${tareaId}/estado`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ estado: 'Cerrado' })
         });
       } catch(e) { console.warn('No se pudo cerrar tarea:', e); }
+      // Vuelve a la página de origen (?volver=/panel desde el panel del
+      // técnico); por defecto, al módulo de mantenimiento preventivo.
+      const volverRaw = new URLSearchParams(location.search).get('volver');
+      const volver = (volverRaw && volverRaw.startsWith('/') && !volverRaw.startsWith('//')) ? volverRaw : '/preventivo.html';
       showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado. Tarea cerrada. Redirigiendo…`);
-      setTimeout(() => { hidePdfOverlay(); window.location.href = '/preventivo.html'; }, 2500);
+      setTimeout(() => { hidePdfOverlay(); window.location.href = volver; }, 2500);
     } else {
       showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado y guardado en base de datos.`);
       setTimeout(hidePdfOverlay, 3000);

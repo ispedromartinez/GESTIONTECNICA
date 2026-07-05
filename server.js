@@ -77,6 +77,8 @@ app.use(rateLimit({ windowMs: 60 * 1000, max: 300, message: 'Demasiadas solicitu
 // Conversión DOCX→PDF con LibreOffice: cara en CPU, no debe poder abusarse
 const pdfLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 60, message: 'Demasiadas vistas de PDF, espera unos minutos.' });
 
+// Gzip para HTML/CSS/JS/JSON: en móvil (4G) reduce ~70% lo transferido.
+app.use(require('compression')());
 app.use(express.json({ limit: '80mb' }));
 
 // ── Seguridad: la raíz del proyecto se sirve estática, pero JAMÁS deben
@@ -121,19 +123,26 @@ app.use('/api', empresasRoutes);
 // ── Mantenimiento Preventivo: tareas (API protegida con login)
 app.use('/tareas', preventivoRoutes);
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'landing.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
+// Las páginas HTML se sirven SIEMPRE sin caché: el estático ya lo hace para
+// *.html directos, pero estas rutas usan sendFile y sin esto el navegador
+// (sobre todo en el teléfono) se quedaba con versiones viejas de la app.
+function sendPage(res, file) {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, file));
+}
+app.get('/', (req, res) => sendPage(res, 'landing.html'));
+app.get('/login', (req, res) => sendPage(res, 'login.html'));
 app.get('/selector', (req, res) => res.redirect(301, '/dashboard')); // unificado: el nodo central es /dashboard
-app.get('/tigo', (req, res) => res.sendFile(path.join(__dirname, 'informe_clima_app.html')));
-app.get('/wom', (req, res) => res.sendFile(path.join(__dirname, 'informe_wom_app.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
-app.get('/panel', (req, res) => res.sendFile(path.join(__dirname, 'panel_tecnico.html'))); // panel del técnico
-app.get('/preventivo', (req, res) => res.sendFile(path.join(__dirname, 'preventivo.html'))); // mantenimiento preventivo
-app.get('/perfil', (req, res) => res.sendFile(path.join(__dirname, 'perfil.html'))); // perfil del usuario
-app.get('/nuevo-proyecto', (req, res) => res.sendFile(path.join(__dirname, 'nuevo_proyecto.html')));
-app.get('/catalogo', (req, res) => res.sendFile(path.join(__dirname, 'catalogo.html'))); // catálogo de sitios
-app.get('/proyecto/:slug', (req, res) => res.sendFile(path.join(__dirname, 'proyecto.html')));
+app.get('/tigo', (req, res) => sendPage(res, 'informe_clima_app.html'));
+app.get('/wom', (req, res) => sendPage(res, 'informe_wom_app.html'));
+app.get('/admin', (req, res) => sendPage(res, 'admin.html'));
+app.get('/dashboard', (req, res) => sendPage(res, 'dashboard.html'));
+app.get('/panel', (req, res) => sendPage(res, 'panel_tecnico.html')); // panel del técnico
+app.get('/preventivo', (req, res) => sendPage(res, 'preventivo.html')); // mantenimiento preventivo
+app.get('/perfil', (req, res) => sendPage(res, 'perfil.html')); // perfil del usuario
+app.get('/nuevo-proyecto', (req, res) => sendPage(res, 'nuevo_proyecto.html'));
+app.get('/catalogo', (req, res) => sendPage(res, 'catalogo.html')); // catálogo de sitios
+app.get('/proyecto/:slug', (req, res) => sendPage(res, 'proyecto.html'));
 
 // ── Proyectos personalizados ──────────────────────────────────
 const PROYECTOS_FILE = path.join(__dirname, 'proyectos.json');

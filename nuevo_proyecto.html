@@ -25,10 +25,10 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 .step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
 .step:not(:last-child)::after{content:'';position:absolute;top:17px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;background:#E2E8F0;z-index:0;}
 .step.done:not(:last-child)::after,.step.active:not(:last-child)::after{background:#0073EA;}
-.step-circle{width:34px;height:34px;border-radius:50%;border:2px solid #E2E8F0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#9ba1b0;position:relative;z-index:1;transition:.2s;}
+.step-circle{width:34px;height:34px;border-radius:50%;border:2px solid #E2E8F0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--faint);position:relative;z-index:1;transition:.2s;}
 .step.done .step-circle{background:#0073EA;border-color:#0073EA;color:#fff;}
 .step.active .step-circle{border-color:#0073EA;color:#0073EA;box-shadow:0 0 0 4px rgba(0,115,234,.15);}
-.step-label{font-size:10px;font-weight:600;color:#9ba1b0;margin-top:6px;text-align:center;white-space:nowrap;}
+.step-label{font-size:10px;font-weight:600;color:var(--faint);margin-top:6px;text-align:center;white-space:nowrap;}
 .step.active .step-label{color:#0073EA;}
 .step.done .step-label{color:#0F172A;}
 
@@ -44,7 +44,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 .field input:focus,.field select:focus,.field textarea:focus{border-color:#0073EA;box-shadow:0 0 0 3px rgba(0,115,234,.1);}
 .field textarea{resize:vertical;min-height:80px;line-height:1.6;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.field-hint{font-size:11px;color:#9ba1b0;margin-top:5px;}
+.field-hint{font-size:11px;color:var(--faint);margin-top:5px;}
 
 /* SLUG PREVIEW */
 .slug-preview{font-size:12px;background:#F0F2F8;padding:8px 12px;border-radius:7px;margin-top:6px;color:#64748B;font-family:monospace;}
@@ -90,7 +90,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 @keyframes fmtPop{from{transform:translateY(12px) scale(.98);opacity:0;}to{transform:none;opacity:1;}}
 .fmt-modal-top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #E2E8F0;}
 .fmt-modal-top h3{font-size:14px;font-weight:800;color:#0F172A;}
-.fmt-x{background:none;border:none;font-size:18px;line-height:1;color:#9ba1b0;cursor:pointer;padding:3px 7px;border-radius:7px;}
+.fmt-x{background:none;border:none;font-size:18px;line-height:1;color:var(--faint);cursor:pointer;padding:3px 7px;border-radius:7px;}
 .fmt-x:hover{background:#F0F1F5;color:#0F172A;}
 .fmt-modal-body{padding:18px;overflow-y:auto;}
 .fmt-head{border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;margin-bottom:16px;}
@@ -115,7 +115,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 .logo-zone.has{border-style:solid;border-color:#0073EA;background:#fff;}
 .logo-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .logo-ic{font-size:36px;margin-bottom:8px;}
-.logo-hint{font-size:12px;color:#9ba1b0;}
+.logo-hint{font-size:12px;color:var(--faint);}
 .logo-preview{max-height:80px;max-width:200px;object-fit:contain;display:none;}
 .logo-zone.has .logo-ic,.logo-zone.has .logo-hint{display:none;}
 .logo-zone.has .logo-preview{display:block;margin:0 auto;}
@@ -371,7 +371,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 
     <!-- Sitios manuales -->
     <div id="sitiosManual">
-      <div style="display:grid;grid-template-columns:1fr 1.5fr auto;gap:8px;padding:0 0 6px;font-size:10px;font-weight:700;color:#9ba1b0;text-transform:uppercase;letter-spacing:.5px;">
+      <div style="display:grid;grid-template-columns:1fr 1.5fr auto;gap:8px;padding:0 0 6px;font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;">
         <span>Nombre del sitio</span><span>Dirección</span><span></span>
       </div>
       <div class="sitios-section" id="sitiosRows"></div>
@@ -434,7 +434,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
       </div>
       <div class="review-item">
         <div class="review-label">Logo</div>
-        <div id="rv-logo"><span style="color:#9ba1b0;font-size:13px;">Sin logo</span></div>
+        <div id="rv-logo"><span style="color:var(--faint);font-size:13px;">Sin logo</span></div>
       </div>
       <div class="review-item">
         <div class="review-label">Sitios</div>
@@ -666,8 +666,8 @@ function renderSitiosPreview() {
   document.getElementById('sitiosPreviewTbl').innerHTML = `
     <table>
       <thead><tr><th>#</th><th>Nombre del sitio</th><th>Dirección</th></tr></thead>
-      <tbody>${sitiosCSV.slice(0,8).map(([n,d],i) => `<tr><td style="color:#9ba1b0">${i+1}</td><td>${n}</td><td>${d}</td></tr>`).join('')}
-      ${sitiosCSV.length>8?`<tr><td colspan="3" style="text-align:center;color:#9ba1b0;padding:8px">… y ${sitiosCSV.length-8} más</td></tr>`:''}</tbody>
+      <tbody>${sitiosCSV.slice(0,8).map(([n,d],i) => `<tr><td style="color:var(--faint)">${i+1}</td><td>${n}</td><td>${d}</td></tr>`).join('')}
+      ${sitiosCSV.length>8?`<tr><td colspan="3" style="text-align:center;color:var(--faint);padding:8px">… y ${sitiosCSV.length-8} más</td></tr>`:''}</tbody>
     </table>`;
 }
 
@@ -700,7 +700,7 @@ function buildReview() {
   if (state.logo) {
     logoEl.innerHTML = `<img src="${state.logo}" class="logo-review" alt="Logo">`;
   } else {
-    logoEl.innerHTML = '<span style="color:#9ba1b0;font-size:13px">Sin logo</span>';
+    logoEl.innerHTML = '<span style="color:var(--faint);font-size:13px">Sin logo</span>';
   }
 
   // Sitios

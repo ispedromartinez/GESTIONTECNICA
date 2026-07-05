@@ -10,6 +10,7 @@
     "@supabase/supabase-js": "^2.108.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.10.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "docx": "^8.5.0",
     "dotenv": "^17.4.2",

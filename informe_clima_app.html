@@ -56,8 +56,8 @@ header{background:#1C1F3B;color:#fff;padding:14px 20px 12px;position:sticky;top:
 .tab.nuevo .num{background:#D4F5E7;color:var(--green);}
 .tab.nuevo.active{color:var(--green);border-bottom-color:var(--green);font-weight:700;}
 .tab.nuevo.active .num{background:var(--green);color:#fff;}
-.tab.papelera{color:#94a3b8;}
-.tab.papelera .num{background:#f8fafc;color:#94a3b8;}
+.tab.papelera{color:var(--faint);}
+.tab.papelera .num{background:#f8fafc;color:var(--faint);}
 .tab.papelera.active{color:var(--red);border-bottom-color:var(--red);}
 .tab.papelera.active .num{background:var(--red);color:#fff;}
 
@@ -91,7 +91,7 @@ textarea{resize:vertical;min-height:88px;line-height:1.6;}
 .s-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;transition:.15s;}
 .site-wrap:focus-within .s-ico{opacity:0;pointer-events:none;}
 .site-wrap:focus-within .site-in{padding-left:13px;}
-.s-clr{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;padding:4px;display:none;}
+.s-clr{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--faint);font-size:16px;cursor:pointer;padding:4px;display:none;}
 .s-clr.show{display:flex;}
 .dd{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--bm);border-radius:10px;box-shadow:var(--sh-lg);max-height:240px;overflow-y:auto;z-index:999;display:none;}
 .dd.open{display:block;}
@@ -136,7 +136,7 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .addr-disp{width:100%;border:1.5px solid #f1f5f9;border-radius:8px;padding:10px 13px;font-size:13px;color:var(--muted);background:#f8fafc;min-height:40px;font-family:inherit;outline:none;transition:border-color .15s,background .15s,color .15s;cursor:default;}
 .addr-disp:not([readonly]){border-color:var(--border);background:#fff;color:var(--text);cursor:text;}
 .addr-disp:not([readonly]):focus{border-color:var(--blue);background:#eff6ff;}
-.addr-disp::placeholder{color:#94a3b8;}
+.addr-disp::placeholder{color:var(--faint);}
 
 /* ── MEDICIONES TABLE ── */
 .med-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border);}
@@ -164,7 +164,7 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .pslot.filled .ph-pl{display:none;}
 .ph-ic{font-size:24px;opacity:.4;}
 .ph-fg{font-size:11px;font-weight:700;color:var(--blue);opacity:.7;}
-.ph-ht{font-size:9px;color:#94a3b8;}
+.ph-ht{font-size:9px;color:var(--faint);}
 .rm-btn{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:12px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:4;}
 .pslot.filled .rm-btn{display:flex;}
 .rst-btn{position:absolute;top:5px;right:33px;background:rgba(21,101,192,.75);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:13px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:4;line-height:1;}
@@ -941,7 +941,7 @@ function renderDD(matches,q){
   hiIdx=-1;
   siteCnt.textContent=q&&matches.length<SITES.length?`${matches.length} resultado${matches.length!==1?'s':''}`:'';
   let html='';
-  if(!matches.length){html='<div class="di" style="color:#90a4ae;cursor:default">Sin resultados</div>';}
+  if(!matches.length){html='<div class="di" style="color:var(--faint);cursor:default">Sin resultados</div>';}
   else{html=matches.map(([n,a],i)=>`<div class="di" data-name="${n}" data-addr="${a}" data-i="${i}"><div class="dn">${hl(n,q)}</div><div class="da">${hl(a,q)}</div></div>`).join('');}
   html+='<div class="dd-otros">+ Otro sitio (escribir nombre)</div>';
   siteDD.innerHTML=html;
@@ -999,7 +999,7 @@ function filterSup(q){
 function renderSupDD(matches,q){
   supHiIdx=-1;
   let html='';
-  if(!matches.length){html='<div class="sup-di" style="color:#90a4ae;cursor:default">Sin resultados</div>';}
+  if(!matches.length){html='<div class="sup-di" style="color:var(--faint);cursor:default">Sin resultados</div>';}
   else{html=matches.map((s,i)=>`<div class="sup-di" data-name="${s}" data-i="${i}">${hl(s,q)}</div>`).join('');}
   html+='<div class="dd-otros">+ Otro supervisor (escribir nombre)</div>';
   supDD.innerHTML=html;
@@ -1037,7 +1037,7 @@ function filterTec(q){
 function renderTecDD(matches,q){
   tecHiIdx=-1;
   let html='';
-  if(!matches.length){html='<div class="sup-di" style="color:#90a4ae;cursor:default">Sin resultados</div>';}
+  if(!matches.length){html='<div class="sup-di" style="color:var(--faint);cursor:default">Sin resultados</div>';}
   else{html=matches.map((s,i)=>`<div class="sup-di" data-name="${s}" data-i="${i}">${hl(s,q)}</div>`).join('');}
   html+='<div class="dd-otros">+ Otro técnico (escribir nombre)</div>';
   tecDD.innerHTML=html;
@@ -1082,7 +1082,7 @@ function initCombo(id, list){
     hi=-1;
     dd.innerHTML=matches.length
       ? matches.map((s,i)=>`<div class="sup-di" data-name="${s.replace(/"/g,'&quot;')}" data-i="${i}">${hl(s,q)}</div>`).join('')
-      : '<div class="sup-di" style="color:#90a4ae;cursor:default">Sin resultados — se usará lo escrito</div>';
+      : '<div class="sup-di" style="color:var(--faint);cursor:default">Sin resultados — se usará lo escrito</div>';
     dd.querySelectorAll('.sup-di[data-name]').forEach(el=>{
       el.addEventListener('click',()=>pick(el.dataset.name));
       el.addEventListener('mouseenter',function(){hi=+this.dataset.i;hilite();});
