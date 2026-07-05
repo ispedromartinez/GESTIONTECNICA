@@ -844,50 +844,54 @@ async function cargarHomeKpis() {
 }
 
 // ── Proyectos asignados (BD de gestión: /api/gestion/mis-proyectos) ──
-// Muestra TODOS los proyectos donde el usuario está asignado. Si el
-// proyecto tiene plantilla tigo/wom, la tarjeta enlaza a su generador.
+// Muestra TODOS los proyectos donde el usuario está asignado, cada uno con
+// su propia tarjeta (nombre, logo y rama) — igual que la lista del sidebar.
 async function cargarMisProyectos() {
   try {
-    const r = await fetch('/api/gestion/mis-proyectos', { headers: authH() });
+    const [r, rLegacy] = await Promise.all([
+      fetch('/api/gestion/mis-proyectos', { headers: authH() }),
+      fetch('/api/proyectos', { headers: authH() }).catch(() => null)
+    ]);
     if (!r.ok) return;
     const proyectos = await r.json();
     if (!Array.isArray(proyectos) || !proyectos.length) return;
 
+    // Un proyecto creado desde el asistente viejo (/nuevo-proyecto, formato
+    // Tigo/Wom) ya tiene su propia tarjeta en "Proyectos adicionales"
+    // (cargarProyectosCustom); se excluye aquí por slug para no duplicarlo.
+    // Antes se excluía por coincidir el nombre con "tigo"/"wom"/"preventivo",
+    // lo que ocultaba por error proyectos reales (con su propio logo) que
+    // simplemente compartían esa palabra.
+    let legacySlugs = new Set();
+    if (rLegacy && rLegacy.ok) {
+      try { legacySlugs = new Set((await rLegacy.json()).map(p => (p.slug || '').toLowerCase())); } catch {}
+    }
     const ROL_PROY = { responsable: 'Responsable', supervisor: 'Supervisor', tecnico: 'Técnico' };
-    // Plantillas/slugs que tienen generador propio en la app.
-    const SLUG_RUTA = { tigo: '/tigo', wom: '/wom', preventivo: '/preventivo' };
-    // TIGO / WOM / Preventivo ya tienen su tarjeta fija arriba: aquí solo
-    // mostramos asignaciones ADICIONALES, para no duplicar esas tarjetas.
-    const adicionales = proyectos.filter(p =>
-      !(SLUG_RUTA[(p.template || '').toLowerCase()] || SLUG_RUTA[(p.slug || '').toLowerCase()]));
+    const adicionales = proyectos.filter(p => !legacySlugs.has((p.slug || '').toLowerCase()));
     if (!adicionales.length) return;
     const grid = document.getElementById('misProyGrid');
     grid.innerHTML = adicionales.map(p => {
       // local: proyecto_nombre · supabase: nombre
       const nombre = p.proyecto_nombre || p.nombre || 'Proyecto';
       const color  = p.color || '#0F172A';
-      const tmpl   = (p.template || '').toLowerCase();
-      const slug   = (p.slug || '').toLowerCase();
-      // Enlaza al generador por plantilla; si no hay, por slug conocido.
-      const href   = SLUG_RUTA[tmpl] || SLUG_RUTA[slug] || null;
       const rol    = ROL_PROY[p.rol_en_proyecto] || p.rol_en_proyecto || '—';
       const estado = p.estado || '—';
       const ini    = nombre.trim().substring(0, 2).toUpperCase();
       const logoMini = p.logo
         ? `<img src="${esc(p.logo)}" alt="" style="max-width:24px;max-height:24px;object-fit:contain;">`
         : `<span style="font-weight:800;font-size:14px;">${esc(ini)}</span>`;
-      const tile = `
+      // Misma navegación que la lista del sidebar (abrirProyecto): preventivo
+      // va al módulo de tareas, el resto abre los informes de ESE proyecto.
+      return `<div class="bento-tile" style="cursor:pointer" onclick="abrirProyecto('${esc(p.id)}','${esc((p.tipo || '').toLowerCase())}')">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div class="bento-ico" style="margin-bottom:0;background:${esc(color)}22;color:${esc(color)};">${logoMini}</div>
-            ${href ? `<span style="opacity:.45;font-size:20px;">→</span>` : ''}
+            <span style="opacity:.45;font-size:20px;">→</span>
           </div>
           <div class="bento-foot">
             <div class="bento-title">${esc(nombre)}</div>
             <div class="bento-desc">Rol: ${esc(rol)} · ${esc(estado)}</div>
-          </div>`;
-      return href
-        ? `<a href="${href}" class="bento-tile">${tile}</a>`
-        : `<div class="bento-tile">${tile}</div>`;
+          </div>
+        </div>`;
     }).join('');
 
     document.getElementById('misProyWrap').style.display = 'block';
