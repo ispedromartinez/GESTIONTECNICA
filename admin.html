@@ -123,6 +123,12 @@ a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,
 .sec-tools .ss-disp{width:100%;box-sizing:border-box!important;height:auto!important;}
 .sec-tools select.filter{min-width:180px;max-width:230px;margin-right:10px;}
 @media(max-width:640px){ .sec-tools{flex-wrap:wrap;} }
+/* Selector "Empresa" junto al botón Guardar: sin tope de ancho se estiraba a
+   flex:1 y en pantallas angostas el botón bajaba de línea justo debajo,
+   quedando tapado por el propio desplegable al abrirse. */
+.eq-emp-field{flex:0 1 360px;}
+.eq-emp-field .ss-wrap{width:auto!important;min-width:220px!important;max-width:360px!important;}
+.eq-emp-field .ss-disp{width:100%;box-sizing:border-box!important;height:auto!important;}
 .btn{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:background .15s,box-shadow .15s,transform .05s;display:inline-flex;align-items:center;gap:6px;}
 .btn:active{transform:translateY(1px);}
 .btn-blue{background:var(--p-accent);color:#fff;}.btn-blue:hover{background:var(--p-accent-d);}
@@ -599,7 +605,7 @@ async function gestionarEquipo(pid){
     empresaSection = `<div class="section"><div class="sec-head"><div><div class="sec-name">Vínculo con empresa</div>
       <div class="sec-sub">A qué empresa pertenece el proyecto</div></div></div>
       <div style="padding:18px 22px"><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-        <div class="field" style="margin:0;flex:1;min-width:220px"><label>Empresa</label>
+        <div class="field eq-emp-field" style="margin:0;min-width:220px"><label>Empresa</label>
           <select id="eqEmp">${emps.map(e=>`<option value="${e.id}" ${e.id===proyecto.empresa_id?'selected':''}>${esc(e.nombre)}</option>`).join('')}</select></div>
         <button class="btn btn-blue" onclick="reasignarEmpresa('${pid}')">Guardar empresa</button></div></div></div>`;
   }

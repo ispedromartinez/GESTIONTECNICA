@@ -217,7 +217,10 @@ a.bento-tile{text-decoration:none;color:inherit;cursor:pointer;}
 .ss-val.ss-placeholder{color:var(--muted,#94A3B8);}
 .ss-arr{color:var(--muted,#94A3B8);font-size:11px;transition:transform .15s,color .15s;}
 .ss-disp.open .ss-arr{transform:rotate(180deg);color:var(--brand,#0073EA);}
-.ss-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--brand,#0073EA);border-radius:9px;box-shadow:0 12px 32px rgba(15,23,42,.16);z-index:400;display:none;overflow:hidden;font-size:13px;}
+/* position:fixed con top/left/width puestos por JS al abrir (searchable-select.js):
+   así el panel nunca queda recortado por un ancestro con overflow:hidden
+   (tarjetas ".section", modales con scroll, etc.). */
+.ss-panel{position:fixed;background:#fff;border:1px solid var(--brand,#0073EA);border-radius:9px;box-shadow:0 12px 32px rgba(15,23,42,.16);z-index:500;display:none;overflow:hidden;font-size:13px;}
 .ss-panel.open{display:block;}
 .ss-search{padding:6px;border-bottom:1px solid #EEF1F6;}
 .ss-in{width:100%;border:1px solid var(--border,#E2E8F0);border-radius:6px;padding:6px 9px;font-size:inherit;font-family:inherit;color:var(--text,#0F172A);outline:none;background:#F8F9FC;}

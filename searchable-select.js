@@ -109,14 +109,63 @@
       els.forEach((el, k) => el.classList.toggle('hi', k === hi));
       if (hi >= 0) els[hi] && els[hi].scrollIntoView({ block: 'nearest' });
     }
+    // El panel es position:fixed (coordenadas puestas a mano aquí) en vez de
+    // absolute-al-wrap: así no lo recorta ningún ancestro con overflow:hidden
+    // (tarjetas ".section", modales con scroll, etc.) ni queda atrapado detrás
+    // de otro contenido con su propio stacking context.
+    // Próximo elemento visible que quede realmente DEBAJO (no al lado, como un
+    // botón en la misma fila) en el flujo del documento: p.ej. los botones de
+    // un modal justo después del campo. Ese es el límite real que le importa
+    // al usuario, más preciso que "hasta el borde de la ventana".
+    function nextVisibleBelow() {
+      let el = wrap;
+      // Tope de 3 niveles: alcanza para llegar a los botones de un modal
+      // (wrap → field → field-row → acciones) sin llegar tan arriba que
+      // termine "chocando" con la próxima tarjeta/sección de la página,
+      // que no es un solape real (hay de sobra para abrir hacia abajo).
+      for (let hops = 0; el && el !== document.body && hops < 3; hops++) {
+        let sib = el.nextElementSibling;
+        while (sib) {
+          const rc = sib.getBoundingClientRect();
+          if ((rc.width || rc.height) && rc.top >= el.getBoundingClientRect().bottom - 4) return rc.top;
+          sib = sib.nextElementSibling;
+        }
+        el = el.parentElement;
+      }
+      return window.innerHeight;
+    }
+    function positionPanel() {
+      const r = disp.getBoundingClientRect();
+      panel.style.left = r.left + 'px';
+      panel.style.width = r.width + 'px';
+      panel.classList.remove('drop-up');
+      panel.style.bottom = 'auto';
+      panel.style.top = (r.bottom + 4) + 'px';
+      const panelH = panel.offsetHeight;
+      const limit = Math.min(window.innerHeight, nextVisibleBelow());
+      const spaceBelow = limit - r.bottom;
+      const spaceAbove = r.top;
+      // Si no cabe hacia abajo (p.ej. un select pegado a los botones de un
+      // modal), se abre hacia arriba: evita que el panel tape controles
+      // debajo y quede imposible de clickear sin cerrarlo antes.
+      if (spaceBelow < panelH && spaceAbove > spaceBelow) {
+        panel.classList.add('drop-up');
+        panel.style.top = 'auto';
+        panel.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+      }
+    }
     function open() {
       if (sel.disabled) return;
       closeAll(panel);
       buildList('');
       panel.classList.add('open'); disp.classList.add('open');
+      positionPanel();
       input.value = ''; setTimeout(() => input.focus(), 0);
     }
     function close() { panel.classList.remove('open'); disp.classList.remove('open'); hi = -1; }
+    window.addEventListener('resize', () => { if (panel.classList.contains('open')) positionPanel(); });
+    // Un scroll debajo (página, modal, tabla) invalida las coordenadas fijas: se cierra en vez de quedar mal ubicado.
+    window.addEventListener('scroll', () => { if (panel.classList.contains('open')) close(); }, true);
     function pick(idx) {
       if (idx === sel.selectedIndex) { close(); disp.focus(); return; }
       INDEX_DESC.set.call(sel, idx);

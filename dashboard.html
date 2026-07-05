@@ -228,6 +228,9 @@ tbody tr:hover{background:#F8FAFF;}
 .ip-reassign-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;border:none;background:transparent;color:var(--faint);cursor:pointer;vertical-align:middle;margin-left:4px;}
 .ip-reassign-btn:hover{background:#EFF6FF;color:#0073EA;}
 .ip-reassign-btn svg{width:13px;height:13px;}
+/* Informe ya enviado: la reasignación queda bloqueada (candado mudo, sin acción) */
+.ip-reassign-locked{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#CBD5E1;vertical-align:middle;margin-left:4px;cursor:default;}
+.ip-reassign-locked svg{width:12px;height:12px;}
 
 .empty-tbl{text-align:center;padding:52px 20px;color:#64748B;}
 .empty-tbl .ei{font-size:38px;margin-bottom:8px;}
@@ -299,6 +302,7 @@ tbody tr:hover{background:#F8FAFF;}
 /* Botones del módulo */
 .ip-btn{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;border:none;cursor:pointer;transition:.13s;text-decoration:none;display:inline-block;}
 .ip-btn:hover{filter:brightness(.96);}
+.ip-btn:disabled{opacity:.5;cursor:not-allowed;filter:none;}
 .ip-btn-sm{padding:7px 13px;font-size:12px;}
 .ip-btn-prim{background:#059669;color:#fff;}
 .ip-btn-confirm{background:#0073EA;color:#fff;}
@@ -310,6 +314,24 @@ tbody tr:hover{background:#F8FAFF;}
 .ip-modal{background:#fff;border:1px solid #E2E8F0;border-radius:14px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(15,23,42,.2);padding:24px 24px 20px;max-height:90vh;overflow-y:auto;}
 .ip-modal h3{font-size:18px;font-weight:800;margin-bottom:4px;color:#0F172A;letter-spacing:-.01em;}
 .ip-modal-sub{font-size:12.5px;color:#64748B;margin-bottom:18px;line-height:1.5;padding-bottom:16px;border-bottom:1px solid #EEF1F6;}
+/* Lista de técnicos para reasignar: tarjetas grandes en vez de un <select>
+   angosto — se ve de un vistazo quién está disponible y quién es el actual. */
+/* Buscador con chip para reasignar técnico: un solo valor, mostrado como
+   etiqueta removible dentro del cuadro de búsqueda (en vez de radios). */
+.ip-tag-box{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:44px;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:10px;background:#F8F9FC;cursor:text;transition:border-color .13s,box-shadow .13s;}
+.ip-tag-box:focus-within{border-color:#0073EA;box-shadow:0 0 0 3px rgba(0,115,234,.12);background:#fff;}
+.ip-tag-chip{display:inline-flex;align-items:center;gap:6px;background:#E0F2FE;color:#0369A1;font-size:12.5px;font-weight:600;padding:5px 6px 5px 11px;border-radius:20px;}
+.ip-tag-x{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border:none;border-radius:50%;background:rgba(3,105,161,.12);color:#0369A1;font-size:13px;line-height:1;cursor:pointer;}
+.ip-tag-x:hover{background:rgba(3,105,161,.22);}
+.ip-tag-input{flex:1;min-width:100px;border:none;outline:none;background:transparent;font-size:13px;font-family:inherit;color:#0F172A;padding:5px 4px;}
+.ip-tag-field{position:relative;}
+.ip-tag-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #0073EA;border-radius:9px;box-shadow:0 12px 32px rgba(15,23,42,.16);z-index:20;max-height:220px;overflow-y:auto;display:none;}
+.ip-tag-panel.open{display:block;}
+.ip-tag-opt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 13px;font-size:13px;color:#0F172A;cursor:pointer;border-bottom:1px solid #F1F5F9;}
+.ip-tag-opt:last-child{border-bottom:none;}
+.ip-tag-opt:hover{background:#EFF6FF;}
+.ip-tag-opt-cur{font-size:10px;font-weight:700;color:#0369A1;background:#E0F2FE;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
+.ip-tag-empty{padding:12px;font-size:12.5px;color:var(--faint);text-align:center;}
 /* Calendario de trabajos (ejecutados/pendientes) por proyecto */
 .ip-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .ip-cal-title{font-size:14px;font-weight:800;color:#0F172A;text-transform:capitalize;}
@@ -1291,9 +1313,13 @@ async function ipLoad() {
       ${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Título</th><th>Técnico</th><th>Estado</th><th>Documento</th><th>Última actualización</th></tr></thead><tbody>
         ${list.map(i => `<tr><td class="td-sitio">${esc(i.titulo)}</td>
           <td class="td-tec">${esc(i.tecnico_nombre || '—')}
-            <button class="ip-reassign-btn" onclick="ipReasignar('${esc(i.id)}','${esc(i.tecnico_id || '')}','${esc(pid)}')" title="Reasignar técnico">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-            </button></td>
+            ${i.estado === 'borrador'
+              ? `<button class="ip-reassign-btn" onclick="ipReasignar('${esc(i.id)}','${esc(i.tecnico_id || '')}','${esc(pid)}','${esc(i.titulo)}')" title="Reasignar técnico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </button>`
+              : `<span class="ip-reassign-locked" title="No se puede reasignar: el informe ya fue enviado">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                </span>`}</td>
           <td><span class="ip-pill ip-${esc(i.estado)}">${esc(i.estado)}</span></td>
           <td>${i.doc_url
             ? `<button class="ip-btn ip-btn-sm ip-btn-doc" onclick="ipVerDoc('${encodeURIComponent(i.doc_url)}','${encodeURIComponent(i.doc_nombre || '')}')">⬇ Descargar</button>`
@@ -1304,24 +1330,77 @@ async function ipLoad() {
 }
 
 // ── Reasignar técnico responsable de un informe ──
-async function ipReasignar(informeId, tecnicoActualId, pid) {
+// Buscador con chip: el técnico elegido queda como etiqueta removible dentro
+// del cuadro (single-select — un informe solo tiene un técnico responsable).
+let _ipTagTecnicos = [], _ipTagSel = null;
+async function ipReasignar(informeId, tecnicoActualId, pid, titulo) {
   let personal = [];
   try { personal = await fetch('/api/gestion/proyectos/' + pid + '/personal', { headers: authH() }).then(r => r.ok ? r.json() : []); }
   catch { personal = []; }
-  const tecnicos = personal.filter(p => p.rol === 'tecnico');
-  if (!tecnicos.length) { toast('Este proyecto no tiene técnicos asignados.'); return; }
+  _ipTagTecnicos = personal.filter(p => p.rol === 'tecnico');
+  if (!_ipTagTecnicos.length) { toast('Este proyecto no tiene técnicos asignados.'); return; }
+  _ipTagSel = _ipTagTecnicos.find(t => t.id === tecnicoActualId) || null;
   ipOpenModal(`<h3>Reasignar técnico</h3>
-    <p class="ip-modal-sub">Se lo quita al técnico actual y queda asignado al que elijas.</p>
-    <div class="ip-field"><label>Técnico responsable</label>
-      <select id="ipReasignSel">
-        ${tecnicos.map(t => `<option value="${esc(t.id)}" ${t.id === tecnicoActualId ? 'selected' : ''}>${esc(t.nombre)}</option>`).join('')}
-      </select>
+    <p class="ip-modal-sub">Elegí quién se hace cargo de <strong>${esc(titulo || 'este informe')}</strong>. Al técnico actual se le quita automáticamente.</p>
+    <div class="ip-field ip-tag-field">
+      <label>Técnico responsable</label>
+      <div class="ip-tag-box" id="ipTagBox" onmousedown="if(event.target===this) document.getElementById('ipTagSearch').focus()">
+        <span id="ipTagChipWrap"></span>
+        <input type="text" id="ipTagSearch" class="ip-tag-input" placeholder="Buscar técnico..." autocomplete="off"
+          oninput="ipTagBuild(this.value)" onfocus="ipTagBuild(this.value)">
+      </div>
+      <div class="ip-tag-panel" id="ipTagPanel"></div>
     </div>
     <div class="ip-actions"><button class="ip-btn ip-btn-cancel" onclick="ipCloseModal()">Cancelar</button>
-      <button class="ip-btn ip-btn-confirm" onclick="ipConfirmarReasignar('${esc(informeId)}')">Guardar</button></div>`);
+      <button class="ip-btn ip-btn-confirm" id="ipTagSaveBtn" onclick="ipConfirmarReasignar('${esc(informeId)}')">Guardar</button></div>`);
+  ipTagRenderChip();
+  if (!window._ipTagOutsideBound) { document.addEventListener('mousedown', ipTagOutsideClose); window._ipTagOutsideBound = true; }
+}
+function ipTagRenderChip() {
+  const wrap = document.getElementById('ipTagChipWrap');
+  const btn = document.getElementById('ipTagSaveBtn');
+  if (!wrap) return;
+  wrap.innerHTML = _ipTagSel
+    ? `<span class="ip-tag-chip">${esc(_ipTagSel.nombre)}<button type="button" class="ip-tag-x" onclick="ipTagClear(event)">×</button></span>`
+    : '';
+  if (btn) btn.disabled = !_ipTagSel;
+}
+function ipTagClear(e) {
+  e.stopPropagation();
+  _ipTagSel = null;
+  ipTagRenderChip();
+  const input = document.getElementById('ipTagSearch');
+  if (input) { input.value = ''; input.focus(); }
+  ipTagBuild('');
+}
+function ipTagBuild(q) {
+  const panel = document.getElementById('ipTagPanel');
+  if (!panel) return;
+  const nq = (q || '').trim().toLowerCase();
+  const opts = _ipTagTecnicos.filter(t => !nq || t.nombre.toLowerCase().includes(nq));
+  panel.innerHTML = opts.length
+    ? opts.map(t => `<div class="ip-tag-opt" onmousedown="event.preventDefault();ipTagPick('${esc(t.id)}')">${esc(t.nombre)}
+        ${_ipTagSel && _ipTagSel.id === t.id ? '<span class="ip-tag-opt-cur">Elegido</span>' : ''}</div>`).join('')
+    : '<div class="ip-tag-empty">Sin resultados</div>';
+  panel.classList.add('open');
+}
+function ipTagPick(id) {
+  _ipTagSel = _ipTagTecnicos.find(t => t.id === id) || null;
+  ipTagRenderChip();
+  const input = document.getElementById('ipTagSearch');
+  const panel = document.getElementById('ipTagPanel');
+  if (input) input.value = '';
+  if (panel) panel.classList.remove('open');
+  if (input) input.focus();
+}
+function ipTagOutsideClose(e) {
+  const box = document.getElementById('ipTagBox'), panel = document.getElementById('ipTagPanel');
+  if (!box || !panel) return;
+  if (!box.contains(e.target) && !panel.contains(e.target)) panel.classList.remove('open');
 }
 async function ipConfirmarReasignar(informeId) {
-  const tecnico_id = document.getElementById('ipReasignSel').value;
+  if (!_ipTagSel) { toast('Elegí un técnico'); return; }
+  const tecnico_id = _ipTagSel.id;
   try {
     const r = await fetch('/api/gestion/informes/' + informeId + '/tecnico', {
       method: 'PATCH', headers: authH({ 'Content-Type': 'application/json' }),
