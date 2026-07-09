@@ -941,7 +941,7 @@ async function cargarModulosFijos() {
     if (!r.ok) return;
     const proyectos = await r.json();
     const activos = new Set(proyectos.map(p => p.template).filter(t => MODULOS_FIJOS[t]));
-    cont.innerHTML = ['tigo', 'wom', 'preventivo'].filter(t => activos.has(t)).map(t => MODULOS_FIJOS[t]()).join('');
+    cont.innerHTML = Object.keys(MODULOS_FIJOS).filter(t => activos.has(t)).map(t => MODULOS_FIJOS[t]()).join('');
   } catch (e) { /* silencioso, igual que cargarProyectosCustom */ }
 }
 
@@ -1249,7 +1249,10 @@ async function cargarInformesProy() {
     ]);
     // Normaliza ambas formas (mis-proyectos: proyecto_id/proyecto_nombre · proyectos: id/nombre)
     // Solo proyectos correctivos: "Informes por proyecto" no maneja preventivo.
-    const norm = (Array.isArray(proyectos) ? proyectos : []).map(p => ({
+    // Excluye además las filas módulo (Tigo/WOM/Preventivo): ya tienen sus propios flujos fijos.
+    const norm = (Array.isArray(proyectos) ? proyectos : [])
+      .filter(p => !Object.keys(MODULOS_FIJOS).includes(p.template))
+      .map(p => ({
       id: p.proyecto_id || p.id,
       nombre: p.proyecto_nombre || p.nombre || 'Proyecto',
       tipo: p.tipo || p.proyecto_tipo || '',
@@ -1299,9 +1302,8 @@ async function renderSidebarProyectos() {
   try {
     const ruta = MIROL === 'supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos';
     const proyectos = await fetch(ruta, { headers: authH() }).then(r => r.ok ? r.json() : []);
-    const MODULOS = ['tigo', 'wom', 'preventivo'];
     const norm = (Array.isArray(proyectos) ? proyectos : [])
-      .filter(p => !MODULOS.includes(p.template))
+      .filter(p => !Object.keys(MODULOS_FIJOS).includes(p.template))
       .map(p => ({
       id: p.proyecto_id || p.id,
       nombre: p.proyecto_nombre || p.nombre || 'Proyecto',

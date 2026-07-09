@@ -4,6 +4,7 @@ const { requireRol } = require('../middleware/roles');
 const { canAccessTenant } = require('../middleware/tenant');
 const { validarRut, normalizarRut } = require('../utils/rut');
 const db = require('../db/gestion');
+const { MODULOS_FIJOS } = require('../middleware/modulos');
 
 const router = express.Router();
 router.use(authMiddleware); // todas las rutas requieren sesión
@@ -130,9 +131,10 @@ router.get('/resumen', async (req, res) => {
   try {
     const { rol, empresa_id, usuario_id } = req.user;
     if (rol === 'superadmin') {
-      const [empresas, proyectos, recientes, todos] = await Promise.all([
+      const [empresas, proyectosCrudo, recientes, todos] = await Promise.all([
         db.empresasList(), db.proyectosAll(), db.informesRecientes(12), db.informesParaStats()
       ]);
+      const proyectos = proyectosCrudo.filter(p => !MODULOS_FIJOS.includes(p.template));
       return res.json({
         empresas: empresas.length,
         proyectos_activos: proyectos.filter(p => p.estado === 'activo').length,
@@ -142,9 +144,10 @@ router.get('/resumen', async (req, res) => {
       });
     }
     if (rol === 'admin_empresa') {
-      const [proyectos, recientes, todos] = await Promise.all([
+      const [proyectosCrudo, recientes, todos] = await Promise.all([
         db.proyectosByEmpresa(empresa_id), db.informesRecientes(12, empresa_id), db.informesParaStats(empresa_id)
       ]);
+      const proyectos = proyectosCrudo.filter(p => !MODULOS_FIJOS.includes(p.template));
       return res.json({
         empresas: 1,
         proyectos_activos: proyectos.filter(p => p.estado === 'activo').length,
