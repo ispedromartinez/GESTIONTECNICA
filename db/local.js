@@ -112,6 +112,10 @@ try { db.exec("ALTER TABLE empresas ADD COLUMN nombre_fantasia TEXT"); } catch {
 try { db.exec("ALTER TABLE empresas ADD COLUMN contacto TEXT"); } catch {}
 try { db.exec("ALTER TABLE empresas ADD COLUMN correo TEXT"); } catch {}
 try { db.exec("ALTER TABLE empresas ADD COLUMN direccion TEXT"); } catch {}
+// Módulos legacy fijos habilitados para la empresa (Tigo/WOM/Preventivo)
+try { db.exec("ALTER TABLE empresas ADD COLUMN modulo_tigo INTEGER DEFAULT 1"); } catch {}
+try { db.exec("ALTER TABLE empresas ADD COLUMN modulo_wom INTEGER DEFAULT 1"); } catch {}
+try { db.exec("ALTER TABLE empresas ADD COLUMN modulo_preventivo INTEGER DEFAULT 1"); } catch {}
 // Vínculo técnico → supervisor (carga masiva de usuarios)
 try { db.exec("ALTER TABLE usuarios ADD COLUMN supervisor_id TEXT"); } catch {}
 // Rama del proyecto: 'correctivo' | 'preventivo' (los informes heredan la rama de su proyecto)
@@ -217,16 +221,17 @@ const local = {
   empresas: {
     insert(e) {
       const id = uuid();
-      db.prepare('INSERT INTO empresas (id, nombre, slug, rut_empresa, nombre_fantasia, contacto, correo, direccion) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      db.prepare('INSERT INTO empresas (id, nombre, slug, rut_empresa, nombre_fantasia, contacto, correo, direccion, modulo_tigo, modulo_wom, modulo_preventivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .run(id, e.nombre, e.slug, e.rut_empresa || null,
-             e.nombre_fantasia || null, e.contacto || null, e.correo || null, e.direccion || null);
+             e.nombre_fantasia || null, e.contacto || null, e.correo || null, e.direccion || null,
+             e.modulo_tigo === false ? 0 : 1, e.modulo_wom === false ? 0 : 1, e.modulo_preventivo === false ? 0 : 1);
       return db.prepare('SELECT * FROM empresas WHERE id = ?').get(id);
     },
     // Actualiza solo los campos provistos
     update(id, f) {
-      const cols = ['nombre','slug','rut_empresa','activa','nombre_fantasia','contacto','correo','direccion'];
+      const cols = ['nombre','slug','rut_empresa','activa','nombre_fantasia','contacto','correo','direccion','modulo_tigo','modulo_wom','modulo_preventivo'];
       const sets = [], vals = [];
-      cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(f[k]); } });
+      cols.forEach(k => { if (f[k] !== undefined) { sets.push(k+' = ?'); vals.push(typeof f[k] === 'boolean' ? (f[k] ? 1 : 0) : f[k]); } });
       if (sets.length) { vals.push(id); db.prepare('UPDATE empresas SET '+sets.join(', ')+' WHERE id = ?').run(...vals); }
       return db.prepare('SELECT * FROM empresas WHERE id = ?').get(id);
     },

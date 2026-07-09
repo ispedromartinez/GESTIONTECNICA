@@ -54,7 +54,7 @@ router.get('/empresas', adminEmpresa, async (req, res) => {
 // POST /api/empresas — nueva empresa (solo superadmin: crear clientes)
 router.post('/empresas', soloSuper, async (req, res) => {
   try {
-    let { nombre, slug, rut_empresa, nombre_fantasia, contacto, correo, direccion } = req.body;
+    let { nombre, slug, rut_empresa, nombre_fantasia, contacto, correo, direccion, modulo_tigo, modulo_wom, modulo_preventivo } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
     if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim()))
       return res.status(400).json({ error: 'Correo inválido' });
@@ -78,7 +78,10 @@ router.post('/empresas', soloSuper, async (req, res) => {
       nombre_fantasia: (nombre_fantasia || '').trim() || null,
       contacto: (contacto || '').trim() || null,
       correo: (correo || '').trim() || null,
-      direccion: (direccion || '').trim() || null
+      direccion: (direccion || '').trim() || null,
+      modulo_tigo: modulo_tigo !== false,
+      modulo_wom: modulo_wom !== false,
+      modulo_preventivo: modulo_preventivo !== false
     });
     res.json({ ok: true, empresa });
   } catch (err) { res.status(400).json({ error: err.message }); }
@@ -99,7 +102,7 @@ router.put('/empresas/:id', adminEmpresa, scopeEmpresa, async (req, res) => {
     const empresa = await db.empresaById(req.params.id);
     if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
     const esSuper = req.user.rol === 'superadmin';
-    const { nombre, slug, rut_empresa, activa, nombre_fantasia, contacto, correo, direccion } = req.body;
+    const { nombre, slug, rut_empresa, activa, nombre_fantasia, contacto, correo, direccion, modulo_tigo, modulo_wom, modulo_preventivo } = req.body;
     const fields = {};
     if (nombre !== undefined) fields.nombre = nombre.trim();
     // Datos comerciales (los puede editar admin_empresa también)
@@ -115,6 +118,9 @@ router.put('/empresas/:id', adminEmpresa, scopeEmpresa, async (req, res) => {
     // slug y estado (activa) son potestad de la plataforma (superadmin)
     if (slug !== undefined && esSuper) fields.slug = slug.toLowerCase().trim();
     if (activa !== undefined && esSuper) fields.activa = activa ? 1 : 0;
+    if (modulo_tigo !== undefined && esSuper) fields.modulo_tigo = !!modulo_tigo;
+    if (modulo_wom !== undefined && esSuper) fields.modulo_wom = !!modulo_wom;
+    if (modulo_preventivo !== undefined && esSuper) fields.modulo_preventivo = !!modulo_preventivo;
     if (rut_empresa !== undefined) {
       // El RUT es el identificador único: no puede quedar vacío.
       if (!rut_empresa) return res.status(400).json({ error: 'El RUT de empresa no puede quedar vacío' });

@@ -522,7 +522,7 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
         </div>
 
         <!-- TIGO -->
-        <a href="/tigo" class="bento-tile is-accent col-2">
+        <a href="/tigo" id="tileTigo" class="bento-tile is-accent col-2">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
             <img src="tigo-logo.png" alt="Tigo" style="height:30px;filter:brightness(0) invert(1);" onerror="this.style.display='none'">
             <span style="font-size:22px;opacity:.85;">→</span>
@@ -534,7 +534,7 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
         </a>
 
         <!-- WOM -->
-        <a href="/wom" class="bento-tile is-violet">
+        <a href="/wom" id="tileWom" class="bento-tile is-violet">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <span style="font-size:30px;font-weight:900;font-style:italic;letter-spacing:-2px;line-height:1;color:#fff;">wom</span>
             <span style="font-size:22px;opacity:.85;">→</span>
@@ -546,7 +546,7 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
         </a>
 
         <!-- PREVENTIVO -->
-        <a href="/preventivo" class="bento-tile is-green">
+        <a href="/preventivo" id="tilePreventivo" class="bento-tile is-green">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
             <span style="font-size:22px;opacity:.85;">→</span>
@@ -770,9 +770,13 @@ async function init() {
   try {
     const r = await fetch('/auth/me', { headers: authH() });
     if (!r.ok) { window.location.replace('/login'); return; }
-    const { usuario, perfil = {}, areas = [] } = await r.json();
+    const { usuario, perfil = {}, areas = [], modulos = { tigo: true, wom: true, preventivo: true } } = await r.json();
     const miRol = usuario.rol;
     MIROL = miRol;
+
+    if (!modulos.tigo) document.getElementById('tileTigo').style.display = 'none';
+    if (!modulos.wom) document.getElementById('tileWom').style.display = 'none';
+    if (!modulos.preventivo) document.getElementById('tilePreventivo').style.display = 'none';
 
     // El perfil (si está completo) trae el nombre de pila ya separado del
     // apellido; usarlo evita duplicar el apellido al armar "nombre completo".

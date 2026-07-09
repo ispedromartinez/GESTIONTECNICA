@@ -779,6 +779,13 @@ function modalEmpresa(){
     <div class="field"><label>Correo</label><input id="mCorreo" type="email" placeholder="contacto@empresa.cl"></div>
     <div class="field"><label>Dirección</label><input id="mDireccion" placeholder="Av. Siempre Viva 123, Santiago"></div>
     <div class="field"><label>Identificador (slug)</label><input id="mSlug" placeholder="icetel"><div class="hint">Opcional · se genera del nombre si lo dejas vacío.</div></div>
+    <div class="field"><label>Módulos habilitados</label>
+      <div style="display:flex;gap:16px;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="mModTigo" checked> Tigo</label>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="mModWom" checked> WOM</label>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="mModPrev" checked> Preventivo</label>
+      </div>
+    </div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="crearEmpresa(this)">Crear empresa</button></div>`);
@@ -790,7 +797,8 @@ async function crearEmpresa(btn){
   if(!rut_empresa) return showErr('El RUT de empresa es obligatorio (identificador único)');
   const body={ nombre, slug:slug||undefined, rut_empresa:rut_empresa||undefined,
     nombre_fantasia:$('mFantasia').value.trim(), contacto:$('mContacto').value.trim(),
-    correo:$('mCorreo').value.trim(), direccion:$('mDireccion').value.trim() };
+    correo:$('mCorreo').value.trim(), direccion:$('mDireccion').value.trim(),
+    modulo_tigo:$('mModTigo').checked, modulo_wom:$('mModWom').checked, modulo_preventivo:$('mModPrev').checked };
   btn.disabled=true;
   try{ await api('/api/empresas',{method:'POST',body:JSON.stringify(body)});
     closeModal(); toast('Empresa creada','ok'); go('empresas');
@@ -802,7 +810,14 @@ async function modalEditarEmpresa(id){
   const usuarios = await api('/api/empresas/'+id+'/usuarios').catch(()=>[]);
   const camposSuper = esSuper ? `
     <div class="field"><label>Identificador (slug)</label><input id="eeSlug" value="${esc(e.slug)}"></div>
-    <div class="field"><label>Estado</label><select id="eeActiva"><option value="1" ${e.activa?'selected':''}>Activa</option><option value="0" ${!e.activa?'selected':''}>Inactiva</option></select></div>` : '';
+    <div class="field"><label>Estado</label><select id="eeActiva"><option value="1" ${e.activa?'selected':''}>Activa</option><option value="0" ${!e.activa?'selected':''}>Inactiva</option></select></div>
+    <div class="field"><label>Módulos habilitados</label>
+      <div style="display:flex;gap:16px;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="eeModTigo" ${e.modulo_tigo!==0&&e.modulo_tigo!==false?'checked':''}> Tigo</label>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="eeModWom" ${e.modulo_wom!==0&&e.modulo_wom!==false?'checked':''}> WOM</label>
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="eeModPrev" ${e.modulo_preventivo!==0&&e.modulo_preventivo!==false?'checked':''}> Preventivo</label>
+      </div>
+    </div>` : '';
   const ROL_ES = { superadmin:'Superadmin', admin_empresa:'Admin', supervisor:'Supervisor', tecnico:'Técnico' };
   const personalHtml = usuarios.length
     ? `<ul style="margin:6px 0 0;padding:0;list-style:none;max-height:150px;overflow:auto;">${usuarios.map(u=>
@@ -829,6 +844,9 @@ async function guardarEmpresa(id,btn){
     correo:$('eeCorreo').value.trim(), direccion:$('eeDireccion').value.trim() };
   if($('eeSlug')) body.slug = $('eeSlug').value.trim().toLowerCase();
   if($('eeActiva')) body.activa = $('eeActiva').value==='1';
+  if($('eeModTigo')) body.modulo_tigo = $('eeModTigo').checked;
+  if($('eeModWom')) body.modulo_wom = $('eeModWom').checked;
+  if($('eeModPrev')) body.modulo_preventivo = $('eeModPrev').checked;
   if(!body.nombre) return showErr('El nombre es requerido');
   btn.disabled=true;
   try{ await api('/api/empresas/'+id,{method:'PUT',body:JSON.stringify(body)});
