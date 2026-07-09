@@ -534,21 +534,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       areas = list.filter(Boolean).map(a => ({ id: a.id, nombre: a.nombre }));
     }
 
-    let modulos = { tigo: true, wom: true, preventivo: true };
-    if (u.rol !== 'superadmin' && u.empresa_id) {
-      try {
-        const empresa = await gestionDB.empresaById(u.empresa_id);
-        if (empresa) {
-          modulos = {
-            tigo: empresa.modulo_tigo !== 0 && empresa.modulo_tigo !== false,
-            wom: empresa.modulo_wom !== 0 && empresa.modulo_wom !== false,
-            preventivo: empresa.modulo_preventivo !== 0 && empresa.modulo_preventivo !== false
-          };
-        }
-      } catch { /* si falla la consulta, se deja todo habilitado (fail-open, no rompe sesión) */ }
-    }
-
-    res.json({ usuario: u, perfil: { cargo, nombre, apellidos }, areas, modulos });
+    res.json({ usuario: u, perfil: { cargo, nombre, apellidos }, areas });
   } catch (err) {
     // Ante cualquier fallo, no romper la sesión: devolver al menos el usuario.
     res.json({ usuario: req.user, perfil: { cargo: null, nombre: null, apellidos: null }, areas: [] });

@@ -106,9 +106,3 @@ ALTER TABLE papelera_prev  ADD COLUMN IF NOT EXISTS empresa_id UUID REFERENCES e
 CREATE INDEX IF NOT EXISTS idx_informes_clima_empresa ON informes_clima(empresa_id);
 CREATE INDEX IF NOT EXISTS idx_informes_wom_empresa   ON informes_wom(empresa_id);
 CREATE INDEX IF NOT EXISTS idx_informes_prev_empresa  ON informes_prev(empresa_id);
-
--- Módulos legacy fijos habilitados para la empresa (Tigo/WOM/Preventivo).
--- Default true: empresas existentes no pierden acceso a los módulos que ya usaban.
-ALTER TABLE empresas ADD COLUMN IF NOT EXISTS modulo_tigo boolean DEFAULT true;
-ALTER TABLE empresas ADD COLUMN IF NOT EXISTS modulo_wom boolean DEFAULT true;
-ALTER TABLE empresas ADD COLUMN IF NOT EXISTS modulo_preventivo boolean DEFAULT true;
