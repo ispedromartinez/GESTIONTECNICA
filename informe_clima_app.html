@@ -1538,7 +1538,7 @@ async function generateDocx(){
   };
   try{
     const resp=await fetch(SERVER+'/generar',{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(payload)});
-    if(!resp.ok)throw new Error(`Error del servidor: ${resp.status}`);
+    if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error||`Error del servidor: ${resp.status}`); }
     const blob=await resp.blob();
     const disp=resp.headers.get('Content-Disposition')||'';
     const fnMatch=disp.match(/filename="(.+)"/);

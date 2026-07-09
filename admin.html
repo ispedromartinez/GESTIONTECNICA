@@ -446,8 +446,35 @@ async function verEmpresa(id){
       ${userRows}</div>
     <div class="section">
       <div class="sec-head"><div><div class="sec-name">Proyectos</div><div class="sec-sub">${proyectos.length}</div></div>
-        ${['superadmin','admin_empresa'].includes(ME.rol)?`<button class="btn btn-blue btn-sm" onclick="location.href='/nuevo-proyecto?empresa=${emp.id}'">+ Nuevo proyecto</button>`:''}</div>
+        <div class="sec-tools">
+        ${ME.rol==='superadmin'?`<button class="btn btn-ghost btn-sm" onclick="modalAsignarProyectoExistente('${emp.id}')">Asignar proyecto existente</button>`:''}
+        ${['superadmin','admin_empresa'].includes(ME.rol)?`<button class="btn btn-blue btn-sm" onclick="location.href='/nuevo-proyecto?empresa=${emp.id}'">+ Nuevo proyecto</button>`:''}
+        </div></div>
       ${projRows}</div>`;
+}
+async function modalAsignarProyectoExistente(empresaId){
+  const [emp, todos] = await Promise.all([api('/api/empresas/'+empresaId), api('/api/gestion/proyectos')]);
+  const disponibles = todos.filter(p=>p.empresa_id!==empresaId);
+  if(!disponibles.length){
+    openModal(`<h3>Asignar proyecto existente</h3><p class="modal-sub">No hay proyectos de otras empresas disponibles para asignar.</p>
+      <div class="modal-actions"><button class="btn-confirm" onclick="closeModal()">Entendido</button></div>`);
+    return;
+  }
+  openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+      <div><h3>Asignar proyecto existente</h3><p class="modal-sub">Se moverá a ${esc(emp.nombre)}, dejando su empresa anterior.</p></div></div>
+    <div class="field"><label>Proyecto</label><select id="mAsignarProy">
+      ${disponibles.map(p=>`<option value="${p.id}">${esc(p.nombre)}${p.empresa_nombre?' — actualmente en '+esc(p.empresa_nombre):''}</option>`).join('')}
+    </select></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="asignarProyectoExistente('${empresaId}',this)">Asignar</button></div>`);
+}
+async function asignarProyectoExistente(empresaId, btn){
+  const pid = $('mAsignarProy').value;
+  btn.disabled=true;
+  try{ await api('/api/gestion/proyectos/'+pid,{method:'PUT',body:JSON.stringify({empresa_id:empresaId})});
+    closeModal(); toast('Proyecto asignado','ok'); verEmpresa(empresaId);
+  }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 async function toggleEmpresa(id, activa){
   try{ await api('/api/empresas/'+id,{method:'PUT',body:JSON.stringify({activa:!!activa})});
@@ -552,7 +579,8 @@ function renderUsuarios(){
 // ── Asignaciones: TODOS los proyectos con su empresa y equipo ──
 VIEWS.asignaciones = async () => {
   const esSuper = ME.rol === 'superadmin';
-  const proyectos = await api('/api/gestion/proyectos');
+  const MODULOS_FIJOS = ['tigo', 'wom', 'preventivo'];
+  const proyectos = (await api('/api/gestion/proyectos')).filter(p => !MODULOS_FIJOS.includes(p.template));
   // El equipo de cada proyecto en paralelo
   const equipos = await Promise.all(
     proyectos.map(p => api('/api/gestion/proyectos/'+p.id+'/personal').catch(()=>[]))

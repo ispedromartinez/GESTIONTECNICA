@@ -419,10 +419,20 @@ const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('tok
 if (!TOKEN()) location.replace('/login');
 // Adjunta el Bearer token automáticamente a todas las llamadas internas.
 const _origFetch = window.fetch.bind(window);
-window.fetch = (url, opts = {}) => {
+window.fetch = async (url, opts = {}) => {
   const headers = new Headers(opts.headers || {});
   if (!headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + TOKEN());
-  return _origFetch(url, { ...opts, headers });
+  const resp = await _origFetch(url, { ...opts, headers });
+  if (resp.status === 403) {
+    const clone = resp.clone();
+    clone.json().then(d => {
+      if (d && /no tiene el módulo/.test(d.error || '')) {
+        alert(d.error);
+        window.location.href = '/dashboard';
+      }
+    }).catch(() => {});
+  }
+  return resp;
 };
 // Rol del usuario, leído del payload del JWT.
 function ROL() {

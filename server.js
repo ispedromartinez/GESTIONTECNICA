@@ -20,6 +20,7 @@ const gestionDb = require('./db/gestion');
 const equiposDb = require('./db/equipos');
 const { authMiddleware } = require('./middleware/auth');
 const { requireRol, requireNivel } = require('./middleware/roles');
+const { requireModulo } = require('./middleware/modulos');
 const { canAccessTenant, scopeToTenant } = require('./middleware/tenant');
 const { rateLimit } = require('./middleware/rateLimit');
 
@@ -121,7 +122,7 @@ app.use('/api/gestion', gestionRoutes);
 app.use('/api', empresasRoutes);
 
 // ── Mantenimiento Preventivo: tareas (API protegida con login)
-app.use('/tareas', preventivoRoutes);
+app.use('/tareas', authMiddleware, requireModulo('preventivo'), preventivoRoutes);
 
 // Las páginas HTML se sirven SIEMPRE sin caché: el estático ya lo hace para
 // *.html directos, pero estas rutas usan sendFile y sin esto el navegador
@@ -1249,7 +1250,7 @@ async function vincularInformeGestion(req, gestionInformeId, doc_url, doc_nombre
   } catch (e) { console.error('vincularInformeGestion:', e.message); }
 }
 
-app.post('/generar', authMiddleware, async (req,res) => {
+app.post('/generar', authMiddleware, requireModulo('tigo'), async (req,res) => {
   try {
     const d = req.body;
     const buffer = await buildDocx(d);
@@ -1302,12 +1303,12 @@ app.post('/generar', authMiddleware, async (req,res) => {
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
 });
 
-app.get('/registro', authMiddleware, async (req,res) => {
+app.get('/registro', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const q = sanitizeSearch(req.query.q);
   res.json(filtrarInformesPorEmpresa(await dbClimaList(q), req.user));
 });
 
-app.get('/descargar/:id', authMiddleware, async (req,res) => {
+app.get('/descargar/:id', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -1323,14 +1324,14 @@ app.get('/descargar/:id', authMiddleware, async (req,res) => {
 });
 
 // Ver el informe como PDF inline (convierte el DOCX con LibreOffice, con cache).
-app.get('/ver-pdf/:id', authMiddleware, pdfLimiter, async (req, res) => {
+app.get('/ver-pdf/:id', authMiddleware, requireModulo('tigo'), pdfLimiter, async (req, res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({ error: 'No encontrado' });
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({ error: 'Sin acceso a este informe' });
   await servirPdf(res, entry, DOCS_DIR, 'clima');
 });
 
-app.post('/enviar/:id', authMiddleware, async (req,res) => {
+app.post('/enviar/:id', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -1352,7 +1353,7 @@ app.post('/enviar/:id', authMiddleware, async (req,res) => {
 });
 
 // Mover a papelera (soft delete)
-app.delete('/registro/:id', authMiddleware, async (req,res) => {
+app.delete('/registro/:id', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -1367,13 +1368,13 @@ app.delete('/registro/:id', authMiddleware, async (req,res) => {
 });
 
 // List papelera
-app.get('/papelera', authMiddleware, async (req,res) => {
+app.get('/papelera', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const q = sanitizeSearch(req.query.q);
   res.json(filtrarInformesPorEmpresa(await dbPapeleraList(q), req.user));
 });
 
 // Restore from papelera
-app.post('/papelera/restaurar/:id', authMiddleware, async (req,res) => {
+app.post('/papelera/restaurar/:id', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -1389,7 +1390,7 @@ app.post('/papelera/restaurar/:id', authMiddleware, async (req,res) => {
 });
 
 // Delete permanently from papelera
-app.delete('/papelera/:id', authMiddleware, async (req,res) => {
+app.delete('/papelera/:id', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -1405,7 +1406,7 @@ app.delete('/papelera/:id', authMiddleware, async (req,res) => {
 });
 
 // Empty papelera (solo lo de la propia empresa; superadmin vacía todo)
-app.delete('/papelera', authMiddleware, async (req,res) => {
+app.delete('/papelera', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const papelera = filtrarInformesPorEmpresa(await dbPapeleraList(null), req.user);
   if (papelera.length) {
     await storageRemove(papelera.flatMap(e => [`clima/papelera/${e.filename}`, `clima/pdf/${e.filename.replace(/\.docx$/, '.pdf')}`]));
@@ -2062,7 +2063,7 @@ async function buildDocxWom(d) {
 app.get('/sitios-rso', (_req, res) => res.json(RSO_SITES));
 app.get('/actividades-wom', (_req, res) => res.json(ACTIVIDADES_WOM));
 
-app.post('/generar-wom', authMiddleware, async (req, res) => {
+app.post('/generar-wom', authMiddleware, requireModulo('wom'), async (req, res) => {
   try {
     const d = req.body;
     const buffer = await buildDocxWom(d);
@@ -2106,12 +2107,12 @@ app.post('/generar-wom', authMiddleware, async (req, res) => {
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
 });
 
-app.get('/registro-wom', authMiddleware, async (req, res) => {
+app.get('/registro-wom', authMiddleware, requireModulo('wom'), async (req, res) => {
   const q = sanitizeSearch(req.query.q);
   res.json(filtrarInformesPorEmpresa(await dbWomList(q), req.user));
 });
 
-app.get('/descargar-wom/:id', authMiddleware, async (req, res) => {
+app.get('/descargar-wom/:id', authMiddleware, requireModulo('wom'), async (req, res) => {
   const entry = await dbWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -2127,14 +2128,14 @@ app.get('/descargar-wom/:id', authMiddleware, async (req, res) => {
 });
 
 // Ver el informe WOM como PDF inline (convierte el DOCX con LibreOffice, con cache).
-app.get('/ver-pdf-wom/:id', authMiddleware, pdfLimiter, async (req, res) => {
+app.get('/ver-pdf-wom/:id', authMiddleware, requireModulo('wom'), pdfLimiter, async (req, res) => {
   const entry = await dbWomFind(req.params.id);
   if (!entry) return res.status(404).json({ error: 'No encontrado' });
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({ error: 'Sin acceso a este informe' });
   await servirPdf(res, entry, DOCS_DIR_WOM, 'wom');
 });
 
-app.delete('/registro-wom/:id', authMiddleware, async (req, res) => {
+app.delete('/registro-wom/:id', authMiddleware, requireModulo('wom'), async (req, res) => {
   const entry = await dbWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -2249,7 +2250,7 @@ app.get('/api/preview-tracker', authMiddleware, (_req, res) => {
 });
 
 // ── Preventivo Informe routes ───────────────────────────────────
-app.post('/generar-preventivo', authMiddleware, async (req, res) => {
+app.post('/generar-preventivo', authMiddleware, requireModulo('preventivo'), async (req, res) => {
   try {
     const d = req.body;
     const trackerId = nextTrackerId();
@@ -2342,12 +2343,12 @@ app.get('/verificar-informe', async (req, res) => {
   </body></html>`);
 });
 
-app.get('/registro-prev', authMiddleware, async (req, res) => {
+app.get('/registro-prev', authMiddleware, requireModulo('preventivo'), async (req, res) => {
   const q = sanitizeSearch(req.query.q);
   res.json(filtrarInformesPorEmpresa(await dbPrevList(q), req.user));
 });
 
-app.get('/descargar-prev/:id', authMiddleware, async (req, res) => {
+app.get('/descargar-prev/:id', authMiddleware, requireModulo('preventivo'), async (req, res) => {
   const entry = await dbPrevFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -2363,7 +2364,7 @@ app.get('/descargar-prev/:id', authMiddleware, async (req, res) => {
   res.send(buffer);
 });
 
-app.delete('/registro-prev/:id', authMiddleware, async (req, res) => {
+app.delete('/registro-prev/:id', authMiddleware, requireModulo('preventivo'), async (req, res) => {
   const entry = await dbPrevFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -2377,9 +2378,9 @@ app.delete('/registro-prev/:id', authMiddleware, async (req, res) => {
   res.json({ok:true});
 });
 
-app.get('/papelera-wom', authMiddleware, async (req, res) => res.json(filtrarInformesPorEmpresa(await dbPapeleraWomList(), req.user)));
+app.get('/papelera-wom', authMiddleware, requireModulo('wom'), async (req, res) => res.json(filtrarInformesPorEmpresa(await dbPapeleraWomList(), req.user)));
 
-app.post('/papelera-wom/restaurar/:id', authMiddleware, async (req, res) => {
+app.post('/papelera-wom/restaurar/:id', authMiddleware, requireModulo('wom'), async (req, res) => {
   const entry = await dbPapeleraWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -2394,7 +2395,7 @@ app.post('/papelera-wom/restaurar/:id', authMiddleware, async (req, res) => {
   res.json({ok:true});
 });
 
-app.delete('/papelera-wom/:id', authMiddleware, async (req, res) => {
+app.delete('/papelera-wom/:id', authMiddleware, requireModulo('wom'), async (req, res) => {
   const entry = await dbPapeleraWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
@@ -2409,7 +2410,7 @@ app.delete('/papelera-wom/:id', authMiddleware, async (req, res) => {
   res.json({ok:true});
 });
 
-app.delete('/papelera-wom', authMiddleware, async (req, res) => {
+app.delete('/papelera-wom', authMiddleware, requireModulo('wom'), async (req, res) => {
   const papelera = filtrarInformesPorEmpresa(await dbPapeleraWomList(), req.user);
   if (papelera.length) {
     await storageRemove(papelera.flatMap(e => [`wom/papelera/${e.filename}`, `wom/pdf/${e.filename.replace(/\.docx$/, '.pdf')}`]));
