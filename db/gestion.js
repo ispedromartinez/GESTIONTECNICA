@@ -376,6 +376,15 @@ const db = {
     return local.areas.listByEmpresa(empresa_id);
   },
 
+  async areaInsert(a) {
+    if (supa) {
+      const { data, error } = await supa.from('areas').insert(a).select().single();
+      if (error) throw new Error(error.message);
+      return data;
+    }
+    return local.areas.insert(a);
+  },
+
   async usuarioAreaUpsert(usuario_id, area_id, asignado_por) {
     if (supa) {
       const { error } = await supa.from('usuario_areas')

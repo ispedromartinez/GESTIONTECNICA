@@ -23,6 +23,8 @@ function scopeEmpresa(req, res, next) {
 }
 
 const ROLES_VALIDOS = ['superadmin','admin_empresa','supervisor','tecnico'];
+// Mismas 3 categorías ya usadas en proyectos (admin.html CAT_LABEL), como áreas por defecto.
+const AREAS_DEFAULT = ['Clima', 'Energía', 'Obras Civiles (OOCC)'];
 
 // ════════════════════════════════════════════════════════════════
 // EMPRESAS
@@ -80,6 +82,11 @@ router.post('/empresas', soloSuper, async (req, res) => {
       correo: (correo || '').trim() || null,
       direccion: (direccion || '').trim() || null
     });
+    // Áreas por defecto: mismas 3 categorías que ya se usan en proyectos
+    // (Clima/Energía/OOCC), para que el picker de área no salga vacío.
+    for (const nombreArea of AREAS_DEFAULT) {
+      await db.areaInsert({ empresa_id: empresa.id, nombre: nombreArea }).catch(() => {});
+    }
     res.json({ ok: true, empresa });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });

@@ -410,8 +410,9 @@ function renderEmpresasList(){
 // ── Empresas — DETALLE ──
 async function verEmpresa(id){
   $('content').innerHTML = '<div class="empty-state">Cargando…</div>';
-  const [emp, usuarios, proyectos] = await Promise.all([
-    api('/api/empresas/'+id), api('/api/empresas/'+id+'/usuarios'), api('/api/empresas/'+id+'/proyectos')
+  const [emp, usuarios, proyectos, areas] = await Promise.all([
+    api('/api/empresas/'+id), api('/api/empresas/'+id+'/usuarios'), api('/api/empresas/'+id+'/proyectos'),
+    api('/auth/areas?empresa_id='+encodeURIComponent(id)).catch(()=>[])
   ]);
   $('tbTitle').textContent = emp.nombre; $('tbSub').textContent = 'Detalle de empresa';
   const userRows = usuarios.length ? `<table><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th></th></tr></thead><tbody>
@@ -441,6 +442,11 @@ async function verEmpresa(id){
         <div><div class="sec-sub">Dirección</div><div style="font-weight:700;margin-top:2px">${esc(emp.direccion||'—')}</div></div>
       </div></div>
     <div class="section">
+      <div class="sec-head"><div><div class="sec-name">Áreas</div><div class="sec-sub">${areas.length}</div></div>
+        ${['superadmin','admin_empresa'].includes(ME.rol)?`<button class="btn btn-ghost btn-sm" onclick="modalNuevaArea('${emp.id}')">+ Nueva área</button>`:''}</div>
+      ${areas.length ? `<div style="padding:14px 22px;display:flex;gap:8px;flex-wrap:wrap;">${areas.map(a=>`<span class="pill">${esc(a.nombre)}</span>`).join('')}</div>`
+        : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg></div>Sin áreas.</div>`}</div>
+    <div class="section">
       <div class="sec-head"><div><div class="sec-name">Usuarios</div><div class="sec-sub">${usuarios.length}</div></div>
         <button class="btn btn-green btn-sm" onclick="modalUsuarioEmpresa('${emp.id}','${esc(emp.nombre)}')">+ Nuevo usuario</button></div>
       ${userRows}</div>
@@ -451,6 +457,23 @@ async function verEmpresa(id){
         ${['superadmin','admin_empresa'].includes(ME.rol)?`<button class="btn btn-blue btn-sm" onclick="location.href='/nuevo-proyecto?empresa=${emp.id}'">+ Nuevo proyecto</button>`:''}
         </div></div>
       ${projRows}</div>`;
+}
+function modalNuevaArea(empresaId){
+  openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg></div>
+      <div><h3>Nueva área</h3><p class="modal-sub">Además de Clima/Energía/OOCC, puedes crear áreas propias.</p></div></div>
+    <div class="field"><label>Nombre</label><input id="mAreaNombre" placeholder="Ej: Redes"></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="crearAreaCustom('${empresaId}',this)">Crear área</button></div>`);
+  setTimeout(()=>$('mAreaNombre').focus(),80);
+}
+async function crearAreaCustom(empresaId, btn){
+  const nombre = $('mAreaNombre').value.trim();
+  if(!nombre) return showErr('El nombre es requerido');
+  btn.disabled=true;
+  try{ await api('/auth/crear-area',{method:'POST',body:JSON.stringify({nombre,empresa_id:empresaId})});
+    closeModal(); toast('Área creada','ok'); verEmpresa(empresaId);
+  }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 async function modalAsignarProyectoExistente(empresaId){
   const [emp, todos] = await Promise.all([api('/api/empresas/'+empresaId), api('/api/gestion/proyectos')]);
