@@ -75,8 +75,6 @@ app.use(cors({
 
 // ── Rate limiting global + limitador para rutas pesadas ────────
 app.use(rateLimit({ windowMs: 60 * 1000, max: 300, message: 'Demasiadas solicitudes, intenta más tarde.' }));
-// Conversión DOCX→PDF con LibreOffice: cara en CPU, no debe poder abusarse
-const pdfLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 60, message: 'Demasiadas vistas de PDF, espera unos minutos.' });
 
 // Gzip para HTML/CSS/JS/JSON: en móvil (4G) reduce ~70% lo transferido.
 app.use(require('compression')());
@@ -469,89 +467,12 @@ const PAPELERA_DIR  = path.join(__dirname, 'papelera');
 const DB_FILE       = path.join(__dirname, 'registro.json');
 const PAPELERA_FILE = path.join(__dirname, 'papelera.json');
 const TAREAS_INFORMES_FILE = path.join(__dirname, 'tareas_informes.json');
-const PDFS_DIR      = path.join(DOCS_DIR, 'pdf_tmp');
 
 if (!fs.existsSync(DOCS_DIR))     fs.mkdirSync(DOCS_DIR);
 if (!fs.existsSync(PAPELERA_DIR)) fs.mkdirSync(PAPELERA_DIR);
 if (!fs.existsSync(DB_FILE))      fs.writeFileSync(DB_FILE, '[]');
 if (!fs.existsSync(PAPELERA_FILE))fs.writeFileSync(PAPELERA_FILE, '[]');
 if (!fs.existsSync(TAREAS_INFORMES_FILE)) fs.writeFileSync(TAREAS_INFORMES_FILE, '{}');
-if (!fs.existsSync(PDFS_DIR))     fs.mkdirSync(PDFS_DIR, { recursive: true });
-
-// ── DOCX → PDF con LibreOffice (para "Ver PDF" inline) ────────
-const { execFile } = require('child_process');
-function convertDocxToPdf(docxPath) {
-  return new Promise((resolve, reject) => {
-    const winSoffice = 'C:/Program Files/LibreOffice/program/soffice.exe';
-    const soffice = process.env.LIBREOFFICE_PATH || (fs.existsSync(winSoffice) ? winSoffice : 'soffice');
-    execFile(soffice, ['--headless', '--convert-to', 'pdf', '--outdir', PDFS_DIR, docxPath], (err) => {
-      const pdfPath = path.join(PDFS_DIR, path.basename(docxPath, '.docx') + '.pdf');
-      if (err || !fs.existsSync(pdfPath)) {
-        return reject(new Error('LibreOffice no instalado o no encontrado. Instala LibreOffice o configura LIBREOFFICE_PATH.'));
-      }
-      resolve(pdfPath);
-    });
-  });
-}
-
-// Devuelve el buffer del PDF de un informe, convirtiendo el .docx UNA sola vez:
-// 1) cache local en pdf_tmp  2) cache remota en Supabase (${prefix}/pdf/)
-// 3) conversión con LibreOffice (y se guarda en ambas caches para la próxima).
-// El disco de Render es efímero, por eso la cache remota: tras un deploy o
-// reinicio el PDF se baja de Supabase en vez de reconvertirse.
-const pdfEnCurso = new Map(); // pdfName → Promise; evita convertir el mismo informe dos veces a la vez
-async function obtenerPdf(entry, dir, storagePrefix) {
-  const pdfName = entry.filename.replace(/\.docx$/, '.pdf');
-  if (pdfEnCurso.has(pdfName)) return pdfEnCurso.get(pdfName);
-  const promesa = obtenerPdfInterno(entry, dir, storagePrefix, pdfName)
-    .finally(() => pdfEnCurso.delete(pdfName));
-  pdfEnCurso.set(pdfName, promesa);
-  return promesa;
-}
-
-async function obtenerPdfInterno(entry, dir, storagePrefix, pdfName) {
-  const pdfPath = path.join(PDFS_DIR, pdfName);
-  if (fs.existsSync(pdfPath)) return fs.readFileSync(pdfPath);
-
-  const cached = await storageDownload(`${storagePrefix}/pdf/${pdfName}`);
-  if (cached) {
-    try { fs.writeFileSync(pdfPath, cached); } catch {}
-    return cached;
-  }
-
-  const docxPath = path.join(dir, entry.filename);
-  if (!fs.existsSync(docxPath)) {
-    const buffer = await storageDownload(`${storagePrefix}/${entry.filename}`);
-    if (!buffer) return null;
-    fs.writeFileSync(docxPath, buffer);
-  }
-  await convertDocxToPdf(docxPath); // deja el PDF en PDFS_DIR
-  const pdfBuffer = fs.readFileSync(pdfPath);
-  storageUpload(pdfBuffer, `${storagePrefix}/pdf/${pdfName}`, 'application/pdf')
-    .catch(e => console.error('cache pdf:', e.message));
-  return pdfBuffer;
-}
-
-async function servirPdf(res, entry, dir, storagePrefix) {
-  try {
-    const pdfBuffer = await obtenerPdf(entry, dir, storagePrefix);
-    if (!pdfBuffer) return res.status(404).json({ error: 'Archivo no existe' });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${entry.filename.replace(/\.docx$/, '.pdf')}"`);
-    // El informe no cambia una vez generado: el navegador puede reusar el PDF
-    res.setHeader('Cache-Control', 'private, max-age=86400');
-    res.send(pdfBuffer);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
-
-// Pre-genera el PDF justo después de crear el informe (fire-and-forget),
-// para que el primer "Ver Informe" ya lo encuentre en cache.
-function precalcularPdf(entry, dir, storagePrefix) {
-  obtenerPdf(entry, dir, storagePrefix)
-    .catch(e => console.error('precalcular pdf:', e.message));
-}
 
 function loadTareasInformes() { try { return JSON.parse(fs.readFileSync(TAREAS_INFORMES_FILE,'utf8')); } catch { return {}; } }
 function saveTareasInformes(m) { fs.writeFileSync(TAREAS_INFORMES_FILE, JSON.stringify(m, null, 2)); }
@@ -1276,7 +1197,6 @@ app.post('/generar', authMiddleware, requireModulo('tigo'), async (req,res) => {
       empresaId: req.user.empresa_id || null
     };
     await dbClimaInsert(entry);
-    precalcularPdf(entry, DOCS_DIR, 'clima');
 
     // Hoja de vida: registra/actualiza el equipo. Nunca rompe la generación.
     try {
@@ -1323,13 +1243,6 @@ app.get('/descargar/:id', authMiddleware, requireModulo('tigo'), async (req,res)
   res.send(buffer);
 });
 
-// Ver el informe como PDF inline (convierte el DOCX con LibreOffice, con cache).
-app.get('/ver-pdf/:id', authMiddleware, requireModulo('tigo'), pdfLimiter, async (req, res) => {
-  const entry = await dbClimaFind(req.params.id);
-  if (!entry) return res.status(404).json({ error: 'No encontrado' });
-  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({ error: 'Sin acceso a este informe' });
-  await servirPdf(res, entry, DOCS_DIR, 'clima');
-});
 
 app.post('/enviar/:id', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const entry = await dbClimaFind(req.params.id);
@@ -1394,12 +1307,10 @@ app.delete('/papelera/:id', authMiddleware, requireModulo('tigo'), async (req,re
   const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
-  await storageRemove([`clima/papelera/${entry.filename}`, `clima/pdf/${entry.filename.replace(/\.docx$/, '.pdf')}`]);
+  await storageRemove([`clima/papelera/${entry.filename}`]);
   try {
     const fpath = path.join(PAPELERA_DIR, entry.filename);
     if (fs.existsSync(fpath)) fs.unlinkSync(fpath);
-    const pdfPath = path.join(PDFS_DIR, entry.filename.replace(/\.docx$/, '.pdf'));
-    if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
   } catch(e) {}
   await dbPapeleraDelete(entry.id);
   res.json({ok:true});
@@ -1409,11 +1320,10 @@ app.delete('/papelera/:id', authMiddleware, requireModulo('tigo'), async (req,re
 app.delete('/papelera', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const papelera = filtrarInformesPorEmpresa(await dbPapeleraList(null), req.user);
   if (papelera.length) {
-    await storageRemove(papelera.flatMap(e => [`clima/papelera/${e.filename}`, `clima/pdf/${e.filename.replace(/\.docx$/, '.pdf')}`]));
+    await storageRemove(papelera.map(e => `clima/papelera/${e.filename}`));
     papelera.forEach(e => {
       try {
         const f = path.join(PAPELERA_DIR, e.filename); if (fs.existsSync(f)) fs.unlinkSync(f);
-        const p = path.join(PDFS_DIR, e.filename.replace(/\.docx$/, '.pdf')); if (fs.existsSync(p)) fs.unlinkSync(p);
       } catch(e2) {}
     });
   }
@@ -2086,7 +1996,6 @@ app.post('/generar-wom', authMiddleware, requireModulo('wom'), async (req, res) 
       empresaId: req.user.empresa_id || null
     };
     await dbWomInsert(entry);
-    precalcularPdf(entry, DOCS_DIR_WOM, 'wom');
 
     // Hoja de vida: registra/actualiza el equipo. Nunca rompe la generación.
     try {
@@ -2127,13 +2036,6 @@ app.get('/descargar-wom/:id', authMiddleware, requireModulo('wom'), async (req, 
   res.send(buffer);
 });
 
-// Ver el informe WOM como PDF inline (convierte el DOCX con LibreOffice, con cache).
-app.get('/ver-pdf-wom/:id', authMiddleware, requireModulo('wom'), pdfLimiter, async (req, res) => {
-  const entry = await dbWomFind(req.params.id);
-  if (!entry) return res.status(404).json({ error: 'No encontrado' });
-  if (!puedeVerInforme(entry, req.user)) return res.status(403).json({ error: 'Sin acceso a este informe' });
-  await servirPdf(res, entry, DOCS_DIR_WOM, 'wom');
-});
 
 app.delete('/registro-wom/:id', authMiddleware, requireModulo('wom'), async (req, res) => {
   const entry = await dbWomFind(req.params.id);
@@ -2399,12 +2301,10 @@ app.delete('/papelera-wom/:id', authMiddleware, requireModulo('wom'), async (req
   const entry = await dbPapeleraWomFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
-  await storageRemove([`wom/papelera/${entry.filename}`, `wom/pdf/${entry.filename.replace(/\.docx$/, '.pdf')}`]);
+  await storageRemove([`wom/papelera/${entry.filename}`]);
   try {
     const fp = path.join(PAPELERA_DIR_WOM, entry.filename);
     if (fs.existsSync(fp)) fs.unlinkSync(fp);
-    const pdfPath = path.join(PDFS_DIR, entry.filename.replace(/\.docx$/, '.pdf'));
-    if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
   } catch(e) {}
   await dbPapeleraWomDelete(entry.id);
   res.json({ok:true});
@@ -2413,11 +2313,10 @@ app.delete('/papelera-wom/:id', authMiddleware, requireModulo('wom'), async (req
 app.delete('/papelera-wom', authMiddleware, requireModulo('wom'), async (req, res) => {
   const papelera = filtrarInformesPorEmpresa(await dbPapeleraWomList(), req.user);
   if (papelera.length) {
-    await storageRemove(papelera.flatMap(e => [`wom/papelera/${e.filename}`, `wom/pdf/${e.filename.replace(/\.docx$/, '.pdf')}`]));
+    await storageRemove(papelera.map(e => `wom/papelera/${e.filename}`));
     papelera.forEach(e => {
       try {
         const fp = path.join(PAPELERA_DIR_WOM, e.filename); if (fs.existsSync(fp)) fs.unlinkSync(fp);
-        const p = path.join(PDFS_DIR, e.filename.replace(/\.docx$/, '.pdf')); if (fs.existsSync(p)) fs.unlinkSync(p);
       } catch(e2) {}
     });
   }

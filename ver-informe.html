@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ver informe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
+<script src="/vendor/jszip.min.js"></script>
+<script src="/vendor/docx-preview.min.js"></script>
+<style>
+body{background:#64748B;min-height:100vh;padding:24px 12px}
+.topbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;background:#fff;border-radius:10px;padding:10px 16px;margin:0 auto 16px;max-width:900px;
+  box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.topbar b{font-size:14px;color:#0F172A}
+.topbar .actions{display:flex;gap:8px}
+.topbar button{border:none;border-radius:8px;padding:8px 14px;font:600 13px Poppins,sans-serif;cursor:pointer}
+.btn-download{background:#0073EA;color:#fff}
+#docxContainer{max-width:900px;margin:0 auto;background:#fff;border-radius:6px;overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,.15)}
+#docxContainer .docx-wrapper{background:transparent;padding:0}
+#status{max-width:900px;margin:40px auto;text-align:center;color:#fff;font:500 15px Poppins,sans-serif}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <b id="titulo">Cargando informe…</b>
+  <div class="actions">
+    <button class="btn-download" id="btnDescargar" disabled>Descargar .docx</button>
+  </div>
+</div>
+<div id="status">Cargando informe…</div>
+<div id="docxContainer"></div>
+
+<script>
+function authH(extra={}) {
+  const t = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+  return { Authorization: 'Bearer ' + t, ...extra };
+}
+
+const params = new URLSearchParams(location.search);
+const id = params.get('id');
+const tipo = params.get('tipo'); // 'clima' | 'wom'
+const ENDPOINTS = { clima: '/descargar/', wom: '/descargar-wom/' };
+
+(async () => {
+  const statusEl = document.getElementById('status');
+  const container = document.getElementById('docxContainer');
+  const btnDescargar = document.getElementById('btnDescargar');
+
+  const endpoint = ENDPOINTS[tipo];
+  if (!id || !endpoint) {
+    statusEl.textContent = 'Enlace inválido: falta id o tipo de informe.';
+    return;
+  }
+
+  try {
+    const r = await fetch(endpoint + id, { headers: authH() });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(d.error || 'No se pudo obtener el informe');
+    }
+    const disp = r.headers.get('Content-Disposition') || '';
+    const filename = (disp.match(/filename="(.+)"/) || [])[1] || 'informe.docx';
+    const blob = await r.blob();
+
+    document.getElementById('titulo').textContent = filename;
+    btnDescargar.disabled = false;
+    btnDescargar.onclick = () => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    await docx.renderAsync(blob, container);
+    statusEl.remove();
+  } catch (e) {
+    statusEl.textContent = 'Error al mostrar el informe: ' + e.message;
+    document.getElementById('titulo').textContent = 'Error';
+  }
+})();
+</script>
+</body>
+</html>

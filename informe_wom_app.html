@@ -904,15 +904,8 @@ async function descargar(id) {
   } catch(e) { toast('Error al descargar: '+e.message,'err'); }
 }
 
-async function verPdf(id) {
-  try {
-    const r = await fetch(`/ver-pdf-wom/${id}`, {headers:authH()});
-    if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.error||'Error al generar PDF'); }
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    setTimeout(()=>URL.revokeObjectURL(url), 60000);
-  } catch(e) { toast('Error al ver PDF: '+e.message,'err'); }
+function verPdf(id) {
+  window.open(`/ver-informe.html?tipo=wom&id=${id}`, '_blank');
 }
 
 async function eliminar(id, btn) {

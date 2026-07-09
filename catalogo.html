@@ -457,7 +457,7 @@ async function abrirEquipo(id){
           <div style="font-size:11px;color:#64748B">${esc(i.fecha)||'—'} · ${esc(i.tecnico)}</div>
         </div>
         <button class="btn btn-ghost" style="padding:6px 10px" onclick="descargarInforme('${esc(i.urlDescarga)}','${esc(i.filename||'informe')}')">⬇</button>
-        <button class="btn btn-ghost" style="padding:6px 10px" title="Ver PDF" onclick="verPdfInforme('${i.tipo==='WOM'?'/ver-pdf-wom/':'/ver-pdf/'}${esc(i.id)}')">👁</button>
+        <button class="btn btn-ghost" style="padding:6px 10px" title="Ver informe" onclick="verPdfInforme('${i.tipo==='WOM'?'wom':'clima'}','${esc(i.id)}')">👁</button>
       </div>`;
     document.getElementById('eqModalBody').innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">
@@ -477,15 +477,8 @@ async function abrirEquipo(id){
 }
 function cerrarModalEquipo(){ document.getElementById('modalEquipo').classList.remove('show'); }
 
-async function verPdfInforme(url){
-  try{
-    const r = await fetch(url, { headers: authH() });
-    if(!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.error||'Error al generar PDF'); }
-    const blob = await r.blob();
-    const u = URL.createObjectURL(blob);
-    window.open(u, '_blank');
-    setTimeout(()=>URL.revokeObjectURL(u), 60000);
-  }catch(e){ toast(e.message); }
+function verPdfInforme(tipo, id){
+  window.open(`/ver-informe.html?tipo=${tipo}&id=${id}`, '_blank');
 }
 
 async function descargarInforme(url, fn){

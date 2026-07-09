@@ -1640,15 +1640,8 @@ async function downloadRecord(id){
     a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url);
   }catch(e){alert('Error al descargar: '+e.message);}
 }
-async function verPdf(id){
-  try{
-    const r=await fetch(`${SERVER}/ver-pdf/${id}`,{headers:authH()});
-    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||'Error al generar PDF');}
-    const blob=await r.blob();
-    const url=URL.createObjectURL(blob);
-    window.open(url,'_blank');
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
-  }catch(e){alert('Error al ver PDF: '+e.message);}
+function verPdf(id){
+  window.open(`/ver-informe.html?tipo=clima&id=${id}`,'_blank');
 }
 function openConfirm(id,sitio){pendingDeleteId=id;document.getElementById('confirmMsg').textContent=`Se eliminará el informe de "${sitio}". Esta acción no se puede deshacer.`;document.getElementById('confirmDel').classList.add('open');}
 function closeConfirm(){document.getElementById('confirmDel').classList.remove('open');pendingDeleteId=null;}
