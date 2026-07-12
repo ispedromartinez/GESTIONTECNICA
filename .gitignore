@@ -21,6 +21,9 @@ registro_*.json
 server.log
 server_err.log
 .claude/
+.agents/
+.codex/
+skills-lock.json
 ref*.xml
 ref*.png
 ref*.jpeg

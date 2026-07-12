@@ -607,7 +607,7 @@ function renderUsuarios(){
 // ── Asignaciones: TODOS los proyectos con su empresa y equipo ──
 VIEWS.asignaciones = async () => {
   const esSuper = ME.rol === 'superadmin';
-  const proyectos = (await api('/api/gestion/proyectos')).filter(p => !MODULOS_FIJOS_TEMPLATES.includes(p.template));
+  const proyectos = await api('/api/gestion/proyectos');
   // El equipo de cada proyecto en paralelo
   const equipos = await Promise.all(
     proyectos.map(p => api('/api/gestion/proyectos/'+p.id+'/personal').catch(()=>[]))
@@ -653,8 +653,10 @@ async function gestionarEquipo(pid){
 
   // Sección "Vínculo con empresa": solo para superadmin, donde es editable
   // (reasigna la empresa del proyecto). Para el resto no aporta y se omite.
+  // Los módulos fijos (tigo/wom/preventivo) son 1:1 con su empresa — no se
+  // reasignan entre empresas, así que la sección se omite aunque sea superadmin.
   let empresaSection = '';
-  if (esSuper) {
+  if (esSuper && !MODULOS_FIJOS_TEMPLATES.includes(proyecto.template)) {
     const emps = window._empresas?.length ? window._empresas : await api('/auth/empresas');
     window._empresas = emps;
     empresaSection = `<div class="section"><div class="sec-head"><div><div class="sec-name">Vínculo con empresa</div>

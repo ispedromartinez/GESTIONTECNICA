@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GestiónTécnica</title>
+<title>NEXXO.APP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -220,8 +220,13 @@ tbody tr:hover{background:#F8FAFF;}
 .pbadge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px;}
 .pb-tigo{background:#EEF5FF;color:#0073EA;}
 .pb-wom {background:#F3F0FF;color:#784BD1;}
+.pb-prev{background:#FFF4E5;color:#B45309;}
+.pb-eq  {background:#F1F5F9;color:#475569;}
 .estado-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
 .est-ok{background:var(--success-soft);color:var(--success-ink);}
+.est-nuevo{background:#EFF6FF;color:#1D4ED8;}
+.est-progreso{background:#FEF3E2;color:#B45309;}
+.est-info{background:#F1F5F9;color:#475569;}
 .td-fecha{color:#64748B;font-size:12px;white-space:nowrap;}
 .td-tec{font-weight:500;}
 .td-sitio{font-weight:600;}
@@ -420,8 +425,8 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sb-logo">
-    <div class="sb-gt">GT</div>
-    <div class="sb-brand">GestiónTécnica<span>Gestión de Mantenimiento</span></div>
+    <div class="sb-gt">NX</div>
+    <div class="sb-brand">NEXXO.APP<span>Gestión de Mantenimiento</span></div>
   </div>
 
   <nav class="sb-nav">
@@ -645,6 +650,43 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
         </div>
       </div>
 
+      <!-- CUMPLIMIENTO DE PLAZOS (preventivo) -->
+      <div class="chart-card" style="margin-bottom:24px;">
+        <div class="chart-head">
+          Cumplimiento de Plazos
+          <span class="chart-head-sub" id="cumplSub">—</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="cumplStatCards">
+          <div class="proj-pill" style="border-left:3px solid #DC2626;">
+            <div class="proj-pill-num" id="cumplVencidas" style="color:#DC2626;">—</div>
+            <div class="proj-pill-label">Vencidas</div>
+          </div>
+          <div class="proj-pill" style="border-left:3px solid #059669;">
+            <div class="proj-pill-num" id="cumplATiempo" style="color:#059669;">—</div>
+            <div class="proj-pill-label">Cerradas a tiempo</div>
+          </div>
+          <div class="proj-pill" style="border-left:3px solid #B45309;">
+            <div class="proj-pill-num" id="cumplFueraPlazo" style="color:#B45309;">—</div>
+            <div class="proj-pill-label">Cerradas fuera de plazo</div>
+          </div>
+          <div class="proj-pill" style="border-left:3px solid #0073EA;">
+            <div class="proj-pill-num" id="cumplPromedio" style="color:#0073EA;">—</div>
+            <div class="proj-pill-label">Días promedio de cierre</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EQUIPOS CON MAS INTERVENCIONES -->
+      <div class="chart-card" style="margin-bottom:24px;">
+        <div class="chart-head">
+          Equipos con Más Intervenciones
+          <span class="chart-head-sub" id="chartEquiposSub">—</span>
+        </div>
+        <div class="chart-wrap" style="max-height:280px;">
+          <canvas id="chartEquipos"></canvas>
+        </div>
+      </div>
+
       </div><!-- /subview-dashboard -->
 
       <!-- SUBVIEW: LISTADO -->
@@ -662,7 +704,7 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
           <table>
             <thead>
               <tr>
-                <th>Proyecto</th>
+                <th>Tipo</th>
                 <th>Sitio / Instalación</th>
                 <th>Técnico</th>
                 <th>Fecha</th>
@@ -940,7 +982,17 @@ async function cargarModulosFijos() {
     const r = await fetch('/api/gestion/proyectos', { headers: authH() });
     if (!r.ok) return;
     const proyectos = await r.json();
-    const activos = new Set(proyectos.map(p => p.template).filter(t => MODULOS_FIJOS[t]));
+    let activos = new Set(proyectos.map(p => p.template).filter(t => MODULOS_FIJOS[t]));
+
+    // Supervisor/técnico: solo ven el módulo si están asignados individualmente a él.
+    // admin_empresa/superadmin administran toda la empresa y ven todos los activos.
+    if (!['superadmin', 'admin_empresa'].includes(MIROL)) {
+      const rMis = await fetch('/api/gestion/mis-proyectos', { headers: authH() });
+      const misProyectos = rMis.ok ? await rMis.json() : [];
+      const misTemplates = new Set(misProyectos.map(p => p.template).filter(Boolean));
+      activos = new Set([...activos].filter(t => misTemplates.has(t)));
+    }
+
     cont.innerHTML = Object.keys(MODULOS_FIJOS).filter(t => activos.has(t)).map(t => MODULOS_FIJOS[t]()).join('');
   } catch (e) { /* silencioso, igual que cargarProyectosCustom */ }
 }
@@ -974,6 +1026,7 @@ function showView(v) {
     switchSubview('dashboard');
     if (!informesCargados) cargarInformes();
     cargarPreventivo();
+    cargarEquiposChart();
   } else if (v === 'informesproy') {
     toggle.classList.remove('visible');
     document.getElementById('searchWrap').style.display = 'none';
@@ -1106,11 +1159,13 @@ function renderCharts(data) {
 
 // ── Datos preventivo ─────────────────────────────────────────────
 let _chartPrevTec = null;
+let todasTareas = [];
 async function cargarPreventivo() {
   try {
     const r = await fetch('/tareas', { headers: authH() });
     if (!r.ok) return;
     const tareas = await r.json();
+    todasTareas = tareas;
     const total    = tareas.length;
     const nuevo    = tareas.filter(t => (t.estado||'Nuevo') === 'Nuevo').length;
     const progreso = tareas.filter(t => t.estado === 'En Progreso').length;
@@ -1121,6 +1176,8 @@ async function cargarPreventivo() {
     document.getElementById('prevProgreso').textContent = progreso;
     document.getElementById('prevCerrado').textContent  = cerrado;
     document.getElementById('prevSub').textContent      = `${total} tarea${total!==1?'s':''}`;
+
+    renderCumplimiento(tareas);
 
     // Gráfica por técnico
     const tecMap = {};
@@ -1139,7 +1196,92 @@ async function cargarPreventivo() {
         scales:{ x:{grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:11}} },
                  y:{grid:{display:false}, ticks:{font:{size:11}} } } }
     });
+    if (busqueda) renderTabla(); // datos recién llegados: refresca si ya hay una búsqueda activa
   } catch(e) { console.warn('preventivo stats:', e.message); }
+}
+
+// ── Cumplimiento de plazos (preventivo) ───────────────────────────
+// Vencida: sigue abierta y su fecha de vencimiento ya pasó.
+// A tiempo / fuera de plazo: se miden solo tareas Cerradas con vencimiento.
+// Días de cierre: fechaCreacion → estadoCambiadoEn (tiempo real de gestión).
+function renderCumplimiento(tareas) {
+  const hoyIso = new Date().toISOString().slice(0,10);
+  let vencidas = 0, aTiempo = 0, fueraPlazo = 0;
+  const diasCierre = [];
+
+  tareas.forEach(t => {
+    const venc = t.fechaVencimiento;
+    if (t.estado === 'Cerrado') {
+      const cierreIso = (t.estadoCambiadoEn || '').slice(0,10);
+      if (venc && cierreIso) {
+        if (cierreIso <= venc) aTiempo++; else fueraPlazo++;
+      }
+      const inicioIso = (t.fechaCreacion || t.fechaInicio || '').slice(0,10);
+      if (inicioIso && cierreIso) {
+        const dias = Math.round((new Date(cierreIso) - new Date(inicioIso)) / 86400000);
+        if (dias >= 0) diasCierre.push(dias);
+      }
+    } else if (venc && venc < hoyIso) {
+      vencidas++;
+    }
+  });
+
+  const promedio = diasCierre.length
+    ? Math.round(diasCierre.reduce((a,b)=>a+b,0) / diasCierre.length)
+    : 0;
+
+  document.getElementById('cumplVencidas').textContent   = vencidas;
+  document.getElementById('cumplATiempo').textContent    = aTiempo;
+  document.getElementById('cumplFueraPlazo').textContent = fueraPlazo;
+  document.getElementById('cumplPromedio').textContent   = diasCierre.length ? `${promedio}d` : '—';
+  const cerradas = aTiempo + fueraPlazo;
+  document.getElementById('cumplSub').textContent = cerradas
+    ? `${Math.round(aTiempo/cerradas*100)}% a tiempo`
+    : '—';
+}
+
+// ── Equipos con más intervenciones ────────────────────────────────
+let _chartEquipos = null;
+let todosEquipos = [];
+async function cargarEquiposChart() {
+  try {
+    const r = await fetch('/api/equipos', { headers: authH() });
+    if (!r.ok) return;
+    const equipos = await r.json();
+    todosEquipos = equipos;
+    const top = [...equipos].sort((a,b) => (b.totalIntervenciones||0) - (a.totalIntervenciones||0)).slice(0, 10);
+
+    document.getElementById('chartEquiposSub').textContent =
+      equipos.length + ' equipo' + (equipos.length !== 1 ? 's' : '');
+
+    const canvas = document.getElementById('chartEquipos');
+    canvas.height = Math.max(200, top.length * 30);
+
+    if (_chartEquipos) _chartEquipos.destroy();
+    _chartEquipos = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: top.map(e => `${e.numero} · ${e.sitio}`),
+        datasets: [{ label: 'Intervenciones', data: top.map(e => e.totalIntervenciones || 0),
+          backgroundColor: '#784BD1', borderRadius: 5, borderSkipped: false }]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: ctx => ` ${ctx.parsed.x} intervención${ctx.parsed.x!==1?'es':''}`,
+            afterLabel: ctx => { const e = top[ctx.dataIndex]; return [e.tipo, e.marca].filter(Boolean).join(' · '); }
+          } }
+        },
+        scales: {
+          x: { beginAtZero: true, grid: { color: '#F0F1F5' }, ticks: { font: { size: 11 }, stepSize: 1 } },
+          y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+    if (busqueda) renderTabla(); // datos recién llegados: refresca si ya hay una búsqueda activa
+  } catch(e) { console.warn('equipos stats:', e.message); }
 }
 
 // ── Datos informes ────────────────────────────────────────────────
@@ -1173,15 +1315,44 @@ function onSearch() {
   pagina = 1; renderTabla();
 }
 
+// ── Filas unificadas (informe / tarea preventivo / equipo) ────────
+const TIPO_BADGE_CLASS = { TIGO: 'pb-tigo', WOM: 'pb-wom', PREVENTIVO: 'pb-prev', EQUIPO: 'pb-eq' };
+const PREV_ESTADO_CLASS = { 'Nuevo': 'est-nuevo', 'En Progreso': 'est-progreso', 'Cerrado': 'est-ok' };
+const filaInforme = r => ({ tipo: r.proyecto, sitio: r.sitio, tecnico: r.tecnico, fecha: r.fecha,
+  estadoLabel: 'Completado', estadoClass: 'est-ok' });
+const filaTarea = t => ({ tipo: 'PREVENTIVO', sitio: t.sitio || '—', tecnico: t.tecnico || '—',
+  fecha: (t.fechaInicio || '').slice(0, 10), estadoLabel: t.estado || 'Nuevo',
+  estadoClass: PREV_ESTADO_CLASS[t.estado] || 'est-nuevo' });
+const filaEquipo = e => ({ tipo: 'EQUIPO', sitio: e.sitio || '—', tecnico: '—',
+  fecha: (e.ultimaIntervencion || '').slice(0, 10),
+  estadoLabel: `${e.totalIntervenciones || 0} interv.`, estadoClass: 'est-info' });
+
 function listaFiltrada() {
+  if (busqueda) {
+    // Con texto de búsqueda: se mezclan informes + tareas preventivo + equipos,
+    // sin importar el tab de proyecto activo (Todos/Tigo/WOM).
+    const matchInf = todosInformes.filter(r =>
+      (r.sitio||'').toLowerCase().includes(busqueda) ||
+      (r.tecnico||'').toLowerCase().includes(busqueda) ||
+      (r.codInforme||'').toLowerCase().includes(busqueda)
+    ).map(filaInforme);
+    const matchTareas = todasTareas.filter(t =>
+      (t.sitio||'').toLowerCase().includes(busqueda) ||
+      (t.tecnico||'').toLowerCase().includes(busqueda) ||
+      (t.tareaNumero||'').toLowerCase().includes(busqueda) ||
+      (t.crqInc||'').toLowerCase().includes(busqueda)
+    ).map(filaTarea);
+    const matchEquipos = todosEquipos.filter(e =>
+      (e.sitio||'').toLowerCase().includes(busqueda) ||
+      (e.numero||'').toLowerCase().includes(busqueda) ||
+      (e.tipo||'').toLowerCase().includes(busqueda) ||
+      (e.marca||'').toLowerCase().includes(busqueda)
+    ).map(filaEquipo);
+    return [...matchInf, ...matchTareas, ...matchEquipos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+  }
   let list = todosInformes;
   if (filtro !== 'todos') list = list.filter(r => r.proyecto === filtro);
-  if (busqueda) list = list.filter(r =>
-    (r.sitio||'').toLowerCase().includes(busqueda) ||
-    (r.tecnico||'').toLowerCase().includes(busqueda) ||
-    (r.codInforme||'').toLowerCase().includes(busqueda)
-  );
-  return list;
+  return list.map(filaInforme);
 }
 
 function fmtFecha(f) {
@@ -1203,11 +1374,11 @@ function renderTabla() {
   } else {
     tbody.innerHTML = slice.map(r => `
       <tr>
-        <td><span class="pbadge ${r.proyecto==='TIGO'?'pb-tigo':'pb-wom'}">${r.proyecto}</span></td>
+        <td><span class="pbadge ${TIPO_BADGE_CLASS[r.tipo] || 'pb-eq'}">${esc(r.tipo)}</span></td>
         <td class="td-sitio">${esc(r.sitio)}</td>
         <td class="td-tec">${esc(r.tecnico)}</td>
         <td class="td-fecha">${fmtFecha(r.fecha)}</td>
-        <td><span class="estado-badge est-ok">Completado</span></td>
+        <td><span class="estado-badge ${r.estadoClass}">${esc(r.estadoLabel)}</span></td>
       </tr>`).join('');
   }
 
