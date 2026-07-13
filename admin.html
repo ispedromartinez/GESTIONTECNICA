@@ -267,6 +267,7 @@ tr:hover td{background:var(--p-subtle);}
 </head>
 <body>
 
+<script src="/common.js"></script>
 <script>
 (function(){
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -306,8 +307,6 @@ const T = () => localStorage.getItem('token') || sessionStorage.getItem('token')
 const aH = (x={}) => ({ Authorization:'Bearer '+T(), ...x });
 const jH = () => aH({ 'Content-Type':'application/json' });
 const $ = id => document.getElementById(id);
-const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const escArg = s => esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
 const initials = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
 let ME = null;

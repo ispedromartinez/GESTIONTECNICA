@@ -162,6 +162,7 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 </style>
 </head>
 <body>
+<script src="/common.js"></script>
 <script>
 let HOME_URL = '/dashboard';
 (function(){
@@ -881,8 +882,6 @@ async function generarInforme() {
 // Escapa texto antes de inyectarlo como HTML (evita XSS almacenado:
 // un informe con ticket/instalación maliciosos ejecutaría script al
 // listarse en el historial de otro usuario).
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function escArg(s){return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));}
 
 // ── Historial ─────────────────────────────────────────────────
 async function loadHistorial() {

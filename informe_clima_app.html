@@ -303,6 +303,7 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 </style>
 </head>
 <body>
+<script src="/common.js"></script>
 <script>
 let HOME_URL = '/dashboard';
 (function(){
@@ -1400,9 +1401,7 @@ async function generateDocx(){
 // ══ HISTORIAL ══
 // Escape HTML: los datos del registro (sitio, código, técnico) los escriben
 // usuarios y se inyectan en innerHTML — sin esto hay XSS almacenado.
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 // Para argumentos dentro de onclick="f('...')": escapa JS y luego HTML.
-function escArg(s){return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));}
 async function loadHist(silent=false){
   if(!serverOnline)await checkServer();
   try{

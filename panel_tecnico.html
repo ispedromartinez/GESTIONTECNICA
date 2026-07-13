@@ -540,6 +540,7 @@ textarea.finput{min-height:85px;resize:vertical;line-height:1.6;}
 
 </div><!-- /main -->
 
+<script src="/common.js"></script>
 <script>
 const TITLES = {
   informes:   ['Historial de actividades', 'Tu actividad reciente'],
@@ -694,7 +695,6 @@ function cardHTML(d) {
 }
 
 // ── Escape para interpolar datos en innerHTML de forma segura ──
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ── Tareas pendientes: correctivos (informes) + preventivos (/tareas) ──
 const ESTADO_LBL = { borrador:'Pendiente', enviado:'Generado', aprobado:'Cerrado', rechazado:'Rechazado' };

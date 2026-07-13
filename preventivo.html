@@ -413,6 +413,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
   </div><!-- /modal-shell -->
 </div>
 
+<script src="/common.js"></script>
 <script>
 // ── Auth (sesión JWT del sistema) ───────────────────────────────
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
@@ -669,7 +670,6 @@ function tiempoRelativo(iso) {
 
 // Escape HTML: las tareas vienen de imports XLSX y de otros usuarios —
 // inyectarlas sin escapar en innerHTML permite XSS almacenado.
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 function renderTabla(){
   const totalPaginas = Math.max(1, Math.ceil(tareas.length / tareasPorPagina));

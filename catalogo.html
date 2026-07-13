@@ -84,6 +84,7 @@ tbody tr:hover{background:#FAFBFF;}
 </head>
 <body>
 
+<script src="/common.js"></script>
 <script>
 (function(){
   const t = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -292,7 +293,6 @@ async function confirmarAsignacion(){
   finally{ btn.disabled=false; }
 }
 
-function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ── Modal genérico + altas de sitios ──────────────────────────────
 function openM2(html){ document.getElementById('modal2box').innerHTML = html; document.getElementById('modal2').classList.add('show'); }

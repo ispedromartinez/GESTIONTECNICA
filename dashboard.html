@@ -752,10 +752,10 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
 
 <div id="toast"></div>
 
+<script src="/common.js"></script>
 <script>
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
-const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 // Guard
 if (!TOKEN()) { window.location.replace('/login'); }

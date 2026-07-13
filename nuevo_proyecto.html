@@ -189,6 +189,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 <body>
 
 <!-- Guard: superadmin y admin_empresa pueden crear proyectos -->
+<script src="/common.js"></script>
 <script>
 (function(){
   const t = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -480,7 +481,6 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
 // Escapa datos antes de inyectarlos como HTML/atributo (anti-XSS).
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 // ── Estado ──────────────────────────────────────────────────────
 let state = {

@@ -66,6 +66,7 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
 </head>
 <body>
 
+<script src="/common.js"></script>
 <script>
 (function(){
   const t = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -277,7 +278,6 @@ function renderProyecto(p) {
   btn.style.background = p.color || '#0073EA';
 }
 
-function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // Normaliza tupla [nombre, direccion, comuna] (compatible con [nombre, direccion])
 function sitioTupla(s){ return Array.isArray(s) ? [s[0]||'', s[1]||'', s[2]||''] : [s.nombre||'', s.direccion||'', s.comuna||s.ciudad||'']; }
