@@ -349,10 +349,6 @@ function cerrarSesion(){
         <label>Instalación (RSO) <span style="color:var(--red)">*</span></label>
         <select id="instalacion" onchange="onSiteChange()">
           <option value="">— Seleccionar sitio —</option>
-          <option value="RSO CONCEPCION">RSO CONCEPCION</option>
-          <option value="RSO ANTOFAGASTA">RSO ANTOFAGASTA</option>
-          <option value="RSO PUERTO MONTT">RSO PUERTO MONTT</option>
-          <option value="RSO PUNTA ARENAS">RSO PUNTA ARENAS</option>
         </select>
       </div>
       <div class="field">
@@ -470,28 +466,22 @@ function cerrarSesion(){
 <div id="toast"></div>
 
 <script>
-// ── RSO sites map (base fija + catálogo por empresa, módulo wom) ──
-let RSO = {
-  'RSO CONCEPCION':   'ANIBAL PINTO 105, CONCEPCION',
-  'RSO ANTOFAGASTA':  'FELIX GARCIA 581, ANTOFAGASTA',
-  'RSO PUERTO MONTT': 'AV LO CELIS S/N PUERTO MONTT',
-  'RSO PUNTA ARENAS': 'AV PDTE EDUARDO FREI MONTALVA 5, PUNTA ARENAS'
-};
-// Carga los sitios del catálogo (módulo wom) y los agrega al <select>,
-// fusionando con los RSO base. Cada sitio nuevo generado queda registrado.
+// ── Sitios de instalación: viven en el catálogo (módulo wom) por empresa ──
+// nombre → dirección, se llena desde la BD. Empresa nueva arranca vacía.
+let RSO = {};
 async function cargarCatalogoSitiosWom(){
   try{
     const r=await fetch('/api/sitios-preventivos?modulo=wom',{headers:authH()});
     if(!r.ok)return;
     const data=await r.json();
     const sel=g('instalacion'); if(!sel)return;
-    const existentes=new Set(Array.from(sel.options).map(o=>o.value));
+    // Reconstruye el select desde cero (solo el placeholder + catálogo).
+    RSO={};
+    sel.innerHTML='<option value="">— Seleccionar sitio —</option>';
     (data||[]).forEach(s=>{
-      RSO[s.nombre]=s.direccion||RSO[s.nombre]||'';
-      if(!existentes.has(s.nombre)){
-        const o=document.createElement('option'); o.value=s.nombre; o.textContent=s.nombre;
-        sel.appendChild(o); existentes.add(s.nombre);
-      }
+      RSO[s.nombre]=s.direccion||'';
+      const o=document.createElement('option'); o.value=s.nombre; o.textContent=s.nombre;
+      sel.appendChild(o);
     });
   }catch{}
 }
