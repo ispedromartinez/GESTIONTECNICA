@@ -450,6 +450,10 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
       <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-6h4v6M5 21h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/><path d="M17 17v-4"/></svg></span> Reportes
     </button>
 
+    <button class="sb-item" id="nav-sla" onclick="showView('sla')" style="display:none">
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span> SLA Preventivo
+    </button>
+
     <div class="sb-divider"></div>
     <button class="sb-item sb-proy-toggle open" id="sbProyToggle" onclick="toggleProyectos()">
       <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
@@ -773,6 +777,27 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
       </div>
     </div>
 
+    <div class="view" id="view-sla">
+      <div class="section-card" style="margin-bottom:18px">
+        <div class="section-head">
+          <span class="section-head-title">Cumplimiento SLA — Preventivo</span>
+          <div class="ip-tools" style="gap:8px">
+            <input class="ip-select" id="slaDesde" type="date" onchange="cargarSLA()" title="Vencimiento desde">
+            <input class="ip-select" id="slaHasta" type="date" onchange="cargarSLA()" title="Vencimiento hasta">
+          </div>
+        </div>
+        <div id="slaGlobal" style="padding:18px 20px"></div>
+      </div>
+      <div class="section-card" style="margin-bottom:18px">
+        <div class="section-head"><span class="section-head-title">Por técnico</span></div>
+        <div id="slaTecnico"><div class="empty-tbl"><p>Cargando…</p></div></div>
+      </div>
+      <div class="section-card">
+        <div class="section-head"><span class="section-head-title">Sitios con más tareas vencidas</span></div>
+        <div id="slaSitio"><div class="empty-tbl"><p>Cargando…</p></div></div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -847,6 +872,7 @@ async function init() {
     // Reportes: supervisor y superiores (el técnico ya ve los suyos en su panel).
     if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
       document.getElementById('nav-reportes').style.display = 'flex';
+      document.getElementById('nav-sla').style.display = 'flex';
     }
     // Catálogo de sitios: supervisor y superiores lo ven (asignar queda gated dentro)
     if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
@@ -1030,7 +1056,7 @@ async function cargarModulosFijos() {
 }
 
 // ── Vistas ────────────────────────────────────────────────────────
-const viewTitles = { proyectos: 'Inicio', informes: 'Panel de Control', informesproy: 'Informes', reportes: 'Reportes' };
+const viewTitles = { proyectos: 'Inicio', informes: 'Panel de Control', informesproy: 'Informes', reportes: 'Reportes', sla: 'SLA Preventivo' };
 let MIROL = '';
 
 function switchSubview(v) {
@@ -1067,6 +1093,10 @@ function showView(v) {
     toggle.classList.remove('visible');
     document.getElementById('searchWrap').style.display = 'none';
     cargarReportes();
+  } else if (v === 'sla') {
+    toggle.classList.remove('visible');
+    document.getElementById('searchWrap').style.display = 'none';
+    cargarSLA();
   } else {
     toggle.classList.remove('visible');
     document.getElementById('searchWrap').style.display = 'none';
@@ -1549,6 +1579,55 @@ async function cargarReportes(){
       </tr>`).join('')}
     </tbody></table></div>`;
   } catch (e) { body.innerHTML = '<div class="empty-tbl"><p>Error: ' + esc(e.message) + '</p></div>'; }
+}
+
+// ── SLA de mantenimiento preventivo ─────────────────────────────
+function slaColor(pct){ if (pct==null) return '#94A3B8'; if (pct>=90) return '#059669'; if (pct>=70) return '#B45309'; return '#DC2626'; }
+async function cargarSLA(){
+  const g = document.getElementById('slaGlobal'), t = document.getElementById('slaTecnico'), s = document.getElementById('slaSitio');
+  if (!g) return;
+  g.innerHTML = '<div class="empty-tbl"><p>Cargando…</p></div>';
+  const p = new URLSearchParams();
+  const d = document.getElementById('slaDesde').value; if (d) p.set('desde', d);
+  const h = document.getElementById('slaHasta').value; if (h) p.set('hasta', h);
+  try {
+    const r = await fetch('/tareas/sla?' + p.toString(), { headers: authH() });
+    if (r.status === 403) { g.innerHTML = '<div class="empty-tbl"><p>Tu empresa no tiene el módulo Preventivo habilitado.</p></div>'; t.innerHTML=''; s.innerHTML=''; return; }
+    if (!r.ok) throw new Error('No se pudo cargar el SLA');
+    const { global, porTecnico, porSitio } = await r.json();
+    const col = slaColor(global.sla);
+    g.innerHTML = `
+      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-size:44px;font-weight:800;line-height:1;color:${col}">${global.sla==null?'—':global.sla+'%'}</div>
+          <div style="font-size:12px;color:#64748B;margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Cumplimiento SLA</div>
+        </div>
+        <div class="stats-row" style="flex:1;min-width:280px;margin:0">
+          <div class="stat-card"><div class="stat-val" style="color:#059669">${global.a_tiempo}</div><div class="stat-label">A tiempo</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#B45309">${global.tarde}</div><div class="stat-label">Tarde</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#DC2626">${global.vencida}</div><div class="stat-label">Vencidas</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#0073EA">${global.en_plazo}</div><div class="stat-label">En plazo</div></div>
+        </div>
+      </div>`;
+    const filaTec = x => `<tr>
+      <td><b>${esc(x.nombre)}</b></td>
+      <td style="text-align:center">${x.a_tiempo}</td><td style="text-align:center">${x.tarde}</td>
+      <td style="text-align:center">${x.vencida}</td><td style="text-align:center">${x.en_plazo}</td>
+      <td style="text-align:right;font-weight:800;color:${slaColor(x.sla)}">${x.sla==null?'—':x.sla+'%'}</td></tr>`;
+    t.innerHTML = porTecnico.length ? `<div class="tbl-wrap"><table><thead><tr>
+      <th>Técnico</th><th style="text-align:center">A tiempo</th><th style="text-align:center">Tarde</th>
+      <th style="text-align:center">Vencidas</th><th style="text-align:center">En plazo</th><th style="text-align:right">SLA</th></tr></thead>
+      <tbody>${porTecnico.map(filaTec).join('')}</tbody></table></div>`
+      : '<div class="empty-tbl"><p>Sin tareas con vencimiento.</p></div>';
+    const sitiosConVencidas = porSitio.filter(x => x.vencida > 0);
+    s.innerHTML = sitiosConVencidas.length ? `<div class="tbl-wrap"><table><thead><tr>
+      <th>Sitio</th><th style="text-align:center">Vencidas</th><th style="text-align:center">Total</th><th style="text-align:right">SLA</th></tr></thead>
+      <tbody>${sitiosConVencidas.map(x => `<tr><td><b>${esc(x.nombre)}</b></td>
+        <td style="text-align:center;color:#DC2626;font-weight:700">${x.vencida}</td>
+        <td style="text-align:center">${x.total}</td>
+        <td style="text-align:right;font-weight:800;color:${slaColor(x.sla)}">${x.sla==null?'—':x.sla+'%'}</td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty-tbl"><p>Ningún sitio con tareas vencidas. 🎉</p></div>';
+  } catch (e) { g.innerHTML = '<div class="empty-tbl"><p>Error: ' + esc(e.message) + '</p></div>'; }
 }
 
 async function renderSidebarProyectos() {

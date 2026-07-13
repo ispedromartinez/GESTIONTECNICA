@@ -13,6 +13,7 @@ const { requireNivel } = require('../middleware/roles');
 const { canAccessTenant, scopeToTenant } = require('../middleware/tenant');
 const localDB = require('../db/local');
 const { supabase } = require('../db/supabase');
+const gestionDb = require('../db/gestion');
 
 const TABLE = 'tareas_preventivo';
 const TAREAS_FILE = path.join(__dirname, '..', 'tareas_preventivo.json');
@@ -275,6 +276,75 @@ router.get('/', async (req, res) => {
     if (hasta) rows = rows.filter(r => r.fechaInicio && r.fechaInicio <= hasta);
     if (tecnico && tecnico !== 'Todos') rows = rows.filter(r => r.tecnico === tecnico);
     res.json(rows);
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
+// GET /tareas/sla — cumplimiento SLA del mantenimiento preventivo.
+// Clasifica cada tarea con vencimiento en: a_tiempo / tarde / vencida / en_plazo.
+// % SLA = a_tiempo / (a_tiempo + tarde + vencida). Aislado por empresa;
+// supervisor ve solo sus técnicos a cargo; técnico solo lo suyo.
+router.get('/sla', async (req, res) => {
+  try {
+    let rows = filtraEmpresa(await dbTareasList(), req.user);
+
+    // Recorte por rol.
+    if (req.user.rol === 'tecnico') {
+      const yo = (req.user.nombre || '').trim().toLowerCase();
+      rows = rows.filter(r => (r.tecnico || '').trim().toLowerCase() === yo);
+    } else if (req.user.rol === 'supervisor') {
+      let nombres = [];
+      try {
+        const tecs = await gestionDb.tecnicosDeSupervisor(req.user.usuario_id);
+        nombres = (tecs || []).map(t => (t.nombre || '').toLowerCase()).filter(Boolean);
+      } catch {}
+      nombres.push((req.user.nombre || '').toLowerCase());
+      rows = rows.filter(r => nombres.some(n => n && (r.tecnico || '').toLowerCase().includes(n)));
+    }
+
+    // Filtro opcional por rango de fecha de vencimiento.
+    const { desde, hasta } = req.query;
+    if (desde) rows = rows.filter(r => (r.fechaVencimiento || '') >= desde);
+    if (hasta) rows = rows.filter(r => (r.fechaVencimiento || '') <= hasta);
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    const esCerrado = e => (e || '').toLowerCase() === 'cerrado';
+    // Clasifica una tarea (solo cuentan las que tienen vencimiento).
+    function clasificar(t) {
+      if (!t.fechaVencimiento) return null;
+      const cerrada = esCerrado(t.estado);
+      if (cerrada) {
+        const cierre = (t.estadoCambiadoEn || '').slice(0, 10);
+        return (cierre && cierre <= t.fechaVencimiento) ? 'a_tiempo' : 'tarde';
+      }
+      return (t.fechaVencimiento < hoy) ? 'vencida' : 'en_plazo';
+    }
+
+    const vacio = () => ({ a_tiempo: 0, tarde: 0, vencida: 0, en_plazo: 0 });
+    const global = vacio();
+    const porTecnico = {}; // nombre → conteos
+    const porSitio = {};   // sitio → conteos
+    for (const t of rows) {
+      const c = clasificar(t);
+      if (!c) continue;
+      global[c]++;
+      const tec = t.tecnico || '—';
+      const sit = t.sitio || t.nombreCliente || '—';
+      (porTecnico[tec] || (porTecnico[tec] = vacio()))[c]++;
+      (porSitio[sit] || (porSitio[sit] = vacio()))[c]++;
+    }
+    const pct = c => {
+      const base = c.a_tiempo + c.tarde + c.vencida;
+      return base ? Math.round((c.a_tiempo / base) * 100) : null;
+    };
+    const listar = obj => Object.entries(obj).map(([nombre, c]) => ({
+      nombre, ...c, total: c.a_tiempo + c.tarde + c.vencida + c.en_plazo, sla: pct(c)
+    }));
+
+    res.json({
+      global: { ...global, total: rows.filter(t => t.fechaVencimiento).length, sla: pct(global) },
+      porTecnico: listar(porTecnico).sort((a, b) => (a.sla ?? 101) - (b.sla ?? 101)),
+      porSitio: listar(porSitio).sort((a, b) => b.vencida - a.vencida)
+    });
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
