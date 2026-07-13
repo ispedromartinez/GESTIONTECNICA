@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEXXO.APP – Gestión de mantenimiento técnico</title>
-<meta name="description" content="Informes técnicos para Tigo y WOM, mantenimiento preventivo programado y hoja de vida de equipos, en un solo panel.">
+<meta name="description" content="Informes técnicos por proyecto, mantenimiento preventivo programado y hoja de vida de equipos, en un solo panel.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
@@ -251,6 +251,50 @@ nav{
 .sec-eyebrow{font-size:11px;font-weight:700;color:#0073EA;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;}
 .sec-title{font-size:clamp(28px,3.5vw,40px);font-weight:900;letter-spacing:-1.3px;color:#0F172A;margin-bottom:14px;line-height:1.12;text-wrap:balance;}
 .sec-sub{font-size:15px;color:#64748B;line-height:1.7;max-width:560px;margin-bottom:56px;}
+
+/* ── DIAGRAMA DE FLUJO ── */
+.flow-label{font-size:12px;font-weight:700;color:#0F172A;margin-bottom:20px;}
+.flow-diagram{
+  display:flex;align-items:stretch;gap:0;
+  margin-bottom:64px;
+  border:1px solid #E2E8F0;border-radius:16px;
+  background:#F9FAFC;
+  padding:22px;
+  overflow-x:auto;
+}
+.flow-node{
+  flex:1;min-width:190px;
+  background:#fff;border:1px solid #E2E8F0;border-radius:12px;
+  padding:20px 18px;
+  display:flex;flex-direction:column;gap:9px;
+  position:relative;
+  transition:box-shadow .2s,border-color .2s,transform .2s;
+}
+.flow-node:hover{box-shadow:0 10px 26px rgba(15,23,42,.08);border-color:#C7DBFB;transform:translateY(-2px);}
+.flow-node-num{
+  position:absolute;top:16px;right:16px;
+  font-size:10.5px;font-weight:800;color:#CBD5E1;letter-spacing:.5px;
+  font-variant-numeric:tabular-nums;
+}
+.flow-icon{
+  width:36px;height:36px;border-radius:9px;
+  background:#EEF5FF;color:#0073EA;
+  display:flex;align-items:center;justify-content:center;
+}
+.flow-icon svg{width:18px;height:18px;}
+.flow-node h4{font-size:13.5px;font-weight:800;color:#0F172A;letter-spacing:-.1px;padding-right:20px;}
+.flow-node p{font-size:12px;color:#64748B;line-height:1.6;}
+.flow-arrow{
+  flex:0 0 34px;
+  display:flex;align-items:center;justify-content:center;
+  color:#B9C2D3;
+}
+.flow-arrow svg{width:20px;height:20px;}
+@media(max-width:860px){
+  .flow-diagram{flex-direction:column;padding:16px;}
+  .flow-node{min-width:0;}
+  .flow-arrow{transform:rotate(90deg);flex:0 0 30px;align-self:center;}
+}
 
 .feat-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;}
 .feat-card{
@@ -530,7 +574,7 @@ footer{
     </h1>
 
     <p class="hero-sub">
-      Genera informes técnicos para sitios Tigo y WOM, programa mantenimiento preventivo con recurrencia automática y arma la hoja de vida de cada equipo, sin planillas sueltas ni carpetas de WhatsApp.
+      Genera informes técnicos para Tigo, WOM o cualquier proyecto propio que configures, programa mantenimiento preventivo con recurrencia automática y arma la hoja de vida de cada equipo, sin planillas sueltas ni carpetas de WhatsApp.
     </p>
 
     <div class="hero-btns">
@@ -629,7 +673,7 @@ footer{
 <!-- ═══ TRUST ═══ -->
 <div class="trust">
   <span class="trust-label">Módulos incluidos</span>
-  <span class="trust-chip">Informes Tigo y WOM</span>
+  <span class="trust-chip">Informes por proyecto (Tigo, WOM y más)</span>
   <span class="trust-chip">Mantenimiento preventivo</span>
   <span class="trust-chip">Hoja de vida de equipos</span>
   <span class="trust-chip">Multi-empresa</span>
@@ -641,11 +685,43 @@ footer{
   <div class="sec-eyebrow">Funciones</div>
   <div class="sec-title">Todo lo que tu equipo técnico necesita</div>
   <p class="sec-sub">Pensado para equipos que mantienen sitios de telecomunicaciones y necesitan orden, trazabilidad y rapidez en terreno.</p>
+
+  <div class="flow-label">Cómo fluye la información, de terreno a panel</div>
+  <div class="flow-diagram">
+    <div class="flow-node">
+      <span class="flow-node-num">01</span>
+      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      <h4>Técnico en terreno</h4>
+      <p>Completa el formulario del proyecto y sube las fotos del sitio desde el celular.</p>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+    <div class="flow-node">
+      <span class="flow-node-num">02</span>
+      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <h4>Informe generado</h4>
+      <p>El sistema arma el Word con código único al instante y lo guarda con historial.</p>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+    <div class="flow-node">
+      <span class="flow-node-num">03</span>
+      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
+      <h4>Equipo y preventivo al día</h4>
+      <p>La hoja de vida del equipo y las próximas tareas de preventivo se actualizan solas.</p>
+    </div>
+    <div class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+    <div class="flow-node">
+      <span class="flow-node-num">04</span>
+      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      <h4>Panel consolidado</h4>
+      <p>Supervisores y administradores ven todo en tiempo real, por proyecto y sitio.</p>
+    </div>
+  </div>
+
   <div class="feat-grid">
     <div class="feat-card">
       <div class="feat-icon fi-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-      <h3>Informes Tigo y WOM</h3>
-      <p>Genera informes técnicos en Word con fotos y código de informe único. Se descargan al instante y quedan guardados con historial completo por sitio.</p>
+      <h3>Informes por proyecto</h3>
+      <p>Genera informes técnicos en Word con fotos y código de informe único, para Tigo, WOM o cualquier proyecto propio de tu empresa. Se descargan al instante y quedan guardados con historial completo por sitio.</p>
     </div>
     <div class="feat-card">
       <div class="feat-icon fi-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
@@ -680,7 +756,7 @@ footer{
   <div class="stats-inner">
     <div class="stat-item">
       <div class="stat-n">3</div>
-      <div class="stat-l">Módulos integrados: informes Tigo/WOM, preventivo y hoja de vida de equipos</div>
+      <div class="stat-l">Módulos integrados: informes por proyecto, preventivo y hoja de vida de equipos</div>
     </div>
     <div class="stat-item">
       <div class="stat-n">4</div>
