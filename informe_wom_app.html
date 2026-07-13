@@ -541,7 +541,7 @@ function updateEstadoActual() {
   const btnC = g('btn-continuar');
   if (!txt) return;
   if (ticket) {
-    txt.innerHTML = `Informe en progreso: <strong style="color:var(--mag);">${ticket}</strong>`;
+    txt.innerHTML = `Informe en progreso: <strong style="color:var(--mag);">${esc(ticket)}</strong>`;
     if (btnC) btnC.style.display = '';
   } else {
     txt.innerHTML = `No hay Informe en progreso. Presiona <strong style="color:var(--mag);">Crear Nuevo Informe</strong> para comenzar.`;
@@ -623,7 +623,7 @@ function addTecnico(name='') {
   const list = g('tecnicos-list');
   const div  = document.createElement('div');
   div.className = 'tecnico-row';
-  div.innerHTML = `<input class="tec-input" type="text" placeholder="Nombre y Apellido" value="${name}">
+  div.innerHTML = `<input class="tec-input" type="text" placeholder="Nombre y Apellido" value="${esc(name)}">
     <button class="btn-icon" onclick="this.parentElement.remove()" title="Eliminar">✕</button>`;
   list.appendChild(div);
   div.querySelector('input').focus();
@@ -862,6 +862,12 @@ async function generarInforme() {
   }
 }
 
+// Escapa texto antes de inyectarlo como HTML (evita XSS almacenado:
+// un informe con ticket/instalación maliciosos ejecutaría script al
+// listarse en el historial de otro usuario).
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escArg(s){return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));}
+
 // ── Historial ─────────────────────────────────────────────────
 async function loadHistorial() {
   const body = g('hist-body');
@@ -874,12 +880,12 @@ async function loadHistorial() {
     body.innerHTML = data.map(e => `
       <div class="hist-row">
         <div class="hist-info">
-          <div class="hist-ticket">${e.ticket||'—'}</div>
+          <div class="hist-ticket">${esc(e.ticket)||'—'}</div>
           <div class="hist-sub">
-            ${e.tipoActividad||''} · ${e.instalacion||''} · ${e.fechaInicio||''}
-            ${e.codInterno ? `<span class="hist-inc"> · INC-${e.codInterno}</span>` : ''}
+            ${esc(e.tipoActividad)} · ${esc(e.instalacion)} · ${esc(e.fechaInicio)}
+            ${e.codInterno ? `<span class="hist-inc"> · INC-${esc(e.codInterno)}</span>` : ''}
           </div>
-          <div class="hist-sub">${(e.tecnicos||'').split(',').join(' / ')} · ${e.photoCount||0} foto(s)</div>
+          <div class="hist-sub">${esc((e.tecnicos||'').split(',').join(' / '))} · ${e.photoCount||0} foto(s)</div>
         </div>
         <div class="hist-actions">
           <button class="btn-dl" onclick="descargar('${e.id}')">↓ Descargar</button>
