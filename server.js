@@ -18,6 +18,7 @@ const empresasRoutes = require('./routes/empresas');
 const preventivoRoutes = require('./routes/preventivo');
 const gestionDb = require('./db/gestion');
 const equiposDb = require('./db/equipos');
+const sitiosDb = require('./db/sitios');
 const { authMiddleware } = require('./middleware/auth');
 const { requireRol, requireNivel } = require('./middleware/roles');
 const { requireModulo } = require('./middleware/modulos');
@@ -1627,8 +1628,6 @@ function loadSitiosPrev() {
     return [];
   }
 }
-let sitiosPrevData = loadSitiosPrev();
-
 // Persiste el catálogo de sitios al .xlsx (mismo formato que lee loadSitiosPrev).
 function saveSitiosPrev(arr) {
   const XLSX = require('xlsx');
@@ -1643,10 +1642,43 @@ function saveSitiosPrev(arr) {
   XLSX.writeFile(wb, SITIOS_XLSX);
 }
 
+// Parsea un .xlsx (Buffer) a la lista de sitios, tolerando distintos formatos
+// de encabezado. Usado por /upload e /importar.
+function parseSitiosXlsx(buf) {
+  const XLSX = require('xlsx');
+  const wb = XLSX.read(buf, { type: 'buffer' });
+  const sheetName = wb.SheetNames.find(n => /sitio/i.test(n)) || wb.SheetNames[0];
+  const filas = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+  const pick = (f, ...keys) => {
+    for (const k of Object.keys(f)) {
+      const lk = k.trim().toLowerCase();
+      if (keys.some(x => lk.includes(x))) { const v = String(f[k] ?? '').trim(); if (v) return v; }
+    }
+    return '';
+  };
+  return filas.map(f => ({
+    nombre: pick(f, 'sitio', 'central', 'nodo', 'hub', 'nombre'),
+    direccion: pick(f, 'direcc'),
+    ciudad: pick(f, 'comuna', 'ciudad'),
+    criticidad: pick(f, 'criticidad'),
+    categoria: pick(f, 'categor'),
+    codigo: pick(f, 'código', 'codigo', 'punto de inter')
+  })).filter(s => s.nombre);
+}
+
 // Clave de duplicado: mismo nombre + dirección + comuna (normalizados).
 const sitioKey = s => ['nombre', 'direccion', 'ciudad']
   .map(k => (s[k] || '').toString().trim().toLowerCase().replace(/\s+/g, ' '))
   .join('|');
+
+// Fallback local (dev, sin Supabase): la capa db/sitios.js reutiliza el xlsx.
+sitiosDb.setLocalImpl({ load: loadSitiosPrev, save: saveSitiosPrev });
+
+// Empresa objetivo del catálogo: la del usuario, o ?empresaId para superadmin
+// (que no tiene empresa propia). Devuelve null si no se puede determinar.
+function empresaCatalogo(req) {
+  return req.user.empresa_id || req.query.empresaId || req.body?.empresaId || null;
+}
 
 function nextTrackerId() {
   let counter = 0;
@@ -2077,98 +2109,70 @@ app.delete('/registro-wom/:id', authMiddleware, requireModulo('wom'), async (req
 });
 
 // ── Sitios / Tracker API ────────────────────────────────────────
-app.get('/api/sitios-preventivos', authMiddleware, (_req, res) => {
-  res.json(sitiosPrevData);
-});
-app.post('/api/sitios-preventivos/reload', authMiddleware, requireNivel(3), (_req, res) => {
-  sitiosPrevData = loadSitiosPrev();
-  res.json({ ok: true, count: sitiosPrevData.length });
-});
-app.post('/api/sitios-preventivos/upload', authMiddleware, requireNivel(3), (req, res) => {
+app.get('/api/sitios-preventivos', authMiddleware, async (req, res) => {
   try {
+    const empresaId = empresaCatalogo(req);
+    if (!empresaId) return res.json([]); // superadmin sin ?empresaId → vacío
+    res.json(await sitiosDb.list(empresaId));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// reload ya no aplica (no hay cache global); se conserva por compatibilidad.
+app.post('/api/sitios-preventivos/reload', authMiddleware, requireNivel(3), async (req, res) => {
+  try {
+    const empresaId = empresaCatalogo(req);
+    if (!empresaId) return res.status(400).json({ error: 'empresaId requerido' });
+    res.json({ ok: true, count: await sitiosDb.count(empresaId) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// Reemplaza TODO el catálogo de la empresa con el xlsx subido.
+app.post('/api/sitios-preventivos/upload', authMiddleware, requireNivel(3), async (req, res) => {
+  try {
+    const empresaId = empresaCatalogo(req);
+    if (!empresaId) return res.status(400).json({ error: 'empresaId requerido' });
     const { dataBase64 } = req.body;
     if (!dataBase64) return res.status(400).json({ error: 'dataBase64 requerido' });
-    const buf = Buffer.from(dataBase64, 'base64');
-    fs.writeFileSync(SITIOS_XLSX, buf);
-    sitiosPrevData = loadSitiosPrev();
-    res.json({ ok: true, count: sitiosPrevData.length });
+    const sitios = parseSitiosXlsx(Buffer.from(dataBase64, 'base64'));
+    const { count } = await sitiosDb.replaceAll(empresaId, sitios);
+    res.json({ ok: true, count });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 // Alta individual de un sitio. 409 si ya existe uno con la misma información.
-app.post('/api/sitios-preventivos', authMiddleware, requireNivel(3), (req, res) => {
+app.post('/api/sitios-preventivos', authMiddleware, requireNivel(3), async (req, res) => {
   try {
+    const empresaId = empresaCatalogo(req);
+    if (!empresaId) return res.status(400).json({ error: 'empresaId requerido' });
     const b = req.body || {};
     const nombre = (b.nombre || '').toString().trim();
     if (!nombre) return res.status(400).json({ error: 'El nombre del sitio es obligatorio' });
-    const nuevo = {
-      nombre,
-      direccion: (b.direccion || '').toString().trim(),
-      ciudad: (b.ciudad || b.comuna || '').toString().trim(),
-      criticidad: (b.criticidad || '').toString().trim(),
-      categoria: (b.categoria || '').toString().trim(),
-      codigo: (b.codigo || '').toString().trim()
-    };
-    const existente = sitiosPrevData.find(s => sitioKey(s) === sitioKey(nuevo));
-    if (existente) return res.status(409).json({ error: 'Ya existe un sitio con la misma información', existente });
-    sitiosPrevData.push(nuevo);
-    saveSitiosPrev(sitiosPrevData);
-    res.json({ ok: true, sitio: nuevo, count: sitiosPrevData.length });
+    const r = await sitiosDb.add(empresaId, b);
+    if (r.duplicado) return res.status(409).json({ error: 'Ya existe un sitio con la misma información', existente: r.existente });
+    res.json({ ok: true, sitio: r.sitio, count: r.count });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Carga masiva: AÑADE (no reemplaza). Inserta los no repetidos y devuelve
 // los duplicados (nuevo vs existente) para que el usuario elija cuál dejar.
-app.post('/api/sitios-preventivos/importar', authMiddleware, requireNivel(3), (req, res) => {
+app.post('/api/sitios-preventivos/importar', authMiddleware, requireNivel(3), async (req, res) => {
   try {
+    const empresaId = empresaCatalogo(req);
+    if (!empresaId) return res.status(400).json({ error: 'empresaId requerido' });
     const { dataBase64 } = req.body || {};
     if (!dataBase64) return res.status(400).json({ error: 'dataBase64 requerido' });
-    const XLSX = require('xlsx');
-    const wb = XLSX.read(Buffer.from(dataBase64, 'base64'), { type: 'buffer' });
-    const sheetName = wb.SheetNames.find(n => /sitio/i.test(n)) || wb.SheetNames[0];
-    const filas = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
-    const pick = (f, ...keys) => {
-      for (const k of Object.keys(f)) {
-        const lk = k.trim().toLowerCase();
-        if (keys.some(x => lk.includes(x))) { const v = String(f[k] ?? '').trim(); if (v) return v; }
-      }
-      return '';
-    };
-    const nuevos = filas.map(f => ({
-      nombre: pick(f, 'sitio', 'central', 'nodo', 'hub', 'nombre'),
-      direccion: pick(f, 'direcc'),
-      ciudad: pick(f, 'comuna', 'ciudad'),
-      criticidad: pick(f, 'criticidad'),
-      categoria: pick(f, 'categor'),
-      codigo: pick(f, 'código', 'codigo', 'punto de inter')
-    })).filter(s => s.nombre);
-
-    const agregados = [], duplicados = [];
-    const vistos = new Map(sitiosPrevData.map(s => [sitioKey(s), s]));
-    for (const s of nuevos) {
-      const k = sitioKey(s);
-      const prev = vistos.get(k);
-      if (prev) { duplicados.push({ nuevo: s, existente: prev }); }
-      else { vistos.set(k, s); sitiosPrevData.push(s); agregados.push(s); }
-    }
-    if (agregados.length) saveSitiosPrev(sitiosPrevData);
-    res.json({ ok: true, total: nuevos.length, agregados: agregados.length, duplicados, count: sitiosPrevData.length });
+    const nuevos = parseSitiosXlsx(Buffer.from(dataBase64, 'base64'));
+    const r = await sitiosDb.bulkImport(empresaId, nuevos);
+    res.json({ ok: true, ...r });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Resolver duplicados: reemplaza el sitio existente por la versión nueva elegida.
-app.post('/api/sitios-preventivos/resolver', authMiddleware, requireNivel(3), (req, res) => {
+app.post('/api/sitios-preventivos/resolver', authMiddleware, requireNivel(3), async (req, res) => {
   try {
+    const empresaId = empresaCatalogo(req);
+    if (!empresaId) return res.status(400).json({ error: 'empresaId requerido' });
     const { decisiones } = req.body || {};
     if (!Array.isArray(decisiones)) return res.status(400).json({ error: 'decisiones requerido' });
-    let reemplazados = 0;
-    for (const d of decisiones) {
-      if (d.accion !== 'reemplazar' || !d.nuevo) continue;
-      const k = sitioKey(d.nuevo);
-      const idx = sitiosPrevData.findIndex(s => sitioKey(s) === k);
-      if (idx >= 0) { sitiosPrevData[idx] = { ...sitiosPrevData[idx], ...d.nuevo }; reemplazados++; }
-    }
-    if (reemplazados) saveSitiosPrev(sitiosPrevData);
-    res.json({ ok: true, reemplazados, count: sitiosPrevData.length });
+    const r = await sitiosDb.resolve(empresaId, decisiones);
+    res.json({ ok: true, ...r });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
