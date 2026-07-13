@@ -67,6 +67,23 @@ Both TIGO and WOM follow the same pattern:
 
 `codInforme` is the primary user-visible identifier (e.g. `YG0806ANTONITX01`). It is used as part of the filename and is **not sanitized** before being embedded in HTML attributes — escape it before innerHTML interpolation.
 
+## Security rule: escape all server data before innerHTML (MANDATORY)
+
+Any page that renders server-supplied data (informe fields, empresa/usuario
+names, sitios, técnicos, etc.) into `innerHTML`/`insertAdjacentHTML`/template
+literals **MUST** run it through `esc()` first, and through `escArg()` inside
+inline `onclick="..."` handlers. The JWT lives in `localStorage`, so an
+unescaped field is stored-XSS → token theft → privilege escalation across the
+tenant.
+
+- Canonical helpers live in `informe_clima_app.html` and `informe_wom_app.html`:
+  - `esc(s)` — escapes `& < > " '` for HTML/attribute contexts.
+  - `escArg(s)` — `esc()` plus backslash/quote escaping for JS string args.
+- This is **per-page**: it does NOT propagate automatically. A new module page
+  (e.g. a custom template built from `nuevo_proyecto.html`) must copy the
+  helpers and wrap its own interpolations. Use the Tigo/WOM pages as the mold.
+- Fixed in WOM history on 2026-07-13 (commit `7f89cd0`); Tigo already did this.
+
 ## Equipos (hoja de vida)
 
 `db/equipos.js` mantiene la tabla resumen `equipos` (clave natural empresa+sitio+numero,
