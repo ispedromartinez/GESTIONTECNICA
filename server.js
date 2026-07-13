@@ -1256,8 +1256,22 @@ app.post('/enviar/:id', authMiddleware, requireModulo('tigo'), async (req,res) =
   }
   const {to,smtpHost,smtpPort,smtpUser,smtpPass} = req.body;
   if (!to) return res.status(400).json({error:'Email requerido'});
+  // Anti-SSRF: el host/puerto SMTP los pone el cliente. Sin validar, esta
+  // ruta autenticada sirve para sondear la red interna (169.254.169.254,
+  // 127.x, 10.x, 192.168.x, etc.) o puertos arbitrarios. Se restringe a
+  // puertos de correo y se bloquean destinos internos.
+  const host = String(smtpHost || 'smtp.gmail.com').trim().toLowerCase();
+  const port = Number(smtpPort) || 587;
+  if (![25, 465, 587, 2525].includes(port))
+    return res.status(400).json({error:'Puerto SMTP no permitido'});
+  const esHostInterno =
+    host === 'localhost' || host.endsWith('.local') ||
+    /^(127\.|10\.|169\.254\.|192\.168\.|0\.0\.0\.0|::1|\[)/.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  if (esHostInterno)
+    return res.status(400).json({error:'Host SMTP no permitido'});
   try {
-    const t = nodemailer.createTransport({ host:smtpHost||'smtp.gmail.com', port:smtpPort||587, secure:false, auth:{user:smtpUser,pass:smtpPass} });
+    const t = nodemailer.createTransport({ host, port, secure: port === 465, auth:{user:smtpUser,pass:smtpPass} });
     await t.sendMail({ from:smtpUser, to, subject:`Informe - ${entry.nombreSitio} - ${entry.codInforme}`,
       text:`Adjunto informe.\nSitio: ${entry.nombreSitio}\nFecha: ${entry.fecha}\nTécnico: ${entry.tecnico}`,
       attachments:[{filename:entry.filename, content:buffer}] });

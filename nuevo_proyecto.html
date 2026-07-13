@@ -479,6 +479,8 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 <script>
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
+// Escapa datos antes de inyectarlos como HTML/atributo (anti-XSS).
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 // ── Estado ──────────────────────────────────────────────────────
 let state = {
@@ -625,8 +627,8 @@ function selTpl(t) {
 function addSitioRow(nombre='', dir='') {
   const row = document.createElement('div');
   row.className = 'sitio-row';
-  row.innerHTML = `<input type="text" placeholder="Nombre sitio" value="${nombre}" oninput="contarSitios()">
-    <input type="text" placeholder="Dirección" value="${dir}" oninput="contarSitios()">
+  row.innerHTML = `<input type="text" placeholder="Nombre sitio" value="${esc(nombre)}" oninput="contarSitios()">
+    <input type="text" placeholder="Dirección" value="${esc(dir)}" oninput="contarSitios()">
     <button class="btn-rm-row" onclick="this.parentElement.remove();contarSitios()">✕</button>`;
   document.getElementById('sitiosRows').appendChild(row);
   contarSitios();
@@ -676,7 +678,7 @@ function addPersona(tipo, val='') {
   const listId = tipo==='sup' ? 'supList' : 'tecList';
   const row = document.createElement('div');
   row.className = 'persona-row';
-  row.innerHTML = `<input type="text" placeholder="${tipo==='sup'?'Nombre del supervisor':'Nombre del técnico'}" value="${val}">
+  row.innerHTML = `<input type="text" placeholder="${tipo==='sup'?'Nombre del supervisor':'Nombre del técnico'}" value="${esc(val)}">
     <button class="btn-rm-row" onclick="this.parentElement.remove()">✕</button>`;
   document.getElementById(listId).appendChild(row);
   row.querySelector('input').focus();
@@ -770,11 +772,11 @@ async function cargarEmpresas() {
     }
     // admin_empresa solo ve su empresa → la preseleccionamos (sin placeholder).
     if (empresas.length === 1) {
-      sel.innerHTML = `<option value="${empresas[0].id}">${empresas[0].nombre}</option>`;
+      sel.innerHTML = `<option value="${esc(empresas[0].id)}">${esc(empresas[0].nombre)}</option>`;
       sel.value = empresas[0].id;
     } else {
       sel.innerHTML = '<option value="">— Selecciona empresa —</option>' +
-        empresas.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+        empresas.map(e => `<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('');
       // Preselección al venir desde el detalle de una empresa (?empresa=<id>)
       const pre = new URLSearchParams(location.search).get('empresa');
       if (pre && empresas.some(e => e.id === pre)) sel.value = pre;
