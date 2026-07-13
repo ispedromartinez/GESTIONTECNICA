@@ -1679,6 +1679,11 @@ sitiosDb.setLocalImpl({ load: loadSitiosPrev, save: saveSitiosPrev });
 function empresaCatalogo(req) {
   return req.user.empresa_id || req.query.empresaId || req.body?.empresaId || null;
 }
+// Módulo del catálogo (tigo/wom/preventivo). Default preventivo por
+// compatibilidad con el endpoint histórico /api/sitios-preventivos.
+function moduloCatalogo(req) {
+  return sitiosDb.normModulo(req.query.modulo || req.body?.modulo || 'preventivo');
+}
 
 function nextTrackerId() {
   let counter = 0;
@@ -2113,7 +2118,7 @@ app.get('/api/sitios-preventivos', authMiddleware, async (req, res) => {
   try {
     const empresaId = empresaCatalogo(req);
     if (!empresaId) return res.json([]); // superadmin sin ?empresaId → vacío
-    res.json(await sitiosDb.list(empresaId));
+    res.json(await sitiosDb.list(empresaId, moduloCatalogo(req)));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // reload ya no aplica (no hay cache global); se conserva por compatibilidad.
@@ -2121,10 +2126,10 @@ app.post('/api/sitios-preventivos/reload', authMiddleware, requireNivel(3), asyn
   try {
     const empresaId = empresaCatalogo(req);
     if (!empresaId) return res.status(400).json({ error: 'empresaId requerido' });
-    res.json({ ok: true, count: await sitiosDb.count(empresaId) });
+    res.json({ ok: true, count: await sitiosDb.count(empresaId, moduloCatalogo(req)) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-// Reemplaza TODO el catálogo de la empresa con el xlsx subido.
+// Reemplaza TODO el catálogo del módulo con el xlsx subido.
 app.post('/api/sitios-preventivos/upload', authMiddleware, requireNivel(3), async (req, res) => {
   try {
     const empresaId = empresaCatalogo(req);
@@ -2132,11 +2137,12 @@ app.post('/api/sitios-preventivos/upload', authMiddleware, requireNivel(3), asyn
     const { dataBase64 } = req.body;
     if (!dataBase64) return res.status(400).json({ error: 'dataBase64 requerido' });
     const sitios = parseSitiosXlsx(Buffer.from(dataBase64, 'base64'));
-    const { count } = await sitiosDb.replaceAll(empresaId, sitios);
+    const { count } = await sitiosDb.replaceAll(empresaId, moduloCatalogo(req), sitios);
     res.json({ ok: true, count });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 // Alta individual de un sitio. 409 si ya existe uno con la misma información.
+// Nivel 3 (admin) O el propio flujo de generación (ver /api/sitios-auto).
 app.post('/api/sitios-preventivos', authMiddleware, requireNivel(3), async (req, res) => {
   try {
     const empresaId = empresaCatalogo(req);
@@ -2144,10 +2150,24 @@ app.post('/api/sitios-preventivos', authMiddleware, requireNivel(3), async (req,
     const b = req.body || {};
     const nombre = (b.nombre || '').toString().trim();
     if (!nombre) return res.status(400).json({ error: 'El nombre del sitio es obligatorio' });
-    const r = await sitiosDb.add(empresaId, b);
+    const r = await sitiosDb.add(empresaId, moduloCatalogo(req), b);
     if (r.duplicado) return res.status(409).json({ error: 'Ya existe un sitio con la misma información', existente: r.existente });
     res.json({ ok: true, sitio: r.sitio, count: r.count });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Alta silenciosa al generar un informe: cualquier usuario con acceso al
+// módulo puede registrar el sitio que acaba de usar (upsert idempotente).
+// No es admin: es parte del flujo normal de generación. Si ya existe, no hace nada.
+app.post('/api/sitios-auto', authMiddleware, async (req, res) => {
+  try {
+    const empresaId = empresaCatalogo(req);
+    const b = req.body || {};
+    const nombre = (b.nombre || '').toString().trim();
+    if (!empresaId || !nombre) return res.json({ ok: true, skipped: true });
+    const r = await sitiosDb.add(empresaId, moduloCatalogo(req), b);
+    res.json({ ok: true, duplicado: !!r.duplicado });
+  } catch (e) { res.json({ ok: false, error: e.message }); } // nunca rompe la generación
 });
 
 // Carga masiva: AÑADE (no reemplaza). Inserta los no repetidos y devuelve
@@ -2159,7 +2179,7 @@ app.post('/api/sitios-preventivos/importar', authMiddleware, requireNivel(3), as
     const { dataBase64 } = req.body || {};
     if (!dataBase64) return res.status(400).json({ error: 'dataBase64 requerido' });
     const nuevos = parseSitiosXlsx(Buffer.from(dataBase64, 'base64'));
-    const r = await sitiosDb.bulkImport(empresaId, nuevos);
+    const r = await sitiosDb.bulkImport(empresaId, moduloCatalogo(req), nuevos);
     res.json({ ok: true, ...r });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -2171,7 +2191,7 @@ app.post('/api/sitios-preventivos/resolver', authMiddleware, requireNivel(3), as
     if (!empresaId) return res.status(400).json({ error: 'empresaId requerido' });
     const { decisiones } = req.body || {};
     if (!Array.isArray(decisiones)) return res.status(400).json({ error: 'decisiones requerido' });
-    const r = await sitiosDb.resolve(empresaId, decisiones);
+    const r = await sitiosDb.resolve(empresaId, moduloCatalogo(req), decisiones);
     res.json({ ok: true, ...r });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

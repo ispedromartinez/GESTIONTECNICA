@@ -1,10 +1,12 @@
-// ── Catálogo de sitios de Preventivo, aislado por empresa ──────────
-// Supabase presente  → tabla `sitios_catalogo` (una fila por sitio, scope
-//                      por empresa_id, clave natural `clave`).
-// Supabase ausente   → cae al xlsx compartido de dev (mono-empresa, solo
-//                      para desarrollo local; el aislamiento real corre en
-//                      Supabase/producción).
+// ── Catálogo de sitios, aislado por empresa Y por módulo ───────────
+// Cada módulo (tigo/wom/preventivo) tiene su propia lista de sitios por
+// empresa. Supabase presente → tabla `sitios_catalogo` (clave natural
+// empresa_id + modulo + clave). Supabase ausente → xlsx compartido de dev
+// (solo preventivo, mono-empresa; el aislamiento real corre en Supabase).
 const { supabase } = require('./supabase');
+
+const MODULOS = ['tigo', 'wom', 'preventivo'];
+const normModulo = m => (MODULOS.includes(m) ? m : 'preventivo');
 
 // Clave de duplicado: mismo nombre + dirección + ciudad, normalizados.
 const claveSitio = s => ['nombre', 'direccion', 'ciudad']
@@ -15,8 +17,9 @@ const fromRow = r => ({
   nombre: r.nombre || '', direccion: r.direccion || '', ciudad: r.ciudad || '',
   criticidad: r.criticidad || '', categoria: r.categoria || '', codigo: r.codigo || ''
 });
-const toRow = (empresaId, s) => ({
+const toRow = (empresaId, modulo, s) => ({
   empresa_id: empresaId,
+  modulo: normModulo(modulo),
   clave: claveSitio(s),
   nombre: (s.nombre || '').toString().trim(),
   direccion: (s.direccion || '').toString().trim(),
@@ -26,22 +29,20 @@ const toRow = (empresaId, s) => ({
   codigo: (s.codigo || '').toString().trim()
 });
 
-// ── Fallback local (dev, mono-empresa): usa las funciones del server ──
-// Se inyectan desde server.js para no duplicar la lógica del xlsx.
+// Fallback local (dev, sin Supabase): inyectado desde server.js (xlsx).
 let localImpl = null;
 function setLocalImpl(impl) { localImpl = impl; }
 
-async function list(empresaId) {
+async function list(empresaId, modulo) {
   if (!supabase) return localImpl ? localImpl.load() : [];
   const { data, error } = await supabase.from('sitios_catalogo')
-    .select('*').eq('empresa_id', empresaId).order('nombre');
+    .select('*').eq('empresa_id', empresaId).eq('modulo', normModulo(modulo)).order('nombre');
   if (error) { console.error('sitios.list:', error.message); return []; }
   return (data || []).map(fromRow);
 }
 
-// Alta individual. Devuelve { duplicado } si ya existe la misma clave.
-async function add(empresaId, sitio) {
-  const row = toRow(empresaId, sitio);
+async function add(empresaId, modulo, sitio) {
+  const row = toRow(empresaId, modulo, sitio);
   if (!supabase) {
     const arr = localImpl.load();
     if (arr.some(s => claveSitio(s) === row.clave)) return { duplicado: true, existente: arr.find(s => claveSitio(s) === row.clave) };
@@ -49,17 +50,16 @@ async function add(empresaId, sitio) {
     return { sitio: fromRow(row), count: arr.length };
   }
   const { data: ya } = await supabase.from('sitios_catalogo')
-    .select('*').eq('empresa_id', empresaId).eq('clave', row.clave).maybeSingle();
+    .select('*').eq('empresa_id', empresaId).eq('modulo', row.modulo).eq('clave', row.clave).maybeSingle();
   if (ya) return { duplicado: true, existente: fromRow(ya) };
   const { error } = await supabase.from('sitios_catalogo').insert(row);
   if (error) throw new Error(error.message);
-  return { sitio: fromRow(row), count: await count(empresaId) };
+  return { sitio: fromRow(row), count: await count(empresaId, modulo) };
 }
 
-// Carga masiva: añade los no repetidos, devuelve duplicados para resolver.
-async function bulkImport(empresaId, sitios) {
-  const rows = sitios.map(s => toRow(empresaId, s)).filter(r => r.nombre);
-  const existentes = await list(empresaId);
+async function bulkImport(empresaId, modulo, sitios) {
+  const rows = sitios.map(s => toRow(empresaId, modulo, s)).filter(r => r.nombre);
+  const existentes = await list(empresaId, modulo);
   const vistos = new Map(existentes.map(s => [claveSitio(s), s]));
   const agregar = [], duplicados = [];
   for (const r of rows) {
@@ -70,45 +70,42 @@ async function bulkImport(empresaId, sitios) {
     if (!supabase) { const arr = localImpl.load(); agregar.forEach(r => arr.push(fromRow(r))); localImpl.save(arr); }
     else { const { error } = await supabase.from('sitios_catalogo').insert(agregar); if (error) throw new Error(error.message); }
   }
-  return { total: rows.length, agregados: agregar.length, duplicados, count: await count(empresaId) };
+  return { total: rows.length, agregados: agregar.length, duplicados, count: await count(empresaId, modulo) };
 }
 
-// Resolver duplicados: reemplaza el existente por la versión nueva elegida.
-async function resolve(empresaId, decisiones) {
+async function resolve(empresaId, modulo, decisiones) {
   let reemplazados = 0;
   for (const d of decisiones) {
     if (d.accion !== 'reemplazar' || !d.nuevo) continue;
-    const row = toRow(empresaId, d.nuevo);
+    const row = toRow(empresaId, modulo, d.nuevo);
     if (!supabase) {
       const arr = localImpl.load();
       const idx = arr.findIndex(s => claveSitio(s) === row.clave);
       if (idx >= 0) { arr[idx] = fromRow(row); localImpl.save(arr); reemplazados++; }
     } else {
       const { error } = await supabase.from('sitios_catalogo')
-        .update(row).eq('empresa_id', empresaId).eq('clave', row.clave);
+        .update(row).eq('empresa_id', empresaId).eq('modulo', row.modulo).eq('clave', row.clave);
       if (!error) reemplazados++;
     }
   }
-  return { reemplazados, count: await count(empresaId) };
+  return { reemplazados, count: await count(empresaId, modulo) };
 }
 
-// Reemplaza TODO el catálogo de la empresa por el set dado (upload de xlsx).
-async function replaceAll(empresaId, sitios) {
-  const rows = sitios.map(s => toRow(empresaId, s)).filter(r => r.nombre);
-  // Dedup dentro del propio archivo por clave.
+async function replaceAll(empresaId, modulo, sitios) {
+  const rows = sitios.map(s => toRow(empresaId, modulo, s)).filter(r => r.nombre);
   const map = new Map(rows.map(r => [r.clave, r]));
   const unicos = [...map.values()];
   if (!supabase) { localImpl.save(unicos.map(fromRow)); return { count: unicos.length }; }
-  await supabase.from('sitios_catalogo').delete().eq('empresa_id', empresaId);
+  await supabase.from('sitios_catalogo').delete().eq('empresa_id', empresaId).eq('modulo', normModulo(modulo));
   if (unicos.length) { const { error } = await supabase.from('sitios_catalogo').insert(unicos); if (error) throw new Error(error.message); }
   return { count: unicos.length };
 }
 
-async function count(empresaId) {
+async function count(empresaId, modulo) {
   if (!supabase) return localImpl ? localImpl.load().length : 0;
   const { count: c } = await supabase.from('sitios_catalogo')
-    .select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId);
+    .select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId).eq('modulo', normModulo(modulo));
   return c || 0;
 }
 
-module.exports = { list, add, bulkImport, resolve, replaceAll, count, claveSitio, setLocalImpl };
+module.exports = { list, add, bulkImport, resolve, replaceAll, count, claveSitio, setLocalImpl, MODULOS, normModulo };
