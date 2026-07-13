@@ -1691,11 +1691,20 @@ async function buildDocxWom(d) {
   // ── Bordes ───────────────────────────────────────────────
   const thin    = () => ({ style: BorderStyle.SINGLE, size: 4, color: 'auto' });
   const noneB   = { style: BorderStyle.NONE, size: 0, color: 'auto' };
-  // Sin borde izquierdo: evita la línea vertical en el margen izquierdo
-  const brd     = { top:thin(), bottom:thin(), left:noneB, right:thin() };
-  const tblBrd  = { top:thin(), bottom:thin(), left:noneB, right:thin(), insideH:thin(), insideV:thin() };
-  const noBrd   = { top:noneB, bottom:noneB, left:noneB, right:noneB };
-  const noTblBrd= { top:noneB, bottom:noneB, left:noneB, right:noneB, insideH:noneB, insideV:noneB };
+  // Blanco en vez de "none": Word/docx-preview muestran una linea guia (gridline)
+  // para celdas sin ningun borde definido. Con un borde blanco real, nunca se ve.
+  const whiteB  = () => ({ style: BorderStyle.SINGLE, size: 4, color: 'FFFFFF' });
+  const brd     = { top:thin(), bottom:thin(), left:thin(), right:thin() };
+  const tblBrd  = { top:thin(), bottom:thin(), left:thin(), right:thin(), insideH:thin(), insideV:thin() };
+  const noBrd   = { top:whiteB(), bottom:whiteB(), left:whiteB(), right:whiteB() };
+  const noTblBrd= { top:whiteB(), bottom:whiteB(), left:whiteB(), right:whiteB(), insideH:whiteB(), insideV:whiteB() };
+  // La mini-tabla OT va anidada dentro de una celda del header con otra celda
+  // (logos) más alta a su lado: docx-preview estira el borde izquierdo de la
+  // tabla anidada hasta el alto de la fila completa. Sin borde izquierdo aquí
+  // evita esa línea larga; el resto de tablas del cuerpo no están anidadas y sí
+  // llevan los 4 bordes.
+  const otBrd    = { top:thin(), bottom:thin(), left:noneB, right:thin() };
+  const otTblBrdX= { top:thin(), bottom:thin(), left:noneB, right:thin(), insideH:thin(), insideV:thin() };
 
   // ── Helpers ──────────────────────────────────────────────
   const para = (children, align='left', before=0) => new Paragraph({
@@ -1710,20 +1719,20 @@ async function buildDocxWom(d) {
 
   // Celda OT (texto centrado, sin relleno)
   const otCell = (text, w, opts={}) => new TableCell({
-    width:{size:w,type:WidthType.DXA}, borders:brd,
+    width:{size:w,type:WidthType.DXA}, borders:otBrd,
     verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:14,right:14},
     children:[para(run(text,opts),'center',110)]
   });
   // Celda OT azul (ORDEN DE TRABAJO / Fecha OT)
   const otBlu = (text, w, span, sz) => new TableCell({
     width:{size:w,type:WidthType.DXA}, ...(span>1?{columnSpan:span}:{}),
-    borders:brd, shading:{fill:BLU,type:ShadingType.CLEAR},
+    borders:otBrd, shading:{fill:BLU,type:ShadingType.CLEAR},
     verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:60,right:60},
     children:[para(run(text,{bold:true,sz,c:WHT}),'center',sz===30?284:110)]
   });
   // Celda código interno verde centrada
   const otCod = (codVal, w) => new TableCell({
-    width:{size:w,type:WidthType.DXA}, borders:brd,
+    width:{size:w,type:WidthType.DXA}, borders:otBrd,
     verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:14,right:14},
     children:[para(codVal
       ? run(`INC-${codVal}`,{bold:true,c:GRN,sz:18})
@@ -1731,24 +1740,26 @@ async function buildDocxWom(d) {
     'center',110)]
   });
 
-  // Mini-tabla ORDEN DE TRABAJO — usa tblBrd (ya sin borde izquierdo)
-  const otTblBrd = tblBrd;
+  // Mini-tabla ORDEN DE TRABAJO — anidada, sin borde izquierdo (ver otBrd)
+  const otTblBrd = otTblBrdX;
   const otTable = new Table({
     width:{size:HDR_R,type:WidthType.DXA}, columnWidths:[OT_COL,OT_COL], borders:otTblBrd,
     indent:{size:0,type:WidthType.DXA},
     rows:[
-      new TableRow({height:{value:558},children:[otBlu('ORDEN DE TRABAJO',OT_COL*2,2,30)]}),
-      new TableRow({height:{value:404},children:[
+      // Alturas medidas en pixeles exactos del PDF de referencia (informe 1)
+      // a 96dpi (1px = 15 twips): 45,31,32,30,30,29 px de alto por fila.
+      new TableRow({height:{value:675},children:[otBlu('ORDEN DE TRABAJO',OT_COL*2,2,30)]}),
+      new TableRow({height:{value:465},children:[
         otCell('Código Interno',OT_COL), otCod(v(d.codInterno),OT_COL)
       ]}),
-      new TableRow({height:{value:404},children:[
+      new TableRow({height:{value:480},children:[
         otCell('Ticket',OT_COL), otCell(v(d.ticket),OT_COL,{bold:true})
       ]}),
-      new TableRow({height:{value:404},children:[otBlu('Fecha OT',OT_COL*2,2,18)]}),
-      new TableRow({height:{value:393},children:[
+      new TableRow({height:{value:450},children:[otBlu('Fecha OT',OT_COL*2,2,18)]}),
+      new TableRow({height:{value:450},children:[
         otCell('Inicio:',OT_COL), otCell(`${v(d.fechaInicio)}  ${v(d.horaInicio)}`,OT_COL)
       ]}),
-      new TableRow({height:{value:371},children:[
+      new TableRow({height:{value:435},children:[
         otCell('Término:',OT_COL), otCell(`${v(d.fechaTermino)}  ${v(d.horaTermino)}`,OT_COL)
       ]})
     ]
@@ -1854,9 +1865,9 @@ async function buildDocxWom(d) {
 
   // ── TABLE 5: Separador vacío ──────────────────────────────
   const emptyTable = new Table({
-    width:{size:FULL_W,type:WidthType.DXA}, columnWidths:[FULL_W], borders:tblBrd,
+    width:{size:FULL_W,type:WidthType.DXA}, columnWidths:[FULL_W], borders:noTblBrd,
     rows:[new TableRow({height:{value:150},children:[
-      new TableCell({width:{size:FULL_W,type:WidthType.DXA},borders:brd,children:[para(run(''))]})
+      new TableCell({width:{size:FULL_W,type:WidthType.DXA},borders:noBrd,children:[para(run(''))]})
     ]})]
   });
 
@@ -1951,7 +1962,7 @@ async function buildDocxWom(d) {
       properties:{
         page:{
           margin:{top:720,right:708,bottom:280,left:566},
-          size:{width:11910,height:16840}
+          size:{width:12240,height:15840}
         }
       },
       children:[
