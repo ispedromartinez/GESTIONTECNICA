@@ -1621,7 +1621,10 @@ function renderHist(records){
         <div class="inf-actions">
           <button class="act-btn act-dl" onclick="downloadRecord('${r.id}')">⬇ Descargar</button>
           <button class="act-btn act-dl" onclick="verPdf('${r.id}')">👁 Ver PDF</button>
+          <!-- Botón Enviar oculto temporalmente hasta reimplementar el envío por correo.
+               El modal (#emailModal) y sendEmail() quedan intactos para reactivarlo.
           <button class="act-btn act-em" onclick="openEmailModal('${r.id}','${escArg(r.nombreSitio)}','${escArg(r.codInforme)}')">✉️ Enviar</button>
+          -->
           <button class="act-btn act-del" onclick="openConfirm('${r.id}','${escArg(r.nombreSitio)}')">🗑️ Borrar</button>
         </div>
       </div>
