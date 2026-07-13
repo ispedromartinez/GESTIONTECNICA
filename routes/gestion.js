@@ -4,10 +4,20 @@ const { requireRol } = require('../middleware/roles');
 const { canAccessTenant } = require('../middleware/tenant');
 const { validarRut, normalizarRut } = require('../utils/rut');
 const db = require('../db/gestion');
+const audit = require('../db/auditoria');
 const { MODULOS_FIJOS } = require('../middleware/modulos');
 
 const router = express.Router();
 router.use(authMiddleware); // todas las rutas requieren sesión
+
+// GET /api/gestion/auditoria — log de acciones. superadmin: todo;
+// admin_empresa: solo su empresa. supervisor/tecnico: sin acceso.
+router.get('/auditoria', requireRol('superadmin', 'admin_empresa'), async (req, res) => {
+  try {
+    const empresa_id = req.user.rol === 'superadmin' ? (req.query.empresa_id || null) : req.user.empresa_id;
+    res.json(await audit.listar({ empresa_id, limit: 300 }));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 const ROLES_ADMIN = ['superadmin', 'admin_empresa'];
 const esAdmin = rol => ROLES_ADMIN.includes(rol);
@@ -282,6 +292,7 @@ router.put('/proyectos/:id', cargarProyecto, requireRol(...ROLES_ADMIN), async (
 router.delete('/proyectos/:id', cargarProyecto, requireRol(...ROLES_ADMIN), async (req, res) => {
   try {
     await db.proyectoDelete(req.proyecto.id);
+    audit.registrar(req, 'borrar', 'proyecto', req.proyecto.id, { nombre: req.proyecto.nombre });
     res.json({ ok: true });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
@@ -361,12 +372,14 @@ router.post('/supervisores/:id/tecnicos', requireRol(...ROLES_ADMIN), async (req
     if (sup.empresa_id !== tec.empresa_id)
       return res.status(400).json({ error: 'Supervisor y técnico de distinta empresa' });
     const vinculo = await db.supervisorTecnicoAdd(sup.empresa_id, supervisorId, tecnico_id);
+    audit.registrar(req, 'vincular', 'supervisor_tecnico', supervisorId, { tecnico_id });
     res.json({ ok: true, vinculo });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 router.delete('/supervisores/:id/tecnicos/:tecnicoId', requireRol(...ROLES_ADMIN), async (req, res) => {
   try {
     await db.supervisorTecnicoRemove(req.params.id, req.params.tecnicoId);
+    audit.registrar(req, 'desvincular', 'supervisor_tecnico', req.params.id, { tecnico_id: req.params.tecnicoId });
     res.json({ ok: true });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });

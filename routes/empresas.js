@@ -6,6 +6,7 @@ const { requireRol } = require('../middleware/roles');
 const { canAccessTenant } = require('../middleware/tenant');
 const { validarRut, normalizarRut } = require('../utils/rut');
 const db = require('../db/gestion');
+const audit = require('../db/auditoria');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -87,6 +88,7 @@ router.post('/empresas', soloSuper, async (req, res) => {
     for (const nombreArea of AREAS_DEFAULT) {
       await db.areaInsert({ empresa_id: empresa.id, nombre: nombreArea }).catch(() => {});
     }
+    audit.registrar(req, 'crear', 'empresa', empresa.id, { nombre: empresa.nombre, rut: empresa.rut_empresa });
     res.json({ ok: true, empresa });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
@@ -183,6 +185,7 @@ router.post('/empresas/:id/modulos', soloSuper, async (req, res) => {
     } else {
       return res.json({ ok: true, template, activo: false }); // nada que desactivar
     }
+    audit.registrar(req, activo ? 'activar_modulo' : 'desactivar_modulo', 'modulo', empresa_id, { template });
     res.json({ ok: true, template, activo, proyecto });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
@@ -239,6 +242,7 @@ router.post('/usuarios', adminEmpresa, async (req, res) => {
     if (area_id)
       await db.usuarioAreaUpsert(usuario.id, area_id, req.user.usuario_id);
 
+    audit.registrar(req, 'crear', 'usuario', usuario.id, { email: usuario.email, rol: usuario.rol });
     res.json({ ok: true, usuario });
   } catch (err) {
     const msg = /unique|duplicate/i.test(err.message) ? 'Ese correo ya está en uso' : err.message;

@@ -6,6 +6,7 @@ const { requireRol } = require('../middleware/roles');
 const { canAccessTenant } = require('../middleware/tenant');
 const { validarRut, normalizarRut } = require('../utils/rut');
 const gestionDB = require('../db/gestion');
+const audit = require('../db/auditoria');
 
 const router = express.Router();
 
@@ -482,6 +483,7 @@ router.delete('/usuarios/:id', authMiddleware, requireRol('superadmin'), async (
     if (id === req.user.usuario_id)
       return res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
     await db.deleteUsuario(id);
+    audit.registrar(req, 'borrar', 'usuario', id);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
