@@ -470,13 +470,31 @@ function cerrarSesion(){
 <div id="toast"></div>
 
 <script>
-// ── RSO sites map ────────────────────────────────────────────
-const RSO = {
+// ── RSO sites map (base fija + catálogo por empresa, módulo wom) ──
+let RSO = {
   'RSO CONCEPCION':   'ANIBAL PINTO 105, CONCEPCION',
   'RSO ANTOFAGASTA':  'FELIX GARCIA 581, ANTOFAGASTA',
   'RSO PUERTO MONTT': 'AV LO CELIS S/N PUERTO MONTT',
   'RSO PUNTA ARENAS': 'AV PDTE EDUARDO FREI MONTALVA 5, PUNTA ARENAS'
 };
+// Carga los sitios del catálogo (módulo wom) y los agrega al <select>,
+// fusionando con los RSO base. Cada sitio nuevo generado queda registrado.
+async function cargarCatalogoSitiosWom(){
+  try{
+    const r=await fetch('/api/sitios-preventivos?modulo=wom',{headers:authH()});
+    if(!r.ok)return;
+    const data=await r.json();
+    const sel=g('instalacion'); if(!sel)return;
+    const existentes=new Set(Array.from(sel.options).map(o=>o.value));
+    (data||[]).forEach(s=>{
+      RSO[s.nombre]=s.direccion||RSO[s.nombre]||'';
+      if(!existentes.has(s.nombre)){
+        const o=document.createElement('option'); o.value=s.nombre; o.textContent=s.nombre;
+        sel.appendChild(o); existentes.add(s.nombre);
+      }
+    });
+  }catch{}
+}
 
 // ── Tab navigation ───────────────────────────────────────────
 // Tab 0=Inicio, 1=OT, 2=Trabajos, 3=Resumen/Fotos, 4=Historial
@@ -572,6 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inp.addEventListener('focus', () => { wrap.style.borderColor='var(--mag)'; wrap.style.boxShadow='0 0 0 3px rgba(123,31,162,.1)'; });
     inp.addEventListener('blur',  () => { wrap.style.borderColor='var(--border)'; wrap.style.boxShadow='none'; });
   }
+  cargarCatalogoSitiosWom();
 });
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -850,6 +869,13 @@ async function generarInforme() {
     URL.revokeObjectURL(url);
 
     toast(`✓ Informe "${name}" generado`, 'ok');
+    // Registra la instalación en el catálogo (módulo wom) para el desplegable.
+    if (payload.instalacion) {
+      try {
+        await fetch('/api/sitios-auto?modulo=wom', { method:'POST', headers:authH({'Content-Type':'application/json'}),
+          body: JSON.stringify({ nombre: payload.instalacion, direccion: payload.direccion }) });
+      } catch {}
+    }
     clearState();
     // Actividad asignada (venía con ?informeId=): ya cumplió su propósito,
     // se vuelve sola a inicio en vez de dejar el formulario abierto.
