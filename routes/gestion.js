@@ -298,22 +298,84 @@ router.get('/proyectos/:id/personal', cargarProyecto, async (req, res) => {
 // ASIGNACIONES  (usuario <-> proyecto)
 // ════════════════════════════════════════════════════════════════
 
-// POST /api/gestion/proyectos/:id/asignaciones — solo admin
-router.post('/proyectos/:id/asignaciones', cargarProyecto, requireRol(...ROLES_ADMIN), async (req, res) => {
+// Candado para el supervisor al asignar/quitar técnicos a un proyecto.
+// Admin pasa siempre. Supervisor solo si: está asignado al proyecto, el
+// target es un técnico a su cargo, y (en alta) el rol se fuerza a 'tecnico'.
+async function puedeAsignarTecnico(req, res, next) {
+  if (esAdmin(req.user.rol)) return next();
+  if (req.user.rol !== 'supervisor')
+    return res.status(403).json({ error: 'Sin permiso para asignar' });
   try {
-    const { usuario_id, rol_en_proyecto } = req.body;
+    const supId = req.user.usuario_id;
+    const tecnicoId = req.body.usuario_id || req.params.usuario_id;
+    if (!(await db.asignacionExists(supId, req.proyecto.id)))
+      return res.status(403).json({ error: 'No estás asignado a este proyecto' });
+    if (!(await db.esTecnicoDe(supId, tecnicoId)))
+      return res.status(403).json({ error: 'Ese técnico no está a tu cargo' });
+    req.forzarRolTecnico = true; // el supervisor solo crea técnicos
+    next();
+  } catch (err) { res.status(500).json({ error: err.message }); }
+}
+
+// POST /api/gestion/proyectos/:id/asignaciones — admin o supervisor (con candados)
+router.post('/proyectos/:id/asignaciones', cargarProyecto, puedeAsignarTecnico, async (req, res) => {
+  try {
+    const { usuario_id } = req.body;
+    let { rol_en_proyecto } = req.body;
     if (!usuario_id) return res.status(400).json({ error: 'usuario_id requerido' });
+    if (req.forzarRolTecnico) rol_en_proyecto = 'tecnico';
     const asignacion = await db.asignacionUpsert(usuario_id, req.proyecto.id, rol_en_proyecto);
     res.json({ ok: true, asignacion });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
-// DELETE /api/gestion/proyectos/:id/asignaciones/:usuario_id — solo admin
-router.delete('/proyectos/:id/asignaciones/:usuario_id', cargarProyecto, requireRol(...ROLES_ADMIN), async (req, res) => {
+// DELETE /api/gestion/proyectos/:id/asignaciones/:usuario_id — admin o supervisor (con candados)
+router.delete('/proyectos/:id/asignaciones/:usuario_id', cargarProyecto, puedeAsignarTecnico, async (req, res) => {
   try {
     await db.asignacionRemove(req.params.usuario_id, req.proyecto.id);
     res.json({ ok: true });
   } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// ── SUPERVISOR ↔ TÉCNICO ──────────────────────────────────────
+// Vínculos supervisor→técnico. Crear/borrar solo admin. El técnico puede
+// estar a cargo de varios supervisores.
+router.get('/supervisores/:id/tecnicos', requireRol(...ROLES_ADMIN), async (req, res) => {
+  try { res.json(await db.tecnicosDeSupervisor(req.params.id)); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.post('/supervisores/:id/tecnicos', requireRol(...ROLES_ADMIN), async (req, res) => {
+  try {
+    const supervisorId = req.params.id;
+    const { tecnico_id } = req.body;
+    if (!tecnico_id) return res.status(400).json({ error: 'tecnico_id requerido' });
+    // Ambos usuarios deben ser de la empresa del admin (superadmin: cualquiera).
+    const sup = await db.usuarioById(supervisorId);
+    const tec = await db.usuarioById(tecnico_id);
+    if (!sup || sup.rol !== 'supervisor') return res.status(400).json({ error: 'El usuario no es supervisor' });
+    if (!tec || tec.rol !== 'tecnico') return res.status(400).json({ error: 'El usuario no es técnico' });
+    if (req.user.rol !== 'superadmin') {
+      if (sup.empresa_id !== req.user.empresa_id || tec.empresa_id !== req.user.empresa_id)
+        return res.status(403).json({ error: 'Usuarios fuera de tu empresa' });
+    }
+    if (sup.empresa_id !== tec.empresa_id)
+      return res.status(400).json({ error: 'Supervisor y técnico de distinta empresa' });
+    const vinculo = await db.supervisorTecnicoAdd(sup.empresa_id, supervisorId, tecnico_id);
+    res.json({ ok: true, vinculo });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+router.delete('/supervisores/:id/tecnicos/:tecnicoId', requireRol(...ROLES_ADMIN), async (req, res) => {
+  try {
+    await db.supervisorTecnicoRemove(req.params.id, req.params.tecnicoId);
+    res.json({ ok: true });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+// GET /api/gestion/mis-tecnicos — técnicos a cargo del supervisor logueado.
+router.get('/mis-tecnicos', async (req, res) => {
+  try {
+    if (req.user.rol !== 'supervisor') return res.json([]);
+    res.json(await db.tecnicosDeSupervisor(req.user.usuario_id));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ════════════════════════════════════════════════════════════════

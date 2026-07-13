@@ -302,6 +302,7 @@ const aH = (x={}) => ({ Authorization:'Bearer '+T(), ...x });
 const jH = () => aH({ 'Content-Type':'application/json' });
 const $ = id => document.getElementById(id);
 const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const escArg = s => esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
 const initials = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
 let ME = null;
@@ -418,10 +419,11 @@ async function verEmpresa(id){
     api('/auth/areas?empresa_id='+encodeURIComponent(id)).catch(()=>[])
   ]);
   $('tbTitle').textContent = emp.nombre; $('tbSub').textContent = 'Detalle de empresa';
+  const puedeVincular = ['superadmin','admin_empresa'].includes(ME.rol);
   const userRows = usuarios.length ? `<table><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th></th></tr></thead><tbody>
     ${usuarios.map(u=>`<tr><td><b>${esc(u.nombre)}</b></td><td class="muted">${esc(u.email)}</td>
       <td><span class="pill pill-${u.rol}">${ROL_LABEL[u.rol]||u.rol}</span></td>
-      <td style="text-align:right"><button class="btn btn-sm btn-ghost" onclick="reenviarInvitacion('${u.id}')">Reenviar invitación</button></td></tr>`).join('')}
+      <td style="text-align:right">${u.rol==='supervisor'&&puedeVincular?`<button class="btn btn-sm btn-blue" onclick="modalTecnicosACargo('${u.id}','${escArg(u.nombre)}','${emp.id}')">Técnicos a cargo</button> `:''}<button class="btn btn-sm btn-ghost" onclick="reenviarInvitacion('${u.id}')">Reenviar invitación</button></td></tr>`).join('')}
     </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Sin usuarios.</div>`;
   const puedeEditarProy = ['superadmin','admin_empresa'].includes(ME.rol);
   const projRows = proyectos.length ? `<table><thead><tr><th>Proyecto</th><th>Estado</th><th>Inicio</th><th>Creado</th>${puedeEditarProy?'<th></th>':''}</tr></thead><tbody>
@@ -470,6 +472,37 @@ async function verEmpresa(id){
         ${['superadmin','admin_empresa'].includes(ME.rol)?`<button class="btn btn-blue btn-sm" onclick="location.href='/nuevo-proyecto?empresa=${emp.id}'">+ Nuevo proyecto</button>`:''}
         </div></div>
       ${projRows}</div>`;
+}
+
+// Gestiona los técnicos a cargo de un supervisor (solo admin).
+async function modalTecnicosACargo(supervisorId, supervisorNombre, empresaId){
+  openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+    <div><div class="modal-title">Técnicos a cargo</div><div class="modal-sub">${esc(supervisorNombre)}</div></div></div>
+    <div id="tecCargoBody" style="max-height:50vh;overflow:auto">Cargando…</div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button></div>`);
+  try {
+    const [usuarios, aCargo] = await Promise.all([
+      api('/api/empresas/'+empresaId+'/usuarios'),
+      api('/api/gestion/supervisores/'+supervisorId+'/tecnicos')
+    ]);
+    const tecnicos = usuarios.filter(u=>u.rol==='tecnico');
+    const idsCargo = new Set(aCargo.map(t=>t.id));
+    if (!tecnicos.length) { $('tecCargoBody').innerHTML = '<div class="empty-state">La empresa no tiene técnicos.</div>'; return; }
+    $('tecCargoBody').innerHTML = tecnicos.map(t=>{
+      const on = idsCargo.has(t.id);
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--border)">
+        <div><b>${esc(t.nombre)}</b><div class="muted" style="font-size:12px">${esc(t.email)}</div></div>
+        <button class="btn btn-sm ${on?'btn-green':'btn-ghost'}" onclick="toggleTecnicoACargo('${supervisorId}','${t.id}',${!on},'${escArg(supervisorNombre)}','${empresaId}')">${on?'✓ A cargo':'+ Agregar'}</button>
+      </div>`;
+    }).join('');
+  } catch(e){ $('tecCargoBody').innerHTML = '<div class="empty-state">'+esc(e.message)+'</div>'; }
+}
+async function toggleTecnicoACargo(supervisorId, tecnicoId, agregar, supervisorNombre, empresaId){
+  try {
+    if (agregar) await api('/api/gestion/supervisores/'+supervisorId+'/tecnicos', { method:'POST', body: JSON.stringify({ tecnico_id: tecnicoId }) });
+    else await api('/api/gestion/supervisores/'+supervisorId+'/tecnicos/'+tecnicoId, { method:'DELETE' });
+    modalTecnicosACargo(supervisorId, supervisorNombre, empresaId); // refresca
+  } catch(e){ toast(e.message||'Error','err'); }
 }
 
 // Activa/desactiva un módulo fijo (Tigo/WOM/Preventivo) para la empresa.
@@ -719,7 +752,7 @@ VIEWS.tecnicos = async () => {
   const proyectos = await api('/api/gestion/mis-proyectos');
   $('content').innerHTML = `<div class="section">
     <div class="sec-head"><div><div class="sec-name">Técnicos de mis proyectos</div><div class="sec-sub">Elige un proyecto</div></div>
-      <div class="sec-tools"><button class="btn btn-ghost" onclick="modalImportUsuarios()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Carga masiva</button><select class="filter" id="tProy" onchange="loadTecnicos()">
+      <div class="sec-tools">${ME.rol==='supervisor'?`<button class="btn btn-blue" onclick="modalAsignarMisTecnicos()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>Asignar mis técnicos</button>`:''}<button class="btn btn-ghost" onclick="modalImportUsuarios()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Carga masiva</button><select class="filter" id="tProy" onchange="loadTecnicos()">
         <option value="">— Selecciona proyecto —</option>
         ${proyectos.map(p=>`<option value="${p.proyecto_id||p.id}">${esc(p.proyecto_nombre||p.nombre)}</option>`).join('')}
       </select></div></div>
@@ -780,6 +813,45 @@ async function loadTecnicos(){
 function toggleTecInformes(id){
   const row = document.getElementById('det-'+id);
   if(row) row.style.display = row.style.display==='none' ? 'table-row' : 'none';
+}
+
+// Supervisor: asigna sus técnicos a cargo a uno de SUS módulos/proyectos.
+async function modalAsignarMisTecnicos(){
+  const proyectos = await api('/api/gestion/mis-proyectos');
+  const opts = proyectos.map(p=>`<option value="${esc(p.proyecto_id||p.id)}">${esc(p.proyecto_nombre||p.nombre)}</option>`).join('');
+  openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
+    <div><div class="modal-title">Asignar mis técnicos</div><div class="modal-sub">Da acceso a tus técnicos en tus proyectos</div></div></div>
+    <div class="field"><label>Proyecto</label><select id="amtProy" onchange="amtLoad()"><option value="">— Selecciona —</option>${opts}</select></div>
+    <div id="amtBody" style="max-height:44vh;overflow:auto;margin-top:8px"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button></div>`);
+}
+async function amtLoad(){
+  const pid = $('amtProy').value;
+  const body = $('amtBody');
+  if(!pid){ body.innerHTML=''; return; }
+  body.innerHTML = 'Cargando…';
+  try {
+    const [misTec, personal] = await Promise.all([
+      api('/api/gestion/mis-tecnicos'),
+      api('/api/gestion/proyectos/'+pid+'/personal').catch(()=>[])
+    ]);
+    const asignados = new Set((personal||[]).map(p=>p.id));
+    if(!misTec.length){ body.innerHTML='<div class="empty-state">No tienes técnicos a cargo. Pídele al administrador que te asigne.</div>'; return; }
+    body.innerHTML = misTec.map(t=>{
+      const on = asignados.has(t.id);
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--border)">
+        <div><b>${esc(t.nombre)}</b><div class="muted" style="font-size:12px">${esc(t.email)}</div></div>
+        <button class="btn btn-sm ${on?'btn-green':'btn-ghost'}" onclick="amtToggle('${pid}','${t.id}',${!on})">${on?'✓ Con acceso':'+ Dar acceso'}</button>
+      </div>`;
+    }).join('');
+  } catch(e){ body.innerHTML='<div class="empty-state">'+esc(e.message)+'</div>'; }
+}
+async function amtToggle(pid, tecnicoId, dar){
+  try {
+    if(dar) await api('/api/gestion/proyectos/'+pid+'/asignaciones', { method:'POST', body: JSON.stringify({ usuario_id: tecnicoId }) });
+    else await api('/api/gestion/proyectos/'+pid+'/asignaciones/'+tecnicoId, { method:'DELETE' });
+    amtLoad();
+  } catch(e){ toast(e.message||'Error','err'); }
 }
 
 // ── Mis informes (técnico) ──

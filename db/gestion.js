@@ -395,6 +395,53 @@ const db = {
     return local.usuario_areas.upsert(usuario_id, area_id, asignado_por);
   },
 
+  // ── SUPERVISOR ↔ TÉCNICO (muchos-a-muchos) ──────────────────
+  // Un técnico puede estar a cargo de varios supervisores. Solo el admin
+  // crea/borra estos vínculos.
+  async supervisorTecnicoAdd(empresa_id, supervisor_id, tecnico_id) {
+    if (supa) {
+      const { data, error } = await supa.from('supervisor_tecnico')
+        .upsert({ empresa_id, supervisor_id, tecnico_id },
+                { onConflict: 'supervisor_id,tecnico_id' })
+        .select().single();
+      if (error) throw new Error(error.message);
+      return data;
+    }
+    return local.supervisor_tecnico.add(empresa_id, supervisor_id, tecnico_id);
+  },
+
+  async supervisorTecnicoRemove(supervisor_id, tecnico_id) {
+    if (supa) {
+      const { error } = await supa.from('supervisor_tecnico').delete()
+        .eq('supervisor_id', supervisor_id).eq('tecnico_id', tecnico_id);
+      if (error) throw new Error(error.message);
+      return;
+    }
+    local.supervisor_tecnico.remove(supervisor_id, tecnico_id);
+  },
+
+  // Técnicos a cargo de un supervisor (usuarios activos, mismo tenant).
+  async tecnicosDeSupervisor(supervisor_id) {
+    if (supa) {
+      const { data } = await supa.from('supervisor_tecnico')
+        .select('tecnico_id, usuarios!supervisor_tecnico_tecnico_id_fkey(id,nombre,email,rol,activo)')
+        .eq('supervisor_id', supervisor_id);
+      return (data || [])
+        .filter(r => r.usuarios && r.usuarios.activo)
+        .map(r => ({ id: r.usuarios.id, nombre: r.usuarios.nombre, email: r.usuarios.email, rol: r.usuarios.rol }));
+    }
+    return local.supervisor_tecnico.tecnicosDe(supervisor_id);
+  },
+
+  async esTecnicoDe(supervisor_id, tecnico_id) {
+    if (supa) {
+      const { data } = await supa.from('supervisor_tecnico').select('id')
+        .eq('supervisor_id', supervisor_id).eq('tecnico_id', tecnico_id).maybeSingle();
+      return !!data;
+    }
+    return local.supervisor_tecnico.exists(supervisor_id, tecnico_id);
+  },
+
   get usandoSupabase() { return !!supa; }
 };
 

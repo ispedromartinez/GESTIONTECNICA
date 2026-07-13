@@ -98,11 +98,24 @@ db.exec(`
     fecha_creacion  TEXT DEFAULT (datetime('now'))
   );
 
+  -- Supervisor <-> técnico (muchos-a-muchos): un técnico puede estar a cargo
+  -- de varios supervisores. Solo el admin crea estos vínculos.
+  CREATE TABLE IF NOT EXISTS supervisor_tecnico (
+    id            TEXT PRIMARY KEY,
+    empresa_id    TEXT REFERENCES empresas(id) ON DELETE CASCADE,
+    supervisor_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    tecnico_id    TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    creado_en     TEXT DEFAULT (datetime('now')),
+    UNIQUE(supervisor_id, tecnico_id)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_proyectos_empresa   ON proyectos(empresa_id);
   CREATE INDEX IF NOT EXISTS idx_asign_usuario       ON asignaciones(usuario_id);
   CREATE INDEX IF NOT EXISTS idx_asign_proyecto      ON asignaciones(proyecto_id);
   CREATE INDEX IF NOT EXISTS idx_informes_proyecto   ON informes(proyecto_id);
   CREATE INDEX IF NOT EXISTS idx_informes_tecnico    ON informes(tecnico_id);
+  CREATE INDEX IF NOT EXISTS idx_suptec_supervisor   ON supervisor_tecnico(supervisor_id);
+  CREATE INDEX IF NOT EXISTS idx_suptec_tecnico      ON supervisor_tecnico(tecnico_id);
 `);
 
 // ── Migraciones idempotentes (ADD COLUMN lanza error si ya existe) ──
@@ -413,6 +426,34 @@ const local = {
     remove(usuario_id, proyecto_id) {
       db.prepare('DELETE FROM asignaciones WHERE usuario_id = ? AND proyecto_id = ?')
         .run(usuario_id, proyecto_id);
+    }
+  },
+
+  // Supervisor <-> técnico (muchos-a-muchos)
+  supervisor_tecnico: {
+    add(empresa_id, supervisor_id, tecnico_id) {
+      const ya = db.prepare('SELECT id FROM supervisor_tecnico WHERE supervisor_id = ? AND tecnico_id = ?')
+        .get(supervisor_id, tecnico_id);
+      if (ya) return db.prepare('SELECT * FROM supervisor_tecnico WHERE id = ?').get(ya.id);
+      const id = uuid();
+      db.prepare('INSERT INTO supervisor_tecnico (id, empresa_id, supervisor_id, tecnico_id) VALUES (?,?,?,?)')
+        .run(id, empresa_id || null, supervisor_id, tecnico_id);
+      return db.prepare('SELECT * FROM supervisor_tecnico WHERE id = ?').get(id);
+    },
+    remove(supervisor_id, tecnico_id) {
+      db.prepare('DELETE FROM supervisor_tecnico WHERE supervisor_id = ? AND tecnico_id = ?')
+        .run(supervisor_id, tecnico_id);
+    },
+    tecnicosDe(supervisor_id) {
+      return db.prepare(`
+        SELECT u.id, u.nombre, u.email, u.rol
+        FROM supervisor_tecnico st JOIN usuarios u ON u.id = st.tecnico_id
+        WHERE st.supervisor_id = ? AND u.activo = 1
+      `).all(supervisor_id);
+    },
+    exists(supervisor_id, tecnico_id) {
+      return !!db.prepare('SELECT 1 FROM supervisor_tecnico WHERE supervisor_id = ? AND tecnico_id = ?')
+        .get(supervisor_id, tecnico_id);
     }
   },
 
