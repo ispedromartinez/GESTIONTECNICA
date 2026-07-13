@@ -164,7 +164,12 @@ tr:hover td{background:var(--p-subtle);}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);}
 .modal-bg.open{display:flex;}
 .modal-wrap{position:relative;width:100%;max-width:460px;border-radius:14px;overflow:hidden;background:var(--p-surface);border:1px solid var(--p-border);box-shadow:var(--p-sh-lg);}
-.modal{background:transparent;border:none;border-radius:0;width:100%;box-shadow:none;padding:26px 24px;max-height:90vh;overflow-y:auto;}
+.modal{background:transparent;border:none;border-radius:0;width:100%;box-shadow:none;padding:26px 24px;max-height:90vh;overflow-y:auto;scrollbar-gutter:stable;}
+/* Reserva sitio para el scrollbar: sin esto tapaba el borde derecho de los
+   campos (las flechas de los <select> quedaban cortadas contra la orilla). */
+.modal::-webkit-scrollbar{width:10px;}
+.modal::-webkit-scrollbar-thumb{background:rgba(15,23,42,.18);border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
+.modal::-webkit-scrollbar-thumb:hover{background:rgba(15,23,42,.32);background-clip:padding-box;}
 .modal-x{position:absolute;top:13px;right:14px;z-index:5;width:30px;height:30px;border:none;border-radius:8px;background:transparent;color:var(--p-muted);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
 .modal-x:hover{background:rgba(15,23,42,.08);color:var(--p-text);}
 .modal h3{font-size:17px;font-weight:800;margin-bottom:5px;letter-spacing:-.01em;}
