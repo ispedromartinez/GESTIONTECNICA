@@ -1467,25 +1467,50 @@ function toggleProyectos() {
 }
 
 // ── Lista de proyectos en el sidebar (reemplaza los accesos de "generar") ──
+// Enlaces/labels de los módulos fijos en el sidebar.
+const MODULOS_FIJOS_NAV = {
+  tigo:       { nombre: 'Proyecto Tigo', href: '/tigo' },
+  wom:        { nombre: 'Proyecto WOM',  href: '/wom' },
+  preventivo: { nombre: 'Preventivo',    href: '/preventivo' }
+};
 async function renderSidebarProyectos() {
   const cont = document.getElementById('sbProyList');
   if (!cont) return;
   try {
     const ruta = MIROL === 'supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos';
     const proyectos = await fetch(ruta, { headers: authH() }).then(r => r.ok ? r.json() : []);
-    const norm = (Array.isArray(proyectos) ? proyectos : [])
-      .filter(p => !Object.keys(MODULOS_FIJOS).includes(p.template))
+    const arr = Array.isArray(proyectos) ? proyectos : [];
+
+    // Módulos fijos activos (Tigo/WOM/Preventivo). Para supervisor/técnico solo
+    // los que tienen asignados; admin_empresa/superadmin ven todos los activos.
+    let fijos = new Set(arr.filter(p => MODULOS_FIJOS_NAV[p.template] && (p.estado || 'activo') === 'activo')
+                           .map(p => p.template));
+    if (!['superadmin', 'admin_empresa'].includes(MIROL)) {
+      const rMis = await fetch('/api/gestion/mis-proyectos', { headers: authH() }).then(r => r.ok ? r.json() : []);
+      const misT = new Set((Array.isArray(rMis) ? rMis : []).map(p => p.template).filter(Boolean));
+      fijos = new Set([...fijos].filter(t => misT.has(t)));
+    }
+
+    // Proyectos custom (no módulos fijos).
+    const norm = arr
+      .filter(p => !MODULOS_FIJOS_NAV[p.template])
       .map(p => ({
-      id: p.proyecto_id || p.id,
-      nombre: p.proyecto_nombre || p.nombre || 'Proyecto',
-      tipo: (p.tipo || p.proyecto_tipo || '').toLowerCase()
-    })).filter(p => p.id);
-    if (!norm.length) { cont.innerHTML = '<div class="sb-proy-empty">Sin proyectos.</div>'; return; }
+        id: p.proyecto_id || p.id,
+        nombre: p.proyecto_nombre || p.nombre || 'Proyecto',
+        tipo: (p.tipo || p.proyecto_tipo || '').toLowerCase()
+      })).filter(p => p.id);
+
+    if (!fijos.size && !norm.length) { cont.innerHTML = '<div class="sb-proy-empty">Sin proyectos.</div>'; return; }
     const icoPrev = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
     const icoCorr = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
-    cont.innerHTML = norm.map(p =>
+    const fijosHtml = Object.keys(MODULOS_FIJOS_NAV).filter(t => fijos.has(t)).map(t => {
+      const m = MODULOS_FIJOS_NAV[t];
+      return `<button class="sb-item" onclick="location.href='${m.href}'"><span class="sb-icon">${t === 'preventivo' ? icoPrev : icoCorr}</span> ${esc(m.nombre)}</button>`;
+    }).join('');
+    const customHtml = norm.map(p =>
       `<button class="sb-item" onclick="abrirProyecto('${esc(p.id)}','${esc(p.tipo)}')"><span class="sb-icon">${p.tipo === 'preventivo' ? icoPrev : icoCorr}</span> ${esc(p.nombre)}</button>`
     ).join('');
+    cont.innerHTML = fijosHtml + customHtml;
   } catch { cont.innerHTML = '<div class="sb-proy-empty">No se pudieron cargar.</div>'; }
 }
 // Abre un proyecto desde el sidebar: preventivo → módulo de tareas; correctivo → sus informes.
