@@ -218,6 +218,7 @@ tr:last-child td{border-bottom:none;}
 tbody tr:hover{background:#F8FAFF;}
 
 .pbadge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+.rep-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
 .pb-tigo{background:#EEF5FF;color:#0073EA;}
 .pb-wom {background:#F3F0FF;color:#784BD1;}
 .pb-prev{background:#FFF4E5;color:#B45309;}
@@ -443,6 +444,10 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
 
     <button class="sb-item" id="nav-informesproy" onclick="showView('informesproy')" style="display:none">
       <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span> Informes
+    </button>
+
+    <button class="sb-item" id="nav-reportes" onclick="showView('reportes')" style="display:none">
+      <span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-6h4v6M5 21h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/><path d="M17 17v-4"/></svg></span> Reportes
     </button>
 
     <div class="sb-divider"></div>
@@ -745,6 +750,29 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
       </div>
     </div>
 
+    <div class="view" id="view-reportes">
+      <div class="stats-row" id="repStats" style="margin-bottom:18px"></div>
+      <div class="section-card">
+        <div class="section-head">
+          <span class="section-head-title">Reportes generados</span>
+          <div class="ip-tools" style="gap:8px;flex-wrap:wrap">
+            <select class="ip-select" id="repModulo" onchange="cargarReportes()">
+              <option value="">Todos los módulos</option>
+              <option value="tigo">Tigo</option>
+              <option value="wom">WOM</option>
+              <option value="preventivo">Preventivo</option>
+            </select>
+            <input class="ip-select" id="repTecnico" placeholder="Técnico…" oninput="repFiltrarDebounce()" style="min-width:130px">
+            <input class="ip-select" id="repDesde" type="date" onchange="cargarReportes()" title="Desde">
+            <input class="ip-select" id="repHasta" type="date" onchange="cargarReportes()" title="Hasta">
+          </div>
+        </div>
+        <div id="repBody">
+          <div class="empty-tbl"><div class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-6h4v6M5 21h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/></svg></div><p>Cargando reportes…</p></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -815,6 +843,10 @@ async function init() {
     if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
       document.getElementById('nav-personal').style.display = 'flex';
       document.getElementById('nav-informesproy').style.display = 'flex';
+    }
+    // Reportes: supervisor y superiores (el técnico ya ve los suyos en su panel).
+    if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
+      document.getElementById('nav-reportes').style.display = 'flex';
     }
     // Catálogo de sitios: supervisor y superiores lo ven (asignar queda gated dentro)
     if (['superadmin','admin_empresa','supervisor'].includes(miRol)) {
@@ -998,7 +1030,7 @@ async function cargarModulosFijos() {
 }
 
 // ── Vistas ────────────────────────────────────────────────────────
-const viewTitles = { proyectos: 'Inicio', informes: 'Panel de Control', informesproy: 'Informes' };
+const viewTitles = { proyectos: 'Inicio', informes: 'Panel de Control', informesproy: 'Informes', reportes: 'Reportes' };
 let MIROL = '';
 
 function switchSubview(v) {
@@ -1031,6 +1063,10 @@ function showView(v) {
     toggle.classList.remove('visible');
     document.getElementById('searchWrap').style.display = 'none';
     cargarInformesProy();
+  } else if (v === 'reportes') {
+    toggle.classList.remove('visible');
+    document.getElementById('searchWrap').style.display = 'none';
+    cargarReportes();
   } else {
     toggle.classList.remove('visible');
     document.getElementById('searchWrap').style.display = 'none';
@@ -1473,6 +1509,48 @@ const MODULOS_FIJOS_NAV = {
   wom:        { nombre: 'Proyecto WOM',  href: '/wom' },
   preventivo: { nombre: 'Preventivo',    href: '/preventivo' }
 };
+// ── Reportes consolidados (Tigo/WOM/Preventivo) ─────────────────
+const REP_MOD = { tigo:'Tigo', wom:'WOM', preventivo:'Preventivo' };
+let _repDeb;
+function repFiltrarDebounce(){ clearTimeout(_repDeb); _repDeb = setTimeout(cargarReportes, 300); }
+async function cargarReportes(){
+  const body = document.getElementById('repBody');
+  if (!body) return;
+  const p = new URLSearchParams();
+  const mod = document.getElementById('repModulo').value; if (mod) p.set('modulo', mod);
+  const tec = document.getElementById('repTecnico').value.trim(); if (tec) p.set('tecnico', tec);
+  const desde = document.getElementById('repDesde').value; if (desde) p.set('desde', desde);
+  const hasta = document.getElementById('repHasta').value; if (hasta) p.set('hasta', hasta);
+  body.innerHTML = '<div class="empty-tbl"><p>Cargando reportes…</p></div>';
+  try {
+    const r = await fetch('/api/reportes?' + p.toString(), { headers: authH() });
+    if (!r.ok) throw new Error('No se pudieron cargar los reportes');
+    const { reportes, stats } = await r.json();
+    // Stats
+    const st = document.getElementById('repStats');
+    const porMod = Object.entries(stats.porModulo || {}).map(([m,n]) => `${REP_MOD[m]||m}: ${n}`).join(' · ') || '—';
+    st.innerHTML = `
+      <div class="stat-card"><div class="stat-val">${stats.total}</div><div class="stat-label">Reportes</div></div>
+      <div class="stat-card"><div class="stat-val">${stats.mes}</div><div class="stat-label">Este mes</div></div>
+      <div class="stat-card"><div class="stat-val" style="font-size:15px;line-height:1.3;padding-top:4px">${esc(porMod)}</div><div class="stat-label">Por módulo</div></div>`;
+    if (!reportes.length) {
+      body.innerHTML = '<div class="empty-tbl"><div class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-6h4v6M5 21h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/></svg></div><p>No hay reportes con estos filtros.</p></div>';
+      return;
+    }
+    body.innerHTML = `<div class="tbl-wrap"><table><thead><tr>
+      <th>Módulo</th><th>Sitio</th><th>Técnico</th><th>Fecha</th><th>Código</th><th></th></tr></thead><tbody>
+      ${reportes.map(r => `<tr>
+        <td><span class="rep-badge pb-${r.modulo==='wom'?'wom':(r.modulo==='preventivo'?'prev':'tigo')}">${REP_MOD[r.modulo]||r.modulo}</span></td>
+        <td><b>${esc(r.sitio)}</b></td>
+        <td>${esc(r.tecnico)}</td>
+        <td class="muted">${esc(r.fecha)||'—'}</td>
+        <td class="muted">${esc(r.codigo)||'—'}</td>
+        <td style="text-align:right"><button class="ip-btn ip-btn-sm" onclick="ipVerDoc('${encodeURIComponent(r.descargaUrl)}','${encodeURIComponent(r.filename)}')">↓ Descargar</button></td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+  } catch (e) { body.innerHTML = '<div class="empty-tbl"><p>Error: ' + esc(e.message) + '</p></div>'; }
+}
+
 async function renderSidebarProyectos() {
   const cont = document.getElementById('sbProyList');
   if (!cont) return;

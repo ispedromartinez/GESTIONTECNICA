@@ -463,6 +463,75 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── GET /api/reportes – vista consolidada de reportes (Tigo/WOM/Prev) ──
+// Visibilidad para supervisor/admin: quién reportó qué, cuándo, en qué sitio.
+// Sin aprobación. Aislado por empresa; supervisor ve solo a sus técnicos a
+// cargo; técnico solo los suyos. Filtros: modulo, tecnico, desde, hasta.
+app.get('/api/reportes', authMiddleware, async (req, res) => {
+  try {
+    const { rol, nombre } = req.user;
+    const [tigoAll, womAll, prevAll] = await Promise.all([
+      dbClimaList(null), dbWomList(null), dbPrevList(null)
+    ]);
+    const tigo = filtrarInformesPorEmpresa(tigoAll, req.user).map(r => ({
+      id: r.id, modulo: 'tigo', sitio: r.nombreSitio || '—',
+      tecnico: r.tecnico || '—', fecha: r.fecha || (r.fechaCreacion || '').slice(0, 10),
+      codigo: r.codInforme || '—', filename: r.filename || '',
+      descargaUrl: `/descargar/${r.id}`
+    }));
+    const wom = filtrarInformesPorEmpresa(womAll, req.user).map(r => {
+      const tecs = Array.isArray(r.tecnicos) ? r.tecnicos : (r.tecnicos || '').split(',').map(s => s.trim());
+      return {
+        id: r.id, modulo: 'wom', sitio: r.instalacion || '—',
+        tecnico: tecs.filter(Boolean).join(', ') || '—',
+        fecha: (r.fechaInicio || r.fechaCreacion || '').slice(0, 10),
+        codigo: r.ticket || r.codInterno || '—', filename: r.filename || '',
+        descargaUrl: `/descargar-wom/${r.id}`
+      };
+    });
+    const prev = filtrarInformesPorEmpresa(prevAll, req.user).map(r => ({
+      id: r.id, modulo: 'preventivo', sitio: r.nombreNodo || '—',
+      tecnico: r.ejecutante || '—', fecha: r.fecha || (r.fechaCreacion || '').slice(0, 10),
+      codigo: r.trackerId || '—', filename: r.filename || '',
+      descargaUrl: `/descargar-prev/${r.id}`
+    }));
+
+    let reportes = [...tigo, ...wom, ...prev];
+
+    // Recorte por rol: supervisor → sus técnicos a cargo; técnico → él mismo.
+    if (rol === 'supervisor') {
+      let nombres = [];
+      try {
+        const tecs = await gestionDb.tecnicosDeSupervisor(req.user.usuario_id);
+        nombres = (tecs || []).map(t => (t.nombre || '').toLowerCase()).filter(Boolean);
+      } catch {}
+      nombres.push((nombre || '').toLowerCase()); // incluye lo del propio supervisor
+      reportes = reportes.filter(r =>
+        nombres.some(n => n && r.tecnico.toLowerCase().includes(n)));
+    } else if (rol === 'tecnico') {
+      const n = (nombre || '').toLowerCase();
+      reportes = reportes.filter(r => r.tecnico.toLowerCase().includes(n));
+    }
+
+    // Filtros opcionales.
+    const { modulo, tecnico, desde, hasta } = req.query;
+    if (modulo) reportes = reportes.filter(r => r.modulo === modulo);
+    if (tecnico) reportes = reportes.filter(r => r.tecnico.toLowerCase().includes(tecnico.toLowerCase()));
+    if (desde) reportes = reportes.filter(r => (r.fecha || '') >= desde);
+    if (hasta) reportes = reportes.filter(r => (r.fecha || '') <= hasta);
+
+    reportes.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+    const now = new Date();
+    const mes = reportes.filter(r => {
+      const d = new Date(r.fecha); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }).length;
+    const porModulo = reportes.reduce((a, r) => { a[r.modulo] = (a[r.modulo] || 0) + 1; return a; }, {});
+
+    res.json({ reportes, stats: { total: reportes.length, mes, porModulo } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 const DOCS_DIR      = path.join(__dirname, 'informes');
 const PAPELERA_DIR  = path.join(__dirname, 'papelera');
 const DB_FILE       = path.join(__dirname, 'registro.json');
