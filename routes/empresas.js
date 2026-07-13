@@ -157,6 +157,36 @@ router.get('/empresas/:id/proyectos', adminEmpresa, scopeEmpresa, async (req, re
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/empresas/:id/modulos — activar/desactivar un módulo fijo
+// (Tigo/WOM/Preventivo) para una empresa. Solo superadmin.
+// Desactivar = estado 'pausado' (conserva informes); no borra la fila.
+const MODULOS_VALIDOS = ['tigo', 'wom', 'preventivo'];
+const NOMBRE_MODULO = { tigo: 'Proyecto Tigo', wom: 'Proyecto WOM', preventivo: 'Preventivo' };
+router.post('/empresas/:id/modulos', soloSuper, async (req, res) => {
+  try {
+    const empresa_id = req.params.id;
+    const { template, activo } = req.body || {};
+    if (!MODULOS_VALIDOS.includes(template))
+      return res.status(400).json({ error: 'template inválido (tigo|wom|preventivo)' });
+
+    const existentes = await db.proyectosByEmpresa(empresa_id);
+    const actual = existentes.find(p => p.template === template);
+    const nuevoEstado = activo ? 'activo' : 'pausado';
+
+    let proyecto;
+    if (actual) {
+      proyecto = await db.proyectoUpdate(actual.id, { estado: nuevoEstado });
+    } else if (activo) {
+      proyecto = await db.proyectoInsert({
+        empresa_id, nombre: NOMBRE_MODULO[template], template, estado: 'activo'
+      });
+    } else {
+      return res.json({ ok: true, template, activo: false }); // nada que desactivar
+    }
+    res.json({ ok: true, template, activo, proyecto });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
 // ════════════════════════════════════════════════════════════════
 // USUARIOS
 // ════════════════════════════════════════════════════════════════
