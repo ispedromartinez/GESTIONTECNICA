@@ -1,0 +1,71 @@
+/* animations.css — animaciones compartidas de la app.
+   Cargar DESPUÉS del <style> inline de cada página para ganar la cascada. */
+
+/* ── Modales / overlays / dropdowns ──
+   Las páginas ocultan con display:none y muestran con display:flex/block. Eso
+   impide animar el CIERRE (display:none corta la transición). Estos contenedores
+   son position:fixed/absolute (no afectan al layout), así que los forzamos a
+   estar SIEMPRE "display" y los ocultamos con opacity/visibility/pointer-events.
+   !important gana a la clase de estado de la página (.show/.open). */
+.modal-bg{ display:flex !important; }
+.modal-overlay{ display:flex !important; }
+.overlay{ display:block !important; }
+.dropdown-menu{ display:block !important; }
+
+.modal-bg, .modal-overlay, .overlay, .dropdown-menu{
+  transition: opacity .18s ease, visibility .18s ease;
+}
+/* estado oculto = sin la clase de estado activa */
+.modal-bg:not(.show):not(.open),
+.modal-overlay:not(.open),
+.overlay:not(.show):not(.open),
+.dropdown-menu:not(.open){
+  opacity:0; visibility:hidden; pointer-events:none;
+}
+/* estado visible */
+.modal-bg.show, .modal-bg.open,
+.modal-overlay.open,
+.overlay.show, .overlay.open,
+.dropdown-menu.open{
+  opacity:1; visibility:visible; pointer-events:auto;
+}
+
+/* Caja interior del modal: entra/sale con un leve scale. */
+.modal-wrap, .modal-shell, .modal{
+  transition: transform .2s ease, opacity .2s ease;
+}
+.modal-bg:not(.show):not(.open) .modal-wrap,
+.modal-bg:not(.show):not(.open) .modal,
+.modal-overlay:not(.open) .modal-shell,
+.modal-overlay:not(.open) .modal,
+.overlay:not(.show):not(.open) .modal{
+  transform: scale(.96);
+  opacity: 0;
+}
+
+/* Dropdown: además del fade, un pequeño slide desde arriba. */
+.dropdown-menu{ transform-origin: top; }
+.dropdown-menu:not(.open){ transform: translateY(-6px); }
+.dropdown-menu.open{ transform: none; }
+
+/* ── Paneles/tabs (informe_wom_app: .panel en flujo normal) ──
+   NO forzamos display (apilaría los paneles). Solo animación de APERTURA. */
+.panel.active{ animation: anim-fade-in .18s ease; }
+
+/* ── Fade-in de página ── */
+body{ opacity:0; transform: translateY(6px); transition: opacity .28s ease, transform .28s ease; }
+body.loaded{ opacity:1; transform:none; }
+
+@keyframes anim-fade-in{ from{opacity:0} to{opacity:1} }
+
+/* ── Micro-interacciones ──
+   Superset de props para NO perder los fades que las páginas ya definen. */
+.btn{ transition: transform .08s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease; }
+.btn:hover{ transform: translateY(-1px); }
+.btn:active{ transform: translateY(0); }
+
+/* ── Accesibilidad: sin movimiento ── */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation:none !important; transition:none !important; }
+  body{ opacity:1 !important; transform:none !important; }
+}
