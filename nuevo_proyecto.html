@@ -305,7 +305,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
       <label class="tpl-card" id="tplTigo" onclick="abrirFormato('tigo')">
         <input type="radio" name="tpl" value="tigo">
         <div class="tpl-check">✓</div>
-        <div class="tpl-name"><span class="tpl-badge tb-tigo">TIGO</span> Formato Tigo</div>
+        <div class="tpl-name"><span class="tpl-badge tb-tigo">CLIMA 1</span> Formato Clima 1</div>
         <div class="tpl-desc">Mantenimiento preventivo/correctivo. Incluye sala, equipo, mediciones técnicas, checklist y fotografías.</div>
         <div class="tpl-preview">
           <div class="tpl-preview-bar blue"></div>
@@ -323,7 +323,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
       <label class="tpl-card" id="tplWom" onclick="abrirFormato('wom')">
         <input type="radio" name="tpl" value="wom">
         <div class="tpl-check">✓</div>
-        <div class="tpl-name"><span class="tpl-badge tb-wom">WOM</span> Formato WOM</div>
+        <div class="tpl-name"><span class="tpl-badge tb-wom">CLIMA 2</span> Formato Clima 2</div>
         <div class="tpl-desc">Correctivo / tickets de servicio. Incluye N° ticket, tipo de actividad, técnicos múltiples y fotografías.</div>
         <div class="tpl-preview">
           <div class="tpl-preview-bar purple"></div>
@@ -563,7 +563,7 @@ function clearLogo(e) {
 // Estructura real de cada formato (campos que genera el informe).
 const FORMATOS = {
   tigo: {
-    nombre:'Formato Tigo', badge:'TIGO', clase:'tb-tigo', barra:'blue', color:'#0073EA',
+    nombre:'Formato Clima 1', badge:'CLIMA 1', clase:'tb-tigo', barra:'blue', color:'#0073EA',
     desc:'Mantenimiento preventivo/correctivo de equipos de clima.',
     secciones:[
       {t:'Datos del sitio', f:['Nombre de Sitio *','Código de Sitio','Dirección','Fecha de Ejecución *','Sala *','Técnico Ejecutante *','Supervisor *','N° de OT','Código de Informe (automático)']},
@@ -574,7 +574,7 @@ const FORMATOS = {
     ]
   },
   wom: {
-    nombre:'Formato WOM', badge:'WOM', clase:'tb-wom', barra:'purple', color:'#784BD1',
+    nombre:'Formato Clima 2', badge:'CLIMA 2', clase:'tb-wom', barra:'purple', color:'#784BD1',
     desc:'Correctivo / tickets de servicio, con técnicos y actividades múltiples.',
     secciones:[
       {t:'Datos del ticket', f:['Ticket *','Código Interno','Fecha/Hora Inicio *','Fecha/Hora Término']},
@@ -696,7 +696,7 @@ function buildReview() {
   const colorEl = document.getElementById('rv-color');
   colorEl.innerHTML = `<span class="color-dot" style="background:${state.color}"></span>${state.color}`;
 
-  document.getElementById('rv-tpl').textContent = state.template === 'tigo' ? 'Formato Tigo' : 'Formato WOM';
+  document.getElementById('rv-tpl').textContent = state.template === 'tigo' ? 'Formato Clima 1' : 'Formato Clima 2';
 
   const logoEl = document.getElementById('rv-logo');
   if (state.logo) {

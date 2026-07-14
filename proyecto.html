@@ -223,7 +223,7 @@ function renderProyecto(p) {
   // Header
   document.title = p.nombre + ' – NEXXO.APP';
   document.getElementById('hName').textContent = p.nombre;
-  document.getElementById('hTpl').textContent  = p.template === 'tigo' ? 'Formato Tigo' : 'Formato WOM';
+  document.getElementById('hTpl').textContent  = p.template === 'tigo' ? 'Formato Clima 1' : 'Formato Clima 2';
   if (p.logo) {
     const hl = document.getElementById('hLogo'); hl.src = p.logo; hl.style.display = 'block';
   }
@@ -247,10 +247,10 @@ function renderProyecto(p) {
   // Template info
   const badge = document.getElementById('tplBadge');
   if (p.template === 'tigo') {
-    badge.textContent = 'Formato Tigo'; badge.className = 'badge badge-tigo';
+    badge.textContent = 'Formato Clima 1'; badge.className = 'badge badge-tigo';
     document.getElementById('tplDesc').textContent = 'Mantenimiento preventivo/correctivo con sala, equipo, mediciones técnicas, checklist y fotografías.';
   } else {
-    badge.textContent = 'Formato WOM'; badge.className = 'badge badge-wom';
+    badge.textContent = 'Formato Clima 2'; badge.className = 'badge badge-wom';
     document.getElementById('tplDesc').textContent = 'Tickets de servicio con N° de ticket, tipo de actividad, técnicos múltiples y fotografías.';
   }
 

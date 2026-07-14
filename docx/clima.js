@@ -12,6 +12,13 @@ const GH  = 'D9D9D9';   // gris — headers sección
 const BC  = '7B7B7B';   // color borde
 const TW  = 9869;       // ancho tabla principal (igual al header original)
 
+// Texto legible (blanco/negro) sobre un color de banda según su luminancia.
+const _contraste = (hex) => {
+  const h = /^[0-9A-Fa-f]{6}$/.test(hex || '') ? hex : '1A3A6C';
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return (0.299*r + 0.587*g + 0.114*b) > 150 ? '000000' : 'FFFFFF';
+};
+
 // Borders: thin=4 (like original sz:4), used everywhere
 const thinB = (color=BC) => ({ style: BorderStyle.SINGLE, size: 12, color });
 const allThin = { top: thinB(), bottom: thinB(), left: thinB(), right: thinB() };
@@ -94,6 +101,10 @@ async function buildDocx(d) {
   const HDR_BLUE  = '1A3A6C';   // azul corporativo ICETEL
   const HDR_BLUE2 = 'D6E4F0';   // azul claro etiquetas COD/FECHA
   const HDR_BRD   = '1A3A6C';   // borde header
+  // Banda principal del encabezado: color elegido en el formulario (d.bandColor,
+  // hex sin #). Default = azul ICETEL. El texto se ajusta a blanco/negro solo.
+  const BAND     = /^[0-9A-Fa-f]{6}$/.test(d.bandColor || '') ? d.bandColor.toUpperCase() : HDR_BLUE;
+  const BAND_TXT = _contraste(BAND);
   const thinHdr   = (color=HDR_BRD) => ({ style: BorderStyle.SINGLE, size: 12, color });
   const allHdr    = { top: thinHdr(), bottom: thinHdr(), left: thinHdr(), right: thinHdr() };
 
@@ -134,13 +145,13 @@ async function buildDocx(d) {
             new TableCell({
               width: { size: 4625, type: WidthType.DXA },
               borders: allHdr,
-              shading: { fill: HDR_BLUE, type: ShadingType.CLEAR },
+              shading: { fill: BAND, type: ShadingType.CLEAR },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 20, bottom: 20, left: 70, right: 40 },
               children: [new Paragraph({
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 0, after: 0 },
-                children: [new TextRun({ text: 'CENTRALES CLIMA', bold: true, size: 24, font: 'Calibri', color: 'FFFFFF' })]
+                children: [new TextRun({ text: 'CENTRALES CLIMA', bold: true, size: 24, font: 'Calibri', color: BAND_TXT })]
               })]
             }),
             // COD label
@@ -177,13 +188,13 @@ async function buildDocx(d) {
             new TableCell({
               width: { size: 4625, type: WidthType.DXA },
               borders: allHdr,
-              shading: { fill: HDR_BLUE, type: ShadingType.CLEAR },
+              shading: { fill: BAND, type: ShadingType.CLEAR },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 20, bottom: 20, left: 70, right: 40 },
               children: [new Paragraph({
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 0, after: 0 },
-                children: [new TextRun({ text: 'INFORME CORRECTIVO CLIMA', bold: true, size: 22, font: 'Calibri', color: 'FFFFFF' })]
+                children: [new TextRun({ text: 'INFORME CORRECTIVO CLIMA', bold: true, size: 22, font: 'Calibri', color: BAND_TXT })]
               })]
             }),
             new TableCell({
