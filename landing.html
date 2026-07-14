@@ -92,6 +92,15 @@ nav{
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:200px;
 }
+.hero-grid{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(62% 58% at 50% 28%,#000 25%,transparent 78%);
+  mask-image:radial-gradient(62% 58% at 50% 28%,#000 25%,transparent 78%);
+}
 .hero-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;z-index:1;}
 
 .hero-badge{
@@ -102,6 +111,14 @@ nav{
   margin-bottom:28px;
 }
 .badge-dot{width:6px;height:6px;border-radius:50%;background:#579BFC;flex-shrink:0;}
+@media(prefers-reduced-motion:no-preference){
+  .badge-dot{animation:dotPulse 2.6s ease-out infinite;}
+  @keyframes dotPulse{
+    0%{box-shadow:0 0 0 0 rgba(87,155,252,.5);}
+    70%{box-shadow:0 0 0 7px rgba(87,155,252,0);}
+    100%{box-shadow:0 0 0 0 rgba(87,155,252,0);}
+  }
+}
 
 .hero h1{
   font-size:clamp(36px,5.2vw,62px);
@@ -111,8 +128,14 @@ nav{
 .hero h1 .hl{color:#68A8FF;}
 .hero-sub{
   font-size:clamp(15px,1.8vw,17.5px);font-weight:400;
-  color:rgba(255,255,255,.58);line-height:1.7;
-  max-width:600px;margin-bottom:40px;
+  color:rgba(255,255,255,.65);line-height:1.7;
+  max-width:600px;margin-bottom:18px;text-wrap:pretty;
+}
+.hero-slogan{
+  font-family:'Outfit',system-ui,sans-serif;
+  font-size:clamp(15px,1.7vw,17px);font-weight:700;
+  color:#8FBCFF;letter-spacing:.2px;
+  margin-bottom:40px;
 }
 .hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:64px;}
 .hbtn-main{
@@ -131,14 +154,79 @@ nav{
 .hbtn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.35);}
 
 /* ── APP MOCKUP ── */
+.hero-visual{
+  position:relative;width:100%;max-width:900px;
+}
+.hero-visual::before{
+  content:'';position:absolute;left:50%;top:-46px;
+  transform:translateX(-50%);
+  width:72%;height:130px;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(0,115,234,.32),transparent 72%);
+  filter:blur(34px);pointer-events:none;
+}
 .hero-mockup{
-  width:100%;max-width:900px;
+  position:relative;
+  width:100%;
   background:#1A1D40;
   border-radius:14px 14px 0 0;
   border:1.5px solid rgba(255,255,255,.1);
   border-bottom:none;
   box-shadow:0 -8px 60px rgba(0,0,0,.5);
   overflow:hidden;
+}
+/* Tarjetas flotantes sobre el mockup */
+.float-card{
+  position:absolute;z-index:5;
+  background:#fff;border-radius:12px;
+  padding:12px 16px;
+  box-shadow:0 18px 44px rgba(2,8,23,.45);
+  display:flex;align-items:center;gap:11px;
+  text-align:left;
+}
+.fc-toast{top:-26px;right:-30px;}
+.fc-sla{bottom:64px;left:-42px;}
+.fc-icon{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.fc-icon svg{width:16px;height:16px;}
+.fc-icon.ok{background:#DCFCE7;color:#16A34A;}
+.fc-title{font-size:12px;font-weight:800;color:#0F172A;line-height:1.3;}
+.fc-sub{font-size:10.5px;color:#64748B;margin-top:1px;}
+.fc-ring{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  background:conic-gradient(#0073EA 0 94%,#E2E8F0 94% 100%);
+  display:flex;align-items:center;justify-content:center;
+}
+.fc-ring i{
+  width:28px;height:28px;border-radius:50%;background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-style:normal;font-size:9.5px;font-weight:800;color:#0073EA;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:1040px){.float-card{display:none;}}
+@media(prefers-reduced-motion:no-preference){
+  .fc-toast{animation:floaty 6s ease-in-out infinite;}
+  .fc-sla{animation:floaty 6s ease-in-out -3s infinite;}
+  @keyframes floaty{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-8px);}
+  }
+}
+/* Coreografía de entrada del hero */
+@media(prefers-reduced-motion:no-preference){
+  .hero-badge,.hero h1,.hero-sub,.hero-slogan,.hero-btns,.hero-visual{
+    animation:heroRise .75s cubic-bezier(.16,1,.3,1) both;
+  }
+  .hero h1{animation-delay:.08s;}
+  .hero-sub{animation-delay:.16s;}
+  .hero-slogan{animation-delay:.22s;}
+  .hero-btns{animation-delay:.3s;}
+  .hero-visual{animation-delay:.42s;animation-duration:.9s;}
+  @keyframes heroRise{
+    from{opacity:0;transform:translateY(18px);}
+    to{opacity:1;transform:none;}
+  }
 }
 .mockup-bar{
   height:36px;background:#131629;
@@ -561,6 +649,7 @@ footer{
 <!-- ═══ HERO ═══ -->
 <section class="hero">
   <div class="hero-noise"></div>
+  <div class="hero-grid"></div>
   <div class="hero-inner">
 
     <div class="hero-badge">
@@ -574,8 +663,10 @@ footer{
     </h1>
 
     <p class="hero-sub">
-      Genera informes técnicos para cualquier proyecto de forma rápida y eficiente, en tiempo real, programa mantenimiento preventivo con recurrencia automática y arma la hoja de vida de cada equipo. Soluciones reales, soluciones efectivas.
+      Genera informes técnicos para cualquier proyecto de forma rápida y eficiente, en tiempo real, programa mantenimiento preventivo con recurrencia automática y arma la hoja de vida de cada equipo.
     </p>
+
+    <p class="hero-slogan">Soluciones reales, soluciones efectivas.</p>
 
     <div class="hero-btns">
       <a href="/login" class="hbtn-main">Iniciar sesión →</a>
@@ -583,6 +674,24 @@ footer{
     </div>
 
     <!-- APP MOCKUP -->
+    <div class="hero-visual">
+
+      <div class="float-card fc-toast">
+        <div class="fc-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div>
+          <div class="fc-title">Informe generado</div>
+          <div class="fc-sub">RSO Antofagasta · hace 2 min</div>
+        </div>
+      </div>
+
+      <div class="float-card fc-sla">
+        <div class="fc-ring"><i>94%</i></div>
+        <div>
+          <div class="fc-title">SLA preventivo</div>
+          <div class="fc-sub">Tareas al día este mes</div>
+        </div>
+      </div>
+
     <div class="hero-mockup">
       <div class="mockup-bar">
         <div class="mock-dot r"></div>
@@ -665,6 +774,7 @@ footer{
           </div>
         </div>
       </div>
+    </div>
     </div>
 
   </div>
