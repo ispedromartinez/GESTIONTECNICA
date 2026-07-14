@@ -5,13 +5,6 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
-// Texto legible (blanco/negro) sobre un color de banda según su luminancia.
-const _contraste = (hex) => {
-  const h = /^[0-9A-Fa-f]{6}$/.test(hex || '') ? hex : '1F497D';
-  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
-  return (0.299*r + 0.587*g + 0.114*b) > 150 ? '000000' : 'FFFFFF';
-};
-
 async function buildDocxWom(d) {
   const v  = s => (s||'').toString().trim();
 
@@ -33,10 +26,7 @@ async function buildDocxWom(d) {
   const RES_W   = RES_L + RES_R;   // 10416
 
   // ── Colores ──────────────────────────────────────────────
-  // Banda (encabezado OT + títulos de sección): color elegido en el formulario
-  // (d.bandColor, hex sin #). Default = azul WOM. Texto se ajusta a blanco/negro.
-  const BLU = /^[0-9A-Fa-f]{6}$/.test(d.bandColor || '') ? d.bandColor.toUpperCase() : '1F497D';
-  const BLU_TXT = _contraste(BLU);
+  const BLU = '1F497D';
   const WHT = 'FFFFFF';
   const GRN = '008000';
   const BLK = '000000';
@@ -81,7 +71,7 @@ async function buildDocxWom(d) {
     width:{size:w,type:WidthType.DXA}, ...(span>1?{columnSpan:span}:{}),
     borders:otBrd, shading:{fill:BLU,type:ShadingType.CLEAR},
     verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:60,right:60},
-    children:[para(run(text,{bold:true,sz,c:BLU_TXT}),'center',sz===30?284:110)]
+    children:[para(run(text,{bold:true,sz,c:WHT}),'center',sz===30?284:110)]
   });
   // Celda código interno verde centrada
   const otCod = (codVal, w) => new TableCell({
@@ -163,7 +153,7 @@ async function buildDocxWom(d) {
     width:{size:w,type:WidthType.DXA}, ...(span>1?{columnSpan:span}:{}),
     borders:brd, shading:{fill:BLU,type:ShadingType.CLEAR},
     verticalAlign:VerticalAlign.CENTER, margins:{top:40,bottom:40,left:100,right:80},
-    children:[para(run(text,{bold:true,sz:18,c:BLU_TXT}))]
+    children:[para(run(text,{bold:true,sz:18,c:WHT}))]
   });
   const valCell = (text, w, opts={}) => new TableCell({
     width:{size:w,type:WidthType.DXA}, borders:brd,
@@ -246,7 +236,7 @@ async function buildDocxWom(d) {
         new TableCell({width:{size:FULL_W,type:WidthType.DXA},columnSpan:2,borders:brd,
           shading:{fill:BLU,type:ShadingType.CLEAR},verticalAlign:VerticalAlign.CENTER,
           margins:{top:40,bottom:40,left:100,right:80},
-          children:[para(run('Datos generales:',{bold:true,c:BLU_TXT}))]})
+          children:[para(run('Datos generales:',{bold:true,c:WHT}))]})
       ]}),
       new TableRow({height:{value:404},children:[whtCell('Sala:',DAT_LBL),   valCell(v(d.sala),DAT_VAL)]}),
       new TableRow({height:{value:404},children:[whtCell('Equipo:',DAT_LBL), valCell(v(d.equipo),DAT_VAL)]}),
@@ -284,7 +274,7 @@ async function buildDocxWom(d) {
       new TableCell({width:{size:RES_W,type:WidthType.DXA},columnSpan:2,borders:brd,
         shading:{fill:BLU,type:ShadingType.CLEAR},verticalAlign:VerticalAlign.CENTER,
         margins:{top:40,bottom:40,left:100,right:80},
-        children:[para(run('RESUMEN DE ACTIVIDAD:',{bold:true,c:BLU_TXT}))]})
+        children:[para(run('RESUMEN DE ACTIVIDAD:',{bold:true,c:WHT}))]})
     ]}),
     new TableRow({height:{value:414},children:[
       new TableCell({width:{size:RES_L,type:WidthType.DXA},borders:brd,
