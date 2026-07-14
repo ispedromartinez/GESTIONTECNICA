@@ -156,8 +156,8 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
   </div>
 
   <!-- Modal: añadir sitios del catálogo a este proyecto -->
-  <div id="modalSitios" style="display:none;position:fixed;inset:0;background:rgba(28,31,59,.55);z-index:300;align-items:center;justify-content:center;padding:20px;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px;">
+  <div id="modalSitios" class="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(28,31,59,.55);z-index:300;align-items:center;justify-content:center;padding:20px;">
+    <div class="modal-wrap" style="background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px;">
       <div style="padding:18px 22px;border-bottom:1px solid #F0F1F5;font-size:15px;font-weight:700;">Añadir sitios del catálogo</div>
       <div style="padding:12px 22px 0;"><input id="qSitios" type="text" placeholder="Buscar sitio, comuna o dirección…" oninput="renderCat()" style="width:100%;border:1.5px solid #E2E8F0;border-radius:9px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;background:#F6F7FB;"></div>
       <div style="padding:8px 22px;overflow-y:auto;flex:1;">
@@ -302,7 +302,7 @@ let CATALOGO = [];
 let catSel = new Set();
 
 async function abrirModalSitios(){
-  document.getElementById('modalSitios').style.display='flex';
+  document.getElementById('modalSitios').classList.add('show');
   if(!CATALOGO.length){
     try{
       const r = await fetch('/api/sitios-preventivos', { headers: authH() });
@@ -313,7 +313,7 @@ async function abrirModalSitios(){
   document.getElementById('qSitios').value='';
   renderCat();
 }
-function cerrarModalSitios(){ document.getElementById('modalSitios').style.display='none'; }
+function cerrarModalSitios(){ document.getElementById('modalSitios').classList.remove('show'); }
 
 function catFiltrados(){
   const q=(document.getElementById('qSitios').value||'').trim().toLowerCase();

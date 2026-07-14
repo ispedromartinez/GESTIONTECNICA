@@ -19,6 +19,8 @@ body{background:#64748B;min-height:100vh;padding:24px 12px}
 .topbar .actions{display:flex;gap:8px}
 .topbar button{border:none;border-radius:8px;padding:8px 14px;font:600 13px Poppins,sans-serif;cursor:pointer}
 .btn-download{background:#0073EA;color:#fff}
+.btn-volver{background:#F1F5F9;color:#0F172A;border:1px solid #E2E8F0!important}
+.btn-volver:hover{background:#E2E8F0}
 #docxContainer{max-width:900px;margin:0 auto;background:#fff;border-radius:6px;overflow:hidden;
   box-shadow:0 2px 12px rgba(0,0,0,.15)}
 #docxContainer .docx-wrapper{background:transparent;padding:0}
@@ -31,6 +33,7 @@ body{background:#64748B;min-height:100vh;padding:24px 12px}
 <div class="topbar">
   <b id="titulo">Cargando informe…</b>
   <div class="actions">
+    <button class="btn-volver" id="btnVolver">← Volver</button>
     <button class="btn-download" id="btnDescargar" disabled>Descargar .docx</button>
   </div>
 </div>
@@ -42,6 +45,16 @@ function authH(extra={}) {
   const t = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
   return { Authorization: 'Bearer ' + t, ...extra };
 }
+
+document.getElementById('btnVolver').onclick = () => {
+  try {
+    if (document.referrer && new URL(document.referrer).origin === location.origin) {
+      location.href = document.referrer; return;
+    }
+  } catch (e) {}
+  if (history.length > 1) history.back();
+  else window.close();
+};
 
 const params = new URLSearchParams(location.search);
 const id = params.get('id');

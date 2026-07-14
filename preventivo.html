@@ -46,6 +46,10 @@ main{padding:22px 28px;max-width:1280px;margin:0 auto;}
 .dropdown{position:relative;display:inline-block;}
 .dropdown-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.12);min-width:280px;z-index:40;padding:6px 0;}
 .dropdown-menu.open{display:block;}
+/* Autocompletes de sitio: animan con clase .open (display forzado + fade/slide). */
+#sitioDD,#fSitioDD{display:block!important;transition:opacity .15s ease,transform .15s ease;transform-origin:top;}
+#sitioDD:not(.open),#fSitioDD:not(.open){opacity:0;visibility:hidden;transform:translateY(-6px);pointer-events:none;}
+#sitioDD.open,#fSitioDD.open{opacity:1;visibility:visible;transform:none;pointer-events:auto;}
 .dropdown-menu hr{border:none;border-top:1px solid #F1F5F9;margin:5px 0;}
 #herramientasMenu .dd-item{display:block;width:100%;text-align:left;background:none;border:none;padding:9px 16px;font-size:13px;font-weight:400;color:#334155;cursor:pointer;}
 #herramientasMenu .dd-item:hover:not(:disabled){background:#F8FAFC;}
@@ -584,10 +588,10 @@ function seleccionarSitioPreventivo(nombre){
   document.getElementById('fComuna').value = sitio ? sitio.ciudad : '';       // Comuna desde la planilla
   document.getElementById('fCriticidad').value = sitio ? sitio.criticidad : '';
   document.getElementById('fCategoriaSitio').value = sitio ? sitio.categoria : '';
-  document.getElementById('sitioDD').style.display = 'none';
+  document.getElementById('sitioDD').classList.remove('open');
   // Reflejar también en el buscador del campo "Sitio" (tab Detalles)
   const sb = document.getElementById('fSitioBuscar'); if (sb) sb.value = nombre;
-  const sdd = document.getElementById('fSitioDD'); if (sdd) sdd.style.display = 'none';
+  const sdd = document.getElementById('fSitioDD'); if (sdd) sdd.classList.remove('open');
 }
 // Buscador desplegable del campo "Sitio": lista sitios con su dirección.
 function filtrarSitiosDetalle(q){
@@ -597,7 +601,7 @@ function filtrarSitiosDetalle(q){
   const matches = (nq
     ? SITIOS_PREVENTIVO.filter(s => s.nombre.toLowerCase().includes(nq) || (s.calle || '').toLowerCase().includes(nq))
     : SITIOS_PREVENTIVO).slice(0, 30);
-  if (!matches.length) { dd.style.display = 'none'; return; }
+  if (!matches.length) { dd.classList.remove('open'); return; }
   dd.innerHTML = matches.map(s =>
     `<div class="sitio-opt" data-nombre="${s.nombre.replace(/"/g,'&quot;')}" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #F0F2F8;">
       <div style="font-weight:600;font-size:13px;color:#0F172A;">${s.nombre}</div>
@@ -607,31 +611,31 @@ function filtrarSitiosDetalle(q){
   dd.querySelectorAll('.sitio-opt').forEach(el => {
     el.addEventListener('mousedown', e => { e.preventDefault(); seleccionarSitioPreventivo(el.dataset.nombre); });
   });
-  dd.style.display = 'block';
+  dd.classList.add('open');
 }
 document.getElementById('fSitioBuscar').addEventListener('input', e => filtrarSitiosDetalle(e.target.value));
 document.getElementById('fSitioBuscar').addEventListener('focus', e => filtrarSitiosDetalle(e.target.value));
 document.getElementById('fSitioBuscar').addEventListener('blur', () => {
-  setTimeout(() => { document.getElementById('fSitioDD').style.display = 'none'; }, 150);
+  setTimeout(() => { document.getElementById('fSitioDD').classList.remove('open'); }, 150);
 });
 function filtrarSitios(q){
   const dd = document.getElementById('sitioDD');
   document.getElementById('fNombreCliente').value = q;
-  if (!q) { dd.style.display = 'none'; return; }
+  if (!q) { dd.classList.remove('open'); return; }
   const nq = q.toLowerCase();
   const matches = SITIOS_PREVENTIVO.filter(s => s.nombre.toLowerCase().includes(nq)).slice(0, 30);
-  if (!matches.length) { dd.style.display = 'none'; return; }
+  if (!matches.length) { dd.classList.remove('open'); return; }
   dd.innerHTML = matches.map(s =>
     `<div class="sitio-opt" data-nombre="${s.nombre.replace(/"/g,'&quot;')}" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #F0F2F8;">${s.nombre}</div>`
   ).join('');
   dd.querySelectorAll('.sitio-opt').forEach(el => {
     el.addEventListener('mousedown', e => { e.preventDefault(); seleccionarSitioPreventivo(el.dataset.nombre); });
   });
-  dd.style.display = 'block';
+  dd.classList.add('open');
 }
 document.getElementById('fNombreClienteInput').addEventListener('input', e => filtrarSitios(e.target.value));
 document.getElementById('fNombreClienteInput').addEventListener('blur', () => {
-  setTimeout(() => { document.getElementById('sitioDD').style.display = 'none'; }, 150);
+  setTimeout(() => { document.getElementById('sitioDD').classList.remove('open'); }, 150);
 });
 
 async function cargarTareas(){
