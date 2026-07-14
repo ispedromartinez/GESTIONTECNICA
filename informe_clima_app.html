@@ -300,6 +300,13 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 .cbtn.cancel:hover{background:#e2e8f0;}
 .cbtn.confirm{background:var(--red);color:#fff;}
 .cbtn.confirm:hover{background:#b91c1c;}
+/* Overlay de carga mientras se genera el documento */
+.gen-overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);backdrop-filter:blur(3px);z-index:10000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.gen-overlay.show{display:flex;}
+.gen-spin{width:54px;height:54px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:genspin .8s linear infinite;}
+@keyframes genspin{to{transform:rotate(360deg)}}
+.gen-txt{color:#fff;font-size:15px;font-weight:700;font-family:inherit;letter-spacing:.2px;}
+.gen-sub{color:rgba(255,255,255,.72);font-size:12.5px;margin-top:-8px;font-family:inherit;}
 </style>
 </head>
 <body>
@@ -397,6 +404,11 @@ function precargarSitioLpuAsignados(informeId, token, intentos){
 </header>
 
 <div id="errToast" class="err-toast"></div>
+<div class="gen-overlay" id="genOverlay">
+  <div class="gen-spin"></div>
+  <div class="gen-txt">Generando informe…</div>
+  <div class="gen-sub">Esto puede tardar unos segundos. No cierres esta ventana.</div>
+</div>
 <div class="tabs" id="tabsBar">
   <div class="tabs-inner">
     <div class="tab nuevo active" onclick="showTab(0)"><span class="num"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg></span>Nuevo</div>
@@ -1381,6 +1393,7 @@ async function generateDocx(){
   const btn=document.getElementById('btnDocx');
   const status=document.getElementById('statusMsg');
   btn.disabled=true;status.className='status loading';status.textContent='⏳ Generando código y documento...';
+  document.getElementById('genOverlay').classList.add('show');
 
   // Get final correlative code
   const cod=await buildCodigoFinal()||'INFORME';
@@ -1435,7 +1448,7 @@ async function generateDocx(){
     if(payload.gestionInformeId){ setTimeout(()=>{ window.location.href = HOME_URL; }, 1400); }
   }catch(err){
     status.className='status err';status.textContent='❌ '+err.message;
-  }finally{btn.disabled=false;}
+  }finally{btn.disabled=false;document.getElementById('genOverlay').classList.remove('show');}
 }
 
 // ══ HISTORIAL ══

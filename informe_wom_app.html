@@ -159,6 +159,12 @@ main{max-width:var(--max-w);margin:0 auto;padding:18px 14px 40px;}
 /* ── SPINNER ── */
 .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
+/* Overlay de carga mientras se genera el documento */
+.gen-overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);backdrop-filter:blur(3px);z-index:10000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.gen-overlay.show{display:flex;}
+.gen-spin{width:54px;height:54px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
+.gen-txt{color:#fff;font-size:15px;font-weight:700;font-family:inherit;letter-spacing:.2px;}
+.gen-sub{color:rgba(255,255,255,.72);font-size:12.5px;margin-top:-8px;font-family:inherit;}
 </style>
 </head>
 <body>
@@ -490,6 +496,11 @@ function precargarSitioAsignadoWom(informeId, token, intentos){
 </footer>
 
 <div id="toast"></div>
+<div class="gen-overlay" id="genOverlay">
+  <div class="gen-spin"></div>
+  <div class="gen-txt">Generando informe…</div>
+  <div class="gen-sub">Esto puede tardar unos segundos. No cierres esta ventana.</div>
+</div>
 
 <script>
 // ── Sitios de instalación: viven en el catálogo (módulo wom) por empresa ──
@@ -840,6 +851,7 @@ async function generarInforme() {
   const btn = g('btn-generar');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Generando...';
+  document.getElementById('genOverlay').classList.add('show');
 
   const tecNames = [...document.querySelectorAll('.tec-input')].map(i => i.value.trim()).filter(Boolean);
 
@@ -901,6 +913,7 @@ async function generarInforme() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = 'Generar Informe WOM';
+    document.getElementById('genOverlay').classList.remove('show');
   }
 }
 
