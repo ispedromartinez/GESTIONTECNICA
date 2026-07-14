@@ -5,6 +5,8 @@ auth.db-shm
 auth.db-wal
 informes/
 papelera/
+papelera_wom/
+papelera_prev/
 registro.json
 papelera.json
 informes_wom/
@@ -29,3 +31,4 @@ ref*.xml
 ref*.png
 ref*.jpeg
 auditoria.json
+graphify-out/
