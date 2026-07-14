@@ -191,6 +191,11 @@ tr:hover td{background:var(--p-subtle);}
 .field label{font-size:11px;font-weight:700;color:var(--p-muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;}
 .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--p-border);border-radius:8px;padding:10px 13px;font-size:14px;color:var(--p-text);font-family:inherit;background:var(--p-surface);outline:none;transition:border-color .15s,box-shadow .15s;}
 .field textarea{min-height:90px;resize:vertical;}
+/* Select nativo (data-no-enhance) con flecha propia: sin la caja/halo nativo
+   que solapaba al vecino en una field-row. */
+.field select{-webkit-appearance:none;-moz-appearance:none;appearance:none;box-sizing:border-box;cursor:pointer;padding-right:34px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;background-size:12px;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--p-accent);box-shadow:0 0 0 3px rgba(3,105,161,.12);}
 .field .hint{font-size:11px;color:var(--p-faint);margin-top:5px;}
 /* ── Logo del proyecto (editar proyecto) ── */
@@ -998,7 +1003,10 @@ async function modalUsuarioEmpresa(empId, empNombre){
     (areas||[]).map(a=>`<option value="${esc(a.id)}">${esc(a.nombre)}</option>`).join('');
   openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
       <div><h3>Nuevo usuario</h3><p class="modal-sub">Se creará en <b>${esc(empNombre)}</b>.</p></div></div>
-    <div class="field"><label>Nombre completo</label><input id="nuNombre" placeholder="Juan Pérez"></div>
+    <div class="field-row">
+      <div class="field"><label>Nombre</label><input id="nuNombre" placeholder="Juan"></div>
+      <div class="field"><label>Apellido</label><input id="nuApellido" placeholder="Pérez"></div>
+    </div>
     <div class="field-row">
       <div class="field"><label>RUT</label><input id="nuRut" placeholder="12.345.678-9"></div>
       <div class="field"><label>Cargo</label><input id="nuCargo" placeholder="Técnico de terreno"></div>
@@ -1006,9 +1014,9 @@ async function modalUsuarioEmpresa(empId, empNombre){
     <div class="field"><label>Email</label><input id="nuEmail" type="email" placeholder="correo@dominio.com"></div>
     <div class="field"><label>Contraseña temporal</label><input id="nuPass" type="password" placeholder="Mínimo 6 caracteres"></div>
     <div class="field-row">
-      <div class="field"><label>Rol</label><select id="nuRol">
+      <div class="field"><label>Rol</label><select id="nuRol" data-no-enhance>
         ${ME.rol==='superadmin'?'<option value="admin_empresa">Administrador</option>':''}<option value="supervisor">Supervisor</option><option value="tecnico" selected>Técnico</option></select></div>
-      <div class="field"><label>Área</label><select id="nuArea">${areaOpts}</select></div>
+      <div class="field"><label>Área</label><select id="nuArea" data-no-enhance>${areaOpts}</select></div>
     </div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -1016,12 +1024,13 @@ async function modalUsuarioEmpresa(empId, empNombre){
   setTimeout(()=>$('nuNombre').focus(),80);
 }
 async function crearUsuarioEmpresa(empId,btn){
-  const nombre=$('nuNombre').value.trim(), email=$('nuEmail').value.trim(), password=$('nuPass').value, rol=$('nuRol').value;
+  const nombre=$('nuNombre').value.trim(), apellido=$('nuApellido').value.trim();
+  const email=$('nuEmail').value.trim(), password=$('nuPass').value, rol=$('nuRol').value;
   const rut=$('nuRut').value.trim(), cargo=$('nuCargo').value.trim(), area_id=$('nuArea').value||null;
   if(!nombre||!email||!password) return showErr('Nombre, email y contraseña son requeridos');
   if(password.length<6) return showErr('La contraseña debe tener 6+ caracteres');
   btn.disabled=true;
-  try{ await api('/api/usuarios',{method:'POST',body:JSON.stringify({nombre,email,password,rol,empresa_id:empId,rut:rut||null,cargo:cargo||null,area_id})});
+  try{ await api('/api/usuarios',{method:'POST',body:JSON.stringify({nombre,apellidos:apellido||null,email,password,rol,empresa_id:empId,rut:rut||null,cargo:cargo||null,area_id})});
     closeModal(); toast('Usuario creado','ok'); verEmpresa(empId);
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }
@@ -1227,7 +1236,10 @@ async function modalUsuario(){
     (areas||[]).map(a=>`<option value="${esc(a.id)}">${esc(a.nombre)}</option>`).join('');
   openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
       <div><h3>Crear acceso</h3><p class="modal-sub">Se genera una cuenta para tu empresa.</p></div></div>
-    <div class="field"><label>Nombre completo</label><input id="mUNombre" placeholder="Juan Pérez"></div>
+    <div class="field-row">
+      <div class="field"><label>Nombre</label><input id="mUNombre" placeholder="Juan"></div>
+      <div class="field"><label>Apellido</label><input id="mUApellido" placeholder="Pérez"></div>
+    </div>
     <div class="field-row">
       <div class="field"><label>RUT</label><input id="mURut" placeholder="12.345.678-9"></div>
       <div class="field"><label>Cargo</label><input id="mUCargo" placeholder="Técnico de terreno"></div>
@@ -1235,8 +1247,8 @@ async function modalUsuario(){
     <div class="field"><label>Email</label><input id="mUEmail" type="email" placeholder="correo@dominio.com"></div>
     <div class="field"><label>Contraseña temporal</label><input id="mUPass" type="password" placeholder="Mínimo 6 caracteres"></div>
     <div class="field-row">
-      <div class="field"><label>Rol</label><select id="mURol">${roles.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
-      <div class="field"><label>Área</label><select id="mUArea">${areaOpts}</select></div>
+      <div class="field"><label>Rol</label><select id="mURol" data-no-enhance>${roles.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
+      <div class="field"><label>Área</label><select id="mUArea" data-no-enhance>${areaOpts}</select></div>
     </div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -1244,12 +1256,13 @@ async function modalUsuario(){
   setTimeout(()=>$('mUNombre').focus(),80);
 }
 async function crearUsuario(btn){
-  const nombre=$('mUNombre').value.trim(), email=$('mUEmail').value.trim(), password=$('mUPass').value, rol=$('mURol').value;
+  const nombre=$('mUNombre').value.trim(), apellido=$('mUApellido').value.trim();
+  const email=$('mUEmail').value.trim(), password=$('mUPass').value, rol=$('mURol').value;
   const rut=$('mURut').value.trim(), cargo=$('mUCargo').value.trim(), area_id=$('mUArea').value||null;
   if(!nombre||!email||!password) return showErr('Nombre, email y contraseña son requeridos');
   if(password.length<6) return showErr('La contraseña debe tener 6+ caracteres');
   btn.disabled=true;
-  try{ await api('/auth/crear-usuario',{method:'POST',body:JSON.stringify({nombre,email,password,rol,rut:rut||null,cargo:cargo||null,area_id})});
+  try{ await api('/auth/crear-usuario',{method:'POST',body:JSON.stringify({nombre,apellidos:apellido||null,email,password,rol,rut:rut||null,cargo:cargo||null,area_id})});
     closeModal(); toast('Usuario creado','ok'); go('usuarios');
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }

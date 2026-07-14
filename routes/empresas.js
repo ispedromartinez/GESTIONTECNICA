@@ -197,10 +197,13 @@ router.post('/empresas/:id/modulos', soloSuper, async (req, res) => {
 // POST /api/usuarios — crear usuario (campos de la tabla + perfil + área)
 router.post('/usuarios', adminEmpresa, async (req, res) => {
   try {
-    const { nombre, email, password, rut, cargo, area_id } = req.body;
+    const { nombre, apellidos, email, password, rut, cargo, area_id } = req.body;
     let { rol, empresa_id } = req.body;
     if (!nombre || !email || !password || !rol)
       return res.status(400).json({ error: 'nombre, email, password y rol requeridos' });
+    // usuarios.nombre guarda el nombre COMPLETO (display/login); el perfil conserva
+    // nombre y apellidos por separado (igual que la carga masiva de usuarios).
+    const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ').trim();
     if (!ROLES_VALIDOS.includes(rol)) return res.status(400).json({ error: 'Rol inválido' });
     if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener 6+ caracteres' });
 
@@ -232,13 +235,13 @@ router.post('/usuarios', adminEmpresa, async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 12);
     const usuario = await db.usuarioInsert({
-      nombre, email: email.toLowerCase().trim(), password_hash, rol,
+      nombre: nombreCompleto, email: email.toLowerCase().trim(), password_hash, rol,
       empresa_id: rol === 'superadmin' ? null : empresa_id, activo: true
     });
 
-    // Perfil (RUT / cargo) y asignación de área, ya con el id del usuario
-    if (rutNorm || cargo)
-      await db.perfilUpsert({ usuario_id: usuario.id, rut: rutNorm, nombre, cargo: cargo || null });
+    // Perfil (nombre / apellidos / RUT / cargo) y asignación de área, ya con el id del usuario
+    if (rutNorm || cargo || apellidos)
+      await db.perfilUpsert({ usuario_id: usuario.id, rut: rutNorm, nombre, apellidos: apellidos || null, cargo: cargo || null });
     if (area_id)
       await db.usuarioAreaUpsert(usuario.id, area_id, req.user.usuario_id);
 

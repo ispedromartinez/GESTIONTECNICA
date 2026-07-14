@@ -187,6 +187,8 @@ let HOME_URL = '/dashboard';
           const nombreCompleto = [ (d.perfil && d.perfil.nombre) || d.usuario.nombre, d.perfil && d.perfil.apellidos ].filter(Boolean).join(' ');
           inputs[0].value = nombreCompleto;
         }
+        // Precargar y bloquear el SITIO que asignó el supervisor (WOM no usa LPU).
+        precargarSitioAsignadoWom(informeId, token);
       }
     })
     .catch(() => window.location.replace('/login'));
@@ -195,6 +197,29 @@ function cerrarSesion(){
   localStorage.removeItem('token');
   sessionStorage.removeItem('token');
   window.location.replace('/login');
+}
+// Trae el informe asignado y deja el SITIO precargado y bloqueado en el
+// formulario del técnico (el supervisor ya lo eligió al asignar la tarea).
+// Reintenta si el catálogo de sitios (select #instalacion) aún no cargó.
+function precargarSitioAsignadoWom(informeId, token, intentos){
+  intentos = intentos || 0;
+  fetch('/api/gestion/informes/' + encodeURIComponent(informeId), { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(inf){
+      if (!inf || !inf.sitio) return;
+      var sel = document.getElementById('instalacion');
+      if (!sel) return;
+      var existe = Array.prototype.some.call(sel.options, function(o){ return o.value === inf.sitio; });
+      if (!existe) {
+        if (intentos < 20) return setTimeout(function(){ precargarSitioAsignadoWom(informeId, token, intentos + 1); }, 250);
+        return; // el sitio asignado no está en el catálogo wom: el técnico elige normal
+      }
+      sel.value = inf.sitio;
+      sel.dispatchEvent(new Event('change', { bubbles: true })); // dispara el llenado de dirección
+      sel.disabled = true;                                       // bloquea: no puede cambiarlo
+      sel.title = 'Asignado por el supervisor — no editable';
+    })
+    .catch(function(){ /* silencioso: si falla, el técnico llena normal */ });
 }
 </script>
 

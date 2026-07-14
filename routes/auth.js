@@ -290,10 +290,12 @@ router.post('/crear-empresa', authMiddleware, requireRol('superadmin'), async (r
 router.post('/crear-usuario', authMiddleware, async (req, res) => {
   try {
     const { rol: rolCreador, empresa_id: empresaCreador } = req.user;
-    const { nombre, email, password, rol, empresa_id, rut, cargo, area_id } = req.body;
+    const { nombre, apellidos, email, password, rol, empresa_id, rut, cargo, area_id } = req.body;
 
     if (!nombre || !email || !password || !rol)
       return res.status(400).json({ error: 'nombre, email, password y rol son requeridos' });
+    // usuarios.nombre = nombre COMPLETO; el perfil guarda nombre y apellidos aparte.
+    const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ').trim();
 
     if (rolCreador === 'superadmin') {
       if (!['superadmin','admin_empresa','supervisor','tecnico'].includes(rol))
@@ -333,7 +335,7 @@ router.post('/crear-usuario', authMiddleware, async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 12);
     const usuario = await db.insertUsuario({
-      nombre,
+      nombre: nombreCompleto,
       email: email.toLowerCase().trim(),
       password_hash,
       rol,
@@ -341,9 +343,9 @@ router.post('/crear-usuario', authMiddleware, async (req, res) => {
       activo: true
     });
 
-    // Perfil (RUT / cargo) y asignación de área, ya con el id del usuario
-    if (rutNorm || cargo)
-      await gestionDB.perfilUpsert({ usuario_id: usuario.id, rut: rutNorm, nombre, cargo: cargo || null });
+    // Perfil (nombre / apellidos / RUT / cargo) y asignación de área, ya con el id del usuario
+    if (rutNorm || cargo || apellidos)
+      await gestionDB.perfilUpsert({ usuario_id: usuario.id, rut: rutNorm, nombre, apellidos: apellidos || null, cargo: cargo || null });
     if (area_id)
       await gestionDB.usuarioAreaUpsert(usuario.id, area_id, req.user.usuario_id);
 

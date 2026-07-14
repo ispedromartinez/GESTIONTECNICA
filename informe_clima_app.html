@@ -328,6 +328,9 @@ let HOME_URL = '/dashboard';
           const nombreCompleto = [ (d.perfil && d.perfil.nombre) || d.usuario.nombre, d.perfil && d.perfil.apellidos ].filter(Boolean).join(' ');
           selectTec(nombreCompleto);
         }
+        // Precargar SITIO y LPU desde la tarea que asignó el supervisor y
+        // bloquearlos: el técnico no vuelve a escribirlos ni los puede cambiar.
+        precargarSitioLpuAsignados(informeId, token);
       }
     })
     .catch(() => window.location.replace('/login'));
@@ -336,6 +339,43 @@ function cerrarSesion(){
   localStorage.removeItem('token');
   sessionStorage.removeItem('token');
   window.location.replace('/login');
+}
+// Trae el informe asignado (sitio + LPU los puso el supervisor al asignar la
+// tarea) y los deja precargados y bloqueados en el formulario del técnico.
+// Reintenta si el catálogo de sitios aún no cargó (para derivar código/dirección).
+function precargarSitioLpuAsignados(informeId, token, intentos){
+  intentos = intentos || 0;
+  fetch('/api/gestion/informes/' + encodeURIComponent(informeId), { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(inf){
+      if (!inf) return;
+      // Sitio: espera a que el catálogo (SITES) esté cargado para traer dirección/código.
+      if (inf.sitio && typeof selectSite === 'function') {
+        if (typeof SITES !== 'undefined' && Array.isArray(SITES) && SITES.length) {
+          var s = SITES.find(function(row){ return row[0] === inf.sitio; });
+          selectSite(inf.sitio, (s && s[1]) || '');
+        } else if (intentos < 20) {
+          // Catálogo aún sin cargar: reintenta en breve (máx ~5 s).
+          return setTimeout(function(){ precargarSitioLpuAsignados(informeId, token, intentos + 1); }, 250);
+        } else {
+          selectSite(inf.sitio, ''); // último recurso: al menos el nombre
+        }
+        // Bloqueo del sitio: oculta el botón ✕ para que no lo pueda cambiar.
+        var clr = document.getElementById('siteClear');
+        if (clr) clr.style.display = 'none';
+      }
+      // LPU: precargado y de solo lectura.
+      if (inf.lpu) {
+        var lpuEl = document.getElementById('lpu');
+        if (lpuEl) {
+          lpuEl.value = inf.lpu;
+          lpuEl.readOnly = true;
+          lpuEl.style.background = '#f0fdf4';
+          lpuEl.title = 'Asignado por el supervisor — no editable';
+        }
+      }
+    })
+    .catch(function(){ /* silencioso: si falla, el técnico llena normal */ });
 }
 </script>
 
