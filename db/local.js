@@ -478,6 +478,14 @@ const local = {
     listByTecnico(tecnico_id) {
       return db.prepare('SELECT * FROM informes WHERE tecnico_id = ? ORDER BY fecha_creacion DESC').all(tecnico_id);
     },
+    // Técnicos (activos) a quienes ESTE supervisor les asignó al menos un informe/tarea.
+    tecnicosAsignadosPor(supervisor_id) {
+      return db.prepare(`
+        SELECT DISTINCT u.id, u.nombre
+        FROM informes i JOIN usuarios u ON u.id = i.tecnico_id
+        WHERE i.supervisor_id = ? AND u.activo = 1
+      `).all(supervisor_id);
+    },
     // Informes donde el usuario es técnico O supervisor (para "Mis informes")
     listByUsuario(usuario_id) {
       return db.prepare(`

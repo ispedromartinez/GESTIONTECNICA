@@ -498,12 +498,17 @@ app.get('/api/reportes', authMiddleware, async (req, res) => {
 
     let reportes = [...tigo, ...wom, ...prev];
 
-    // Recorte por rol: supervisor → sus técnicos a cargo; técnico → él mismo.
+    // Recorte por rol: supervisor → sus técnicos a cargo + a quien asignó tarea;
+    // técnico → él mismo.
     if (rol === 'supervisor') {
       let nombres = [];
       try {
-        const tecs = await gestionDb.tecnicosDeSupervisor(req.user.usuario_id);
-        nombres = (tecs || []).map(t => (t.nombre || '').toLowerCase()).filter(Boolean);
+        const [vinculados, asignados] = await Promise.all([
+          gestionDb.tecnicosDeSupervisor(req.user.usuario_id),
+          gestionDb.tecnicosAsignadosPorSupervisor(req.user.usuario_id)
+        ]);
+        nombres = [...(vinculados || []), ...(asignados || [])]
+          .map(t => (t.nombre || '').toLowerCase()).filter(Boolean);
       } catch {}
       nombres.push((nombre || '').toLowerCase()); // incluye lo del propio supervisor
       reportes = reportes.filter(r =>

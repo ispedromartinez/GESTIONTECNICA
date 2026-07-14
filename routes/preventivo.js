@@ -294,8 +294,12 @@ router.get('/sla', async (req, res) => {
     } else if (req.user.rol === 'supervisor') {
       let nombres = [];
       try {
-        const tecs = await gestionDb.tecnicosDeSupervisor(req.user.usuario_id);
-        nombres = (tecs || []).map(t => (t.nombre || '').toLowerCase()).filter(Boolean);
+        const [vinculados, asignados] = await Promise.all([
+          gestionDb.tecnicosDeSupervisor(req.user.usuario_id),
+          gestionDb.tecnicosAsignadosPorSupervisor(req.user.usuario_id)
+        ]);
+        nombres = [...(vinculados || []), ...(asignados || [])]
+          .map(t => (t.nombre || '').toLowerCase()).filter(Boolean);
       } catch {}
       nombres.push((req.user.nombre || '').toLowerCase());
       rows = rows.filter(r => nombres.some(n => n && (r.tecnico || '').toLowerCase().includes(n)));

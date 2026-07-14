@@ -433,6 +433,22 @@ const db = {
     return local.supervisor_tecnico.tecnicosDe(supervisor_id);
   },
 
+  // Técnicos (activos) a quienes ESTE supervisor les asignó al menos un informe/tarea.
+  // Complementa a tecnicosDeSupervisor (vínculo admin) para Reportes/SLA: el
+  // supervisor ve también a quien asignó trabajo, aunque no esté vinculado.
+  async tecnicosAsignadosPorSupervisor(supervisor_id) {
+    if (supa) {
+      const { data } = await supa.from('informes')
+        .select('tecnico_id').eq('supervisor_id', supervisor_id);
+      const ids = [...new Set((data || []).map(r => r.tecnico_id).filter(Boolean))];
+      if (!ids.length) return [];
+      const { data: us } = await supa.from('usuarios')
+        .select('id,nombre,activo').in('id', ids);
+      return (us || []).filter(u => u.activo).map(u => ({ id: u.id, nombre: u.nombre }));
+    }
+    return local.informes.tecnicosAsignadosPor(supervisor_id);
+  },
+
   async esTecnicoDe(supervisor_id, tecnico_id) {
     if (supa) {
       const { data } = await supa.from('supervisor_tecnico').select('id')
