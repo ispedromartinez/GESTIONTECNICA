@@ -157,6 +157,9 @@ tr:hover td{background:var(--p-subtle);}
 .pill-supervisor{background:var(--p-green-soft);color:var(--p-green);}.pill-tecnico{background:var(--p-indigo-soft);color:var(--p-indigo);}
 .pill-correctivo{background:var(--p-accent-soft);color:var(--p-accent);}.pill-preventivo{background:var(--p-green-soft);color:var(--p-green);}.pill-temporal{background:var(--p-amber-soft);color:var(--p-amber);}
 .empty-state{padding:44px;text-align:center;color:var(--p-muted);font-size:13px;}
+.modal .empty-state{padding:22px 16px;}
+/* Select de "Asignar mis técnicos": un punto más compacto que el resto. */
+#amtProy{padding:8px 13px;font-size:13px;}
 .empty-icon{font-size:34px;margin-bottom:10px;opacity:.6;}
 .muted{color:var(--p-faint);}
 
@@ -164,9 +167,11 @@ tr:hover td{background:var(--p-subtle);}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);}
 .modal-bg.open{display:flex;}
 .modal-wrap{position:relative;width:100%;max-width:460px;border-radius:14px;overflow:hidden;background:var(--p-surface);border:1px solid var(--p-border);box-shadow:var(--p-sh-lg);}
-.modal{background:transparent;border:none;border-radius:0;width:100%;box-shadow:none;padding:26px 24px;max-height:90vh;overflow-y:auto;scrollbar-gutter:stable;}
-/* Reserva sitio para el scrollbar: sin esto tapaba el borde derecho de los
-   campos (las flechas de los <select> quedaban cortadas contra la orilla). */
+.modal{background:transparent;border:none;border-radius:0;width:100%;box-shadow:none;padding:26px 24px;max-height:90vh;overflow-y:auto;}
+/* Scrollbar clásico (width:10px, reserva espacio al aparecer) para no tapar la
+   orilla de los campos. Sin scrollbar-gutter:stable a propósito: reservaba el
+   hueco solo a la derecha y dejaba el banner de cabecera asimétrico (sangraba
+   completo a la izquierda pero no a la derecha). Sin gutter → simétrico. */
 .modal::-webkit-scrollbar{width:10px;}
 .modal::-webkit-scrollbar-thumb{background:rgba(15,23,42,.18);border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
 .modal::-webkit-scrollbar-thumb:hover{background:rgba(15,23,42,.32);background-clip:padding-box;}
