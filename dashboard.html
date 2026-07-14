@@ -893,7 +893,8 @@ async function init() {
     // KPIs del hero + proyectos asignados/personalizados
     cargarHomeKpis();
     renderSidebarProyectos();
-    await cargarMisProyectos();
+    // cargarMisProyectos() se omite: duplicaba las tarjetas de color de
+    // cargarModulosFijos() (Tigo/WOM/Preventivo ya filtradas por asignación).
     await cargarProyectosCustom();
     await cargarModulosFijos();
   } catch(e) { toast('Error de sesión: ' + e.message); }
@@ -1485,10 +1486,12 @@ async function cargarInformesProy() {
       fetch('/api/gestion/resumen', { headers: authH() }).then(r => r.ok ? r.json() : null).catch(() => null)
     ]);
     // Normaliza ambas formas (mis-proyectos: proyecto_id/proyecto_nombre · proyectos: id/nombre)
-    // Solo proyectos correctivos: "Informes por proyecto" no maneja preventivo.
-    // Excluye además las filas módulo (Tigo/WOM/Preventivo): ya tienen sus propios flujos fijos.
+    // Solo proyectos CORRECTIVOS: aquí el supervisor asigna trabajo (sitio+técnico) a
+    // sus técnicos. Los módulos Tigo/WOM son correctivos, así que SÍ aparecen (para
+    // Icetel, Tigo/WOM son proyectos correctivos). Se excluye únicamente Preventivo:
+    // tiene su propio módulo (/preventivo) — por template y por tipo.
     const norm = (Array.isArray(proyectos) ? proyectos : [])
-      .filter(p => !Object.keys(MODULOS_FIJOS).includes(p.template))
+      .filter(p => p.template !== 'preventivo')
       .map(p => ({
       id: p.proyecto_id || p.id,
       nombre: p.proyecto_nombre || p.nombre || 'Proyecto',

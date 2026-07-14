@@ -315,7 +315,7 @@ app.delete('/api/proyectos/:slug/sitios', authMiddleware, requireNivel(3), (req,
 });
 
 // Asignación masiva: mismos sitios a varios proyectos
-app.post('/api/proyectos/sitios/asignar', authMiddleware, requireNivel(3), (req, res) => {
+app.post('/api/proyectos/sitios/asignar', authMiddleware, requireNivel(2), (req, res) => {
   const { sitios, slugs } = req.body || {};
   if (!Array.isArray(slugs) || !slugs.length) return res.status(400).json({ error: 'slugs requeridos' });
   const ps = loadProyectos();

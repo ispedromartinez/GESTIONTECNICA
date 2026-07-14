@@ -208,7 +208,7 @@ async function init(){
     if(!me.ok){ window.location.replace('/login'); return; }
     const { usuario } = await me.json();
     USUARIO_ROL = usuario.rol;
-    puedeAsignar = (NIVEL[usuario.rol]||0) >= 3;
+    puedeAsignar = (NIVEL[usuario.rol]||0) >= 2;
     if(puedeAsignar){
       document.getElementById('btnAsignar').style.display='inline-flex';
       document.getElementById('btnNuevoSitio').style.display='inline-flex';
