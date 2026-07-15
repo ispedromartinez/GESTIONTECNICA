@@ -108,4 +108,15 @@ async function count(empresaId, modulo) {
   return c || 0;
 }
 
-module.exports = { list, add, bulkImport, resolve, replaceAll, count, claveSitio, setLocalImpl, MODULOS, normModulo };
+// Todas las filas de sitios con empresa/modulo (para búsqueda global).
+async function listAll() {
+  if (!supabase) {
+    const arr = localImpl ? localImpl.load() : [];
+    return arr.map(s => ({ ...fromRow(s), empresaId: s.empresa_id || null, modulo: s.modulo || null }));
+  }
+  const { data, error } = await supabase.from('sitios').select('*').order('nombre');
+  if (error) { console.error('sitios.listAll:', error.message); return []; }
+  return (data || []).map(s => ({ ...fromRow(s), empresaId: s.empresa_id || null, modulo: s.modulo || null }));
+}
+
+module.exports = { list, listAll, add, bulkImport, resolve, replaceAll, count, claveSitio, setLocalImpl, MODULOS, normModulo };

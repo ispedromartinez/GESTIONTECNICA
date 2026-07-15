@@ -330,6 +330,71 @@ app.post('/api/proyectos/sitios/asignar', authMiddleware, requireNivel(2), (req,
   res.json({ ok: true, asignados, omitidos });
 });
 
+// ── Búsqueda global ─────────────────────────────────────────────
+// NOTA: server.js YA tiene `equiposDb` (L18), `sitiosDb` (L19) y `gestionDb` (L17).
+// NO agregar requires. Usar esos nombres.
+
+// Carga sitios ya scopeados por empresa (o todos para superadmin).
+async function cargarSitios(req) {
+  if (req.user.rol === 'superadmin') return await sitiosDb.listAll();
+  const emp = req.user.empresa_id;
+  if (!emp) return [];
+  const mods = ['tigo', 'wom', 'preventivo'];
+  const listas = await Promise.all(mods.map(m => sitiosDb.list(emp, m).catch(() => [])));
+  return listas.flat();
+}
+
+app.get('/api/buscar', authMiddleware, async (req, res) => {
+  const vacio = { informes: [], sitios: [], equipos: [], tecnicos: [] };
+  const q = normBusq(req.query.q);
+  if (q.length < 2) return res.json(vacio);
+  const out = { informes: [], sitios: [], equipos: [], tecnicos: [] };
+
+  // Informes (clima + wom)
+  try {
+    const [clima, wom] = await Promise.all([dbClimaList(null), dbWomList(null)]);
+    const climaR = clima
+      .filter(i => matchTexto(q, i.codInforme, i.nombreSitio, i.codigoSitio, i.tecnico, i.numOT, i.eqNumero))
+      .map(i => ({ tipo: 'informe', subtipo: 'Tigo', id: i.id, codInforme: i.codInforme,
+        nombreSitio: i.nombreSitio, tecnico: i.tecnico, fecha: i.fecha, filename: i.filename, empresaId: i.empresaId }));
+    // OJO: el objeto WOM (fromWom) NO tiene codInforme/nombreSitio/numOT. Sus campos
+    // reales son: ticket, codInterno, instalacion, tipoActividad, tecnicos, equipo, fechaInicio.
+    const womR = wom
+      .filter(i => matchTexto(q, i.ticket, i.codInterno, i.instalacion, i.tipoActividad, i.tecnicos, i.equipo))
+      .map(i => ({ tipo: 'informe', subtipo: 'WOM', id: i.id, codInforme: i.ticket || i.codInterno || '',
+        nombreSitio: i.instalacion, tecnico: i.tecnicos, fecha: i.fechaInicio, filename: i.filename, empresaId: i.empresaId }));
+    out.informes = (await scopeBusqueda(req, 'informe', [...climaR, ...womR])).slice(0, 8);
+  } catch (e) { console.error('buscar informes:', e.message); }
+
+  // Sitios
+  try {
+    const sitios = (await cargarSitios(req))
+      .filter(s => matchTexto(q, s.nombre, s.codigo, s.direccion))
+      .map(s => ({ tipo: 'sitio', nombre: s.nombre, codigo: s.codigo, direccion: s.direccion, modulo: s.modulo || null }));
+    out.sitios = (await scopeBusqueda(req, 'sitio', sitios)).slice(0, 8);
+  } catch (e) { console.error('buscar sitios:', e.message); }
+
+  // Equipos
+  try {
+    const eq = (await equiposDb.list())
+      .filter(x => matchTexto(q, x.numero, x.sitio, x.marca, x.modelo))
+      .map(x => ({ tipo: 'equipo', id: x.id, numero: x.numero, sitio: x.sitio,
+        marca: x.marca, modelo: x.modelo, totalIntervenciones: x.totalIntervenciones, empresaId: x.empresaId }));
+    out.equipos = (await scopeBusqueda(req, 'equipo', eq)).slice(0, 8);
+  } catch (e) { console.error('buscar equipos:', e.message); }
+
+  // Técnicos (usuarios)
+  try {
+    const empParam = req.user.rol === 'superadmin' ? null : req.user.empresa_id;
+    const users = (await gestionDb.usuariosList(empParam))
+      .filter(us => matchTexto(q, us.nombre, us.email))
+      .map(us => ({ tipo: 'tecnico', id: us.id, nombre: us.nombre, email: us.email, rol: us.rol, empresa_id: us.empresa_id }));
+    out.tecnicos = (await scopeBusqueda(req, 'tecnico', users)).slice(0, 8);
+  } catch (e) { console.error('buscar tecnicos:', e.message); }
+
+  res.json(out);
+});
+
 // ── Equipos (hoja de vida de activos) ─────────────────────────
 app.get('/api/equipos', authMiddleware, async (req, res) => {
   try {
@@ -580,6 +645,31 @@ function filtrarInformesPorEmpresa(rows, user) {
 // ¿Este usuario puede acceder a un informe concreto (por id)?
 function puedeVerInforme(entry, user) {
   return canAccessTenant({ user }, entry && entry.empresaId);
+}
+
+// ── Búsqueda global: helpers ───────────────────────────────────
+function normBusq(s) {
+  return String(s == null ? '' : s)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+// true si qNorm (ya normalizado) está en alguno de los campos.
+function matchTexto(qNorm, ...campos) {
+  return campos.some(c => normBusq(c).includes(qNorm));
+}
+
+// Filtra filas de una fuente según el rol/empresa del usuario.
+// tipo: 'informe' | 'sitio' | 'equipo' | 'tecnico'
+// Nota: el scoping por técnico (supervisor/tecnico) se agrega en Task 2.
+async function scopeBusqueda(req, tipo, filas) {
+  const u = req.user;
+  if (u.rol === 'superadmin') return filas;               // ve todo
+  const emp = u.empresa_id || null;
+  if (tipo === 'informe' || tipo === 'equipo')
+    return filas.filter(f => (f.empresaId || null) === emp);
+  if (tipo === 'tecnico')
+    return filas.filter(f => (f.empresa_id || null) === emp);
+  // 'sitio': los sitios se cargan ya scopeados por empresa (ver cargarSitios); no re-filtra.
+  return filas;
 }
 
 // Escapa texto antes de inyectarlo en HTML (evita XSS en páginas públicas)
