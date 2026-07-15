@@ -659,17 +659,42 @@ function matchTexto(qNorm, ...campos) {
 
 // Filtra filas de una fuente según el rol/empresa del usuario.
 // tipo: 'informe' | 'sitio' | 'equipo' | 'tecnico'
-// Nota: el scoping por técnico (supervisor/tecnico) se agrega en Task 2.
 async function scopeBusqueda(req, tipo, filas) {
   const u = req.user;
-  if (u.rol === 'superadmin') return filas;               // ve todo
+  if (u.rol === 'superadmin') return filas;
   const emp = u.empresa_id || null;
-  if (tipo === 'informe' || tipo === 'equipo')
-    return filas.filter(f => (f.empresaId || null) === emp);
-  if (tipo === 'tecnico')
-    return filas.filter(f => (f.empresa_id || null) === emp);
-  // 'sitio': los sitios se cargan ya scopeados por empresa (ver cargarSitios); no re-filtra.
-  return filas;
+
+  // Base: recorta por empresa primero.
+  let base;
+  if (tipo === 'informe' || tipo === 'equipo') base = filas.filter(f => (f.empresaId || null) === emp);
+  else if (tipo === 'tecnico') base = filas.filter(f => (f.empresa_id || null) === emp);
+  else base = filas; // sitios ya vienen scopeados por empresa
+
+  // admin_empresa: empresa alcanza.
+  if (u.rol === 'admin_empresa') return base;
+
+  // supervisor / tecnico: además, por nombre de técnico.
+  const yo = await gestionDb.usuarioById(u.usuario_id).catch(() => null);
+  const nombres = new Set();
+  if (yo && yo.nombre) nombres.add(normBusq(yo.nombre));
+  if (u.rol === 'supervisor') {
+    const tecs = await gestionDb.tecnicosDeSupervisor(u.usuario_id).catch(() => []);
+    for (const t of tecs) if (t && t.nombre) nombres.add(normBusq(t.nombre));
+  }
+
+  if (tipo === 'informe') {
+    // clima: 'tecnico' (uno); wom: 'tecnico' aquí ya trae la cadena de 'tecnicos' (coma-separada)
+    return base.filter(f => {
+      const partes = String(f.tecnico || '').split(',').map(normBusq).filter(Boolean);
+      return partes.some(p => nombres.has(p));
+    });
+  }
+  if (tipo === 'tecnico') {
+    // supervisor: él + sus técnicos; tecnico: solo él
+    return base.filter(f => nombres.has(normBusq(f.nombre)));
+  }
+  // sitios / equipos: a nivel empresa (no se recortan por técnico).
+  return base;
 }
 
 // Escapa texto antes de inyectarlo en HTML (evita XSS en páginas públicas)

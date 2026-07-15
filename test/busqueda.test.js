@@ -21,6 +21,27 @@ function esperar(ms = 15000) {
 }
 const authOf = t => ({ Authorization: 'Bearer ' + t });
 
+// Estos tests corren contra un servidor local con estado persistente
+// (auth.db / *.json, no una DB efímera). Igual que en tenant-isolation.test.js,
+// la creación de empresa/usuario es idempotente: si ya existe (de una corrida
+// previa), se recupera su id en vez de fallar.
+async function crearEmpresaIdempotente(H, nombre, rut) {
+  const r = await fetch(`${BASE}/api/empresas`, { method: 'POST', headers: H,
+    body: JSON.stringify({ nombre, rut_empresa: rut }) });
+  if (r.ok) return (await r.json()).empresa.id;
+  const lista = await fetch(`${BASE}/api/empresas`, { headers: H }).then(x => x.json());
+  const found = (Array.isArray(lista) ? lista : []).find(
+    x => (x.rut_empresa || '').replace(/\./g, '') === rut.replace(/\./g, ''));
+  return found && found.id;
+}
+async function crearUsuarioIdempotente(H, empId, nombre, email, rol) {
+  const r = await fetch(`${BASE}/api/usuarios`, { method: 'POST', headers: H,
+    body: JSON.stringify({ nombre, email, password: 'Busq123!', rol, empresa_id: empId }) });
+  if (r.ok) return (await r.json()).usuario;
+  const lista = await fetch(`${BASE}/api/empresas/${empId}/usuarios`, { headers: H }).then(x => x.json());
+  return (Array.isArray(lista) ? lista : []).find(u => u.email === email);
+}
+
 before(async () => {
   server = spawn(process.execPath, ['server.js'], {
     cwd: path.join(__dirname, '..'),
@@ -44,10 +65,69 @@ before(async () => {
   });
 });
 
+test('busqueda: scoping por técnico (supervisor ve su técnico, técnico solo lo suyo)', async () => {
+  const H = { 'Content-Type': 'application/json', ...authOf(tokSuper) };
+  // Empresa
+  const empId = await crearEmpresaIdempotente(H, 'Busq Emp', '76500000-9');
+  // Supervisor SUP y técnicos TA (asignado) y TB (ajeno)
+  const sup = await crearUsuarioIdempotente(H, empId, 'Sup Uno','busq-sup@test.local','supervisor');
+  const ta  = await crearUsuarioIdempotente(H, empId, 'Tec Alfa','busq-ta@test.local','tecnico');
+  const tb  = await crearUsuarioIdempotente(H, empId, 'Tec Beta','busq-tb@test.local','tecnico');
+  // Asignar TA al supervisor (vínculo admin)
+  await fetch(`${BASE}/api/gestion/supervisores/${sup.id}/tecnicos`, { method:'POST', headers:H,
+    body: JSON.stringify({ tecnico_id: ta.id }) }).catch(()=>{});
+  // Activar módulo tigo + asignar TA y TB para que puedan generar
+  const proy = await fetch(`${BASE}/api/empresas/${empId}/modulos`, { method:'POST', headers:H,
+    body: JSON.stringify({ template:'tigo', activo:true }) }).then(r=>r.json());
+  for (const t of [ta, tb]) await fetch(`${BASE}/api/gestion/proyectos/${proy.proyecto.id}/asignaciones`,
+    { method:'POST', headers:H, body: JSON.stringify({ usuario_id: t.id }) }).catch(()=>{});
+  // Login TA y TB y generar un informe cada uno (tecnico = su nombre)
+  const login = e => fetch(`${BASE}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ email:e, password:'Busq123!' }) }).then(r=>r.json()).then(d=>d.token);
+  const tokTA = await login('busq-ta@test.local'), tokTB = await login('busq-tb@test.local');
+  const gen = (tok, nombre, cod) => fetch(`${BASE}/generar`, { method:'POST',
+    headers:{'Content-Type':'application/json', ...authOf(tok)},
+    body: JSON.stringify({ fecha:'2026-07-15', nombreSitio:'SCOPE SITIO', codigoSitio:'SC1',
+      tecnico: nombre, supervisor:'Sup Uno', numOT:'OT', codInforme: cod, photos:[], captions:[] }) });
+  await gen(tokTA, 'Tec Alfa', 'BUSQSCOPEA');
+  await gen(tokTB, 'Tec Beta', 'BUSQSCOPEB');
+  // Login supervisor
+  const tokSup = await login('busq-sup@test.local');
+  const buscar = tok => fetch(`${BASE}/api/buscar?q=scope`, { headers: authOf(tok) }).then(r=>r.json());
+
+  const rTA = await buscar(tokTA);
+  assert.ok(rTA.informes.some(i=>i.codInforme==='BUSQSCOPEA'), 'TA ve su informe');
+  assert.ok(!rTA.informes.some(i=>i.codInforme==='BUSQSCOPEB'), 'TA NO ve el de TB');
+
+  const rSup = await buscar(tokSup);
+  assert.ok(rSup.informes.some(i=>i.codInforme==='BUSQSCOPEA'), 'Supervisor ve el de su técnico TA');
+  assert.ok(!rSup.informes.some(i=>i.codInforme==='BUSQSCOPEB'), 'Supervisor NO ve el de TB (ajeno)');
+});
+
+test('busqueda: aislamiento por empresa (usuario de empresa B no ve datos de empresa A)', async () => {
+  const H = { 'Content-Type': 'application/json', ...authOf(tokSuper) };
+  // Empresa B, separada de "Busq Emp" (empresa A del test anterior)
+  const empBId = await crearEmpresaIdempotente(H, 'Busq Emp B', '76500001-7');
+  await crearUsuarioIdempotente(H, empBId, 'Admin B', 'busq-adminb@test.local', 'admin_empresa');
+
+  const login = e => fetch(`${BASE}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ email:e, password:'Busq123!' }) }).then(r=>r.json()).then(d=>d.token);
+  const tokAdminB = await login('busq-adminb@test.local');
+
+  const buscar = tok => fetch(`${BASE}/api/buscar?q=scope`, { headers: authOf(tok) }).then(r=>r.json());
+  const rAdminB = await buscar(tokAdminB);
+  assert.ok(!rAdminB.informes.some(i=>i.codInforme==='BUSQSCOPEA'), 'Admin B NO ve el informe de empresa A');
+  assert.ok(!rAdminB.informes.some(i=>i.codInforme==='BUSQSCOPEB'), 'Admin B NO ve el informe de empresa A (TB)');
+  assert.ok(!rAdminB.tecnicos.some(t=>t.nombre==='Tec Alfa'), 'Admin B NO ve el técnico de empresa A');
+});
+
 after(async () => {
   const list = await fetch(`${BASE}/registro`, { headers: authOf(tokSuper) }).then(r => r.json()).catch(() => []);
-  const f = list.find(x => x.codInforme === 'BUSQTEST01');
-  if (f) await fetch(`${BASE}/registro/${f.id}`, { method: 'DELETE', headers: authOf(tokSuper) }).catch(() => {});
+  const codigos = ['BUSQTEST01', 'BUSQSCOPEA', 'BUSQSCOPEB'];
+  for (const cod of codigos) {
+    const f = (Array.isArray(list) ? list : []).find(x => x.codInforme === cod);
+    if (f) await fetch(`${BASE}/registro/${f.id}`, { method: 'DELETE', headers: authOf(tokSuper) }).catch(() => {});
+  }
   if (server) server.kill();
 });
 
