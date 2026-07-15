@@ -953,7 +953,7 @@ async function cargarMisProyectos() {
         : `<span style="font-weight:800;font-size:14px;">${esc(ini)}</span>`;
       // Misma navegación que la lista del sidebar (abrirProyecto): preventivo
       // va al módulo de tareas, el resto abre los informes de ESE proyecto.
-      return `<div class="bento-tile" style="cursor:pointer" onclick="abrirProyecto('${esc(p.id)}','${esc((p.tipo || '').toLowerCase())}')">
+      return `<div class="bento-tile" style="cursor:pointer" onclick="abrirProyecto('${escArg(p.id)}','${escArg((p.tipo || '').toLowerCase())}')">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div class="bento-ico" style="margin-bottom:0;background:${esc(color)}22;color:${esc(color)};">${logoMini}</div>
             <span style="opacity:.45;font-size:20px;">→</span>
@@ -1516,7 +1516,7 @@ async function cargarInformesProy() {
       .filter(x => porNombre[x.nombre]).slice(0, 6);
     document.getElementById('ipChipsWrap').innerHTML = top.length
       ? `<div class="ip-chips"><span class="ip-chips-label">Más usados</span>${top.map(x =>
-          `<button class="ip-chip" data-pid="${esc(porNombre[x.nombre])}" onclick="ipQuick('${esc(porNombre[x.nombre])}')">${esc(x.nombre)} <span class="ip-chip-n">${x.count}</span></button>`).join('')}</div>`
+          `<button class="ip-chip" data-pid="${esc(porNombre[x.nombre])}" onclick="ipQuick('${escArg(porNombre[x.nombre])}')">${esc(x.nombre)} <span class="ip-chip-n">${x.count}</span></button>`).join('')}</div>`
       : '';
 
     // Conserva la selección previa si sigue disponible.
@@ -1670,7 +1670,7 @@ async function renderSidebarProyectos() {
       return `<button class="sb-item" onclick="location.href='${m.href}'"><span class="sb-icon">${t === 'preventivo' ? icoPrev : icoCorr}</span> ${esc(m.nombre)}</button>`;
     }).join('');
     const customHtml = norm.map(p =>
-      `<button class="sb-item" onclick="abrirProyecto('${esc(p.id)}','${esc(p.tipo)}')"><span class="sb-icon">${p.tipo === 'preventivo' ? icoPrev : icoCorr}</span> ${esc(p.nombre)}</button>`
+      `<button class="sb-item" onclick="abrirProyecto('${escArg(p.id)}','${escArg(p.tipo)}')"><span class="sb-icon">${p.tipo === 'preventivo' ? icoPrev : icoCorr}</span> ${esc(p.nombre)}</button>`
     ).join('');
     cont.innerHTML = fijosHtml + customHtml;
   } catch { cont.innerHTML = '<div class="sb-proy-empty">No se pudieron cargar.</div>'; }
@@ -1692,12 +1692,12 @@ async function ipLoad() {
     const r = await fetch('/api/gestion/proyectos/' + pid + '/informes', { headers: authH() });
     if (!r.ok) throw new Error('No se pudieron cargar los informes');
     const list = await r.json();
-    body.innerHTML = `<div class="ip-toolbar"><button class="ip-btn ip-btn-prim ip-btn-sm" onclick="ipModalInforme('${esc(pid)}')">+ Asignar tarea</button></div>
+    body.innerHTML = `<div class="ip-toolbar"><button class="ip-btn ip-btn-prim ip-btn-sm" onclick="ipModalInforme('${escArg(pid)}')">+ Asignar tarea</button></div>
       ${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Título</th><th>Técnico</th><th>Estado</th><th>Documento</th><th>Última actualización</th></tr></thead><tbody>
         ${list.map(i => `<tr><td class="td-sitio">${esc(i.titulo)}</td>
           <td class="td-tec">${esc(i.tecnico_nombre || '—')}
             ${i.estado === 'borrador'
-              ? `<button class="ip-reassign-btn" onclick="ipReasignar('${esc(i.id)}','${esc(i.tecnico_id || '')}','${esc(pid)}','${esc(i.titulo)}')" title="Reasignar técnico">
+              ? `<button class="ip-reassign-btn" onclick="ipReasignar('${escArg(i.id)}','${escArg(i.tecnico_id || '')}','${escArg(pid)}','${escArg(i.titulo)}')" title="Reasignar técnico">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                 </button>`
               : `<span class="ip-reassign-locked" title="No se puede reasignar: el informe ya fue enviado">
@@ -1735,7 +1735,7 @@ async function ipReasignar(informeId, tecnicoActualId, pid, titulo) {
       <div class="ip-tag-panel" id="ipTagPanel"></div>
     </div>
     <div class="ip-actions"><button class="ip-btn ip-btn-cancel" onclick="ipCloseModal()">Cancelar</button>
-      <button class="ip-btn ip-btn-confirm" id="ipTagSaveBtn" onclick="ipConfirmarReasignar('${esc(informeId)}')">Guardar</button></div>`);
+      <button class="ip-btn ip-btn-confirm" id="ipTagSaveBtn" onclick="ipConfirmarReasignar('${escArg(informeId)}')">Guardar</button></div>`);
   ipTagRenderChip();
   if (!window._ipTagOutsideBound) { document.addEventListener('mousedown', ipTagOutsideClose); window._ipTagOutsideBound = true; }
 }
@@ -1762,7 +1762,7 @@ function ipTagBuild(q) {
   const nq = (q || '').trim().toLowerCase();
   const opts = _ipTagTecnicos.filter(t => !nq || t.nombre.toLowerCase().includes(nq));
   panel.innerHTML = opts.length
-    ? opts.map(t => `<div class="ip-tag-opt" onmousedown="event.preventDefault();ipTagPick('${esc(t.id)}')">${esc(t.nombre)}
+    ? opts.map(t => `<div class="ip-tag-opt" onmousedown="event.preventDefault();ipTagPick('${escArg(t.id)}')">${esc(t.nombre)}
         ${_ipTagSel && _ipTagSel.id === t.id ? '<span class="ip-tag-opt-cur">Elegido</span>' : ''}</div>`).join('')
     : '<div class="ip-tag-empty">Sin resultados</div>';
   panel.classList.add('open');

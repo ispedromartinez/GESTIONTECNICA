@@ -479,7 +479,7 @@ async function verEmpresa(id){
         : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg></div>Sin áreas.</div>`}</div>
     <div class="section">
       <div class="sec-head"><div><div class="sec-name">Usuarios</div><div class="sec-sub">${usuarios.length}</div></div>
-        <button class="btn btn-green btn-sm" onclick="modalUsuarioEmpresa('${emp.id}','${esc(emp.nombre)}')">+ Nuevo usuario</button></div>
+        <button class="btn btn-green btn-sm" onclick="modalUsuarioEmpresa('${emp.id}','${escArg(emp.nombre)}')">+ Nuevo usuario</button></div>
       ${userRows}</div>
     <div class="section">
       <div class="sec-head"><div><div class="sec-name">Proyectos</div><div class="sec-sub">${proyectos.length}</div></div>
@@ -671,7 +671,7 @@ function renderUsuarios(){
         : '<span class="muted">—</span>'}</td>
       ${admin?`<td style="text-align:right;white-space:nowrap">
         <button class="btn btn-sm btn-ghost" onclick="editarUsuario('${u.id}')">Editar</button>
-        <button class="btn btn-sm btn-del" onclick="delUsuario('${u.id}','${esc(u.nombre)}')">Eliminar</button></td>`:''}</tr>`).join('')}
+        <button class="btn btn-sm btn-del" onclick="delUsuario('${u.id}','${escArg(u.nombre)}')">Eliminar</button></td>`:''}</tr>`).join('')}
   </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>No hay usuarios con ese filtro.</div>`;
 }
 
@@ -745,7 +745,7 @@ async function gestionarEquipo(pid){
       ${arr.map(p=>`<tr><td><b>${esc(p.nombre)}</b></td>
         <td><span class="pill pill-${p.rol}">${ROL_LABEL[p.rol]||p.rol}</span></td>
         <td><span class="pill pill-${p.rol_en_proyecto}">${p.rol_en_proyecto}</span></td>
-        <td style="text-align:right"><button class="btn btn-sm btn-del" onclick="quitarAsignacion('${pid}','${p.id}','${esc(p.nombre)}')">Quitar</button></td></tr>`).join('')}
+        <td style="text-align:right"><button class="btn btn-sm btn-del" onclick="quitarAsignacion('${pid}','${p.id}','${escArg(p.nombre)}')">Quitar</button></td></tr>`).join('')}
     </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Nadie asignado.</div>`}</div>`;
 
   $('tbTitle').textContent = proyecto.nombre;
@@ -1122,7 +1122,7 @@ async function modalProyecto(empresaId, empresaNombre){
     ${CHIPS_FIELD}
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-confirm" onclick="crearProyecto(this, ${empresaId?`'${esc(empresaId)}'`:'null'})">Crear proyecto</button></div>`);
+      <button class="btn-confirm" onclick="crearProyecto(this, ${empresaId?`'${escArg(empresaId)}'`:'null'})">Crear proyecto</button></div>`);
   // Técnicos de la empresa para el campo de chips (vacío al crear).
   const empInicial = empresaId || ($('mEmp') ? $('mEmp').value : null);
   chSetup(await chLoadTecnicos(empInicial), []);
@@ -1182,9 +1182,9 @@ async function modalEditarProyecto(pid, empresaId){
     </label><div class="hint">Los usuarios asignados no verán este proyecto; los administradores sí.</div></div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions">
-      <button class="btn-del" style="margin-right:auto" onclick="borrarProyecto('${pid}',${empresaId?`'${esc(empresaId)}'`:'null'},${p.template?`'${esc(p.template)}'`:'null'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Borrar proyecto</button>
+      <button class="btn-del" style="margin-right:auto" onclick="borrarProyecto('${pid}',${empresaId?`'${escArg(empresaId)}'`:'null'},${p.template?`'${escArg(p.template)}'`:'null'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Borrar proyecto</button>
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-confirm" onclick="guardarProyecto('${pid}',${empresaId?`'${esc(empresaId)}'`:'null'},this)">Guardar cambios</button></div>`);
+      <button class="btn-confirm" onclick="guardarProyecto('${pid}',${empresaId?`'${escArg(empresaId)}'`:'null'},this)">Guardar cambios</button></div>`);
   // Técnicos de la empresa + los ya asignados al proyecto.
   const asignados = await api('/api/gestion/proyectos/'+pid+'/personal').catch(()=>[]);
   const idsTec = (asignados||[]).filter(u=>u.rol==='tecnico').map(u=>u.id);

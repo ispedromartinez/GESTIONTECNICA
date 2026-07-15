@@ -459,7 +459,7 @@ function renderEquipos(list){
   const tb = document.getElementById('tbodyEquipos');
   if (!list.length){ tb.innerHTML = '<tr><td colspan="6" class="empty">Sin equipos registrados. Se crean automáticamente al generar informes con N° de equipo.</td></tr>'; return; }
   tb.innerHTML = list.map(e => `
-    <tr style="cursor:pointer" onclick="abrirEquipo('${esc(e.id)}')">
+    <tr style="cursor:pointer" onclick="abrirEquipo('${escArg(e.id)}')">
       <td class="td-sitio">${esc(e.sitio)}</td>
       <td><strong>${esc(e.numero)}</strong></td>
       <td>${esc(e.tipo)||'—'}</td>
@@ -486,8 +486,8 @@ async function abrirEquipo(id){
           <div style="font-weight:600">${esc(i.codigo)}</div>
           <div style="font-size:11px;color:#64748B">${esc(i.fecha)||'—'} · ${esc(i.tecnico)}</div>
         </div>
-        <button class="btn btn-ghost" style="padding:6px 10px" onclick="descargarInforme('${esc(i.urlDescarga)}','${esc(i.filename||'informe')}')">⬇</button>
-        <button class="btn btn-ghost" style="padding:6px 10px" title="Ver informe" onclick="verPdfInforme('${i.tipo==='WOM'?'wom':'clima'}','${esc(i.id)}')">👁</button>
+        <button class="btn btn-ghost" style="padding:6px 10px" onclick="descargarInforme('${escArg(i.urlDescarga)}','${escArg(i.filename||'informe')}')">⬇</button>
+        <button class="btn btn-ghost" style="padding:6px 10px" title="Ver informe" onclick="verPdfInforme('${i.tipo==='WOM'?'wom':'clima'}','${escArg(i.id)}')">👁</button>
       </div>`;
     document.getElementById('eqModalBody').innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px">

@@ -612,7 +612,7 @@ async function loadHistorial() {
             const cls  = ESTADO_CLS[i.estado] || 'tag-ok';
             const tipo = esPreventivo(i) ? 'Preventivo' : 'Correctivo';
             const doc  = i.doc_url
-              ? `<button class="btn btn-ghost btn-sm" onclick="verDocumento('${esc(i.doc_url)}','${esc(i.doc_nombre || 'informe')}')">Ver</button>`
+              ? `<button class="btn btn-ghost btn-sm" onclick="verDocumento('${escArg(i.doc_url)}','${escArg(i.doc_nombre || 'informe')}')">Ver</button>`
               : '<span style="color:var(--muted)">—</span>';
             return `<tr>
               <td class="col-site" data-label="Informe">${esc(i.titulo || '—')}</td>
@@ -735,11 +735,11 @@ async function loadTareasCorrectivas(){
             const lbl = ESTADO_LBL[i.estado] || i.estado;
             const cls = ESTADO_CLS[i.estado] || 'tag-ok';
             const verDoc = i.doc_url
-              ? `<button class="btn btn-ghost btn-sm" onclick="verDocumento('${esc(i.doc_url)}','${esc(i.doc_nombre || 'informe')}')">Ver documento</button>`
+              ? `<button class="btn btn-ghost btn-sm" onclick="verDocumento('${escArg(i.doc_url)}','${escArg(i.doc_nombre || 'informe')}')">Ver documento</button>`
               : '';
             const accion = i.estado === 'borrador'
-              ? `<button class="btn btn-primary btn-sm" onclick="genInforme('${esc(i.id)}','${formUrlFor(i)}')">Generar informe</button>`
-              : `<span style="display:inline-flex;gap:6px;flex-wrap:wrap;">${verDoc}<button class="btn btn-green btn-sm" onclick="cerrarInforme('${esc(i.id)}')">Cerrar</button></span>`;
+              ? `<button class="btn btn-primary btn-sm" onclick="genInforme('${escArg(i.id)}','${formUrlFor(i)}')">Generar informe</button>`
+              : `<span style="display:inline-flex;gap:6px;flex-wrap:wrap;">${verDoc}<button class="btn btn-green btn-sm" onclick="cerrarInforme('${escArg(i.id)}')">Cerrar</button></span>`;
             return `<tr>
               <td class="col-site" data-label="Informe">${esc(i.titulo || '—')}</td>
               <td data-label="Proyecto">${esc(i.proyecto_nombre || '—')}</td>
