@@ -76,13 +76,19 @@ inline `onclick="..."` handlers. The JWT lives in `localStorage`, so an
 unescaped field is stored-XSS → token theft → privilege escalation across the
 tenant.
 
-- Canonical helpers live in `informe_clima_app.html` and `informe_wom_app.html`:
+- Canonical helpers live in **`common.js`** (single source, loaded by every
+  page before its own `<script>`):
   - `esc(s)` — escapes `& < > " '` for HTML/attribute contexts.
   - `escArg(s)` — `esc()` plus backslash/quote escaping for JS string args.
-- This is **per-page**: it does NOT propagate automatically. A new module page
-  (e.g. a custom template built from `nuevo_proyecto.html`) must copy the
-  helpers and wrap its own interpolations. Use the Tigo/WOM pages as the mold.
-- Fixed in WOM history on 2026-07-13 (commit `7f89cd0`); Tigo already did this.
+- Helpers are now **shared** (no longer per-page): a new module page only needs
+  to include `common.js`. Earlier each page had its own copy and the drift
+  caused an XSS (WOM lacked them).
+- **Trap — inside `onclick="f('${...}')"` use `escArg()`, NOT `esc()`.** `esc()`
+  encodes `'` as `&#39;`, which the HTML parser decodes back to `'` before the JS
+  engine reads the attribute — breaking out of the string literal. `escArg()`
+  backslash-escapes it so it stays inert. Text/attribute contexts keep `esc()`.
+- Fixed in WOM history on 2026-07-13 (commit `7f89cd0`); centralized to
+  `common.js`; onclick `esc→escArg` fix on 2026-07-15 (commit `23c5503`).
 
 ## Equipos (hoja de vida)
 
