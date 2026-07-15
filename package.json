@@ -25,6 +25,6 @@
     "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz"
   }
 }
