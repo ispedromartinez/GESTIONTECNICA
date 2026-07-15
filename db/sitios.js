@@ -114,7 +114,7 @@ async function listAll() {
     const arr = localImpl ? localImpl.load() : [];
     return arr.map(s => ({ ...fromRow(s), empresaId: s.empresa_id || null, modulo: s.modulo || null }));
   }
-  const { data, error } = await supabase.from('sitios').select('*').order('nombre');
+  const { data, error } = await supabase.from('sitios_catalogo').select('*').order('nombre');
   if (error) { console.error('sitios.listAll:', error.message); return []; }
   return (data || []).map(s => ({ ...fromRow(s), empresaId: s.empresa_id || null, modulo: s.modulo || null }));
 }
