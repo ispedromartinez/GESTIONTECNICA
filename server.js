@@ -676,10 +676,10 @@ async function scopeBusqueda(req, tipo, filas) {
   // supervisor / tecnico: además, por nombre de técnico.
   const yo = await gestionDb.usuarioById(u.usuario_id).catch(() => null);
   const nombres = new Set();
-  if (yo && yo.nombre) nombres.add(normBusq(yo.nombre));
+  const n = normBusq(yo && yo.nombre); if (n) nombres.add(n);
   if (u.rol === 'supervisor') {
     const tecs = await gestionDb.tecnicosDeSupervisor(u.usuario_id).catch(() => []);
-    for (const t of tecs) if (t && t.nombre) nombres.add(normBusq(t.nombre));
+    for (const t of tecs) { const n = normBusq(t && t.nombre); if (n) nombres.add(n); }
   }
 
   if (tipo === 'informe') {
