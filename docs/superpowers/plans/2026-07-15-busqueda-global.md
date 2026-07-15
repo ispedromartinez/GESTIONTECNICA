@@ -18,6 +18,7 @@
 - Match normalizado sin acentos: `String(x).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim()`.
 - Patrón de dualidad de almacenamiento: reusar los helpers que ya hacen `if(supabase){}else{}` (`dbClimaList`, `dbWomList`, `equipos.list`, `sitios.list`, `db.usuariosList`).
 - Los informes legacy guardan el técnico como TEXTO: clima en `tecnico` (uno), WOM en `tecnicos` (varios, coma-separados). El scoping por técnico compara nombres normalizados.
+- Campos reales de WOM (`fromWom`): `ticket`, `codInterno`, `instalacion` (=sitio), `tipoActividad`, `tecnicos`, `equipo`, `fechaInicio`. NO tiene `codInforme`/`nombreSitio`/`numOT` (esos son de clima). El resultado WOM mapea ticket→codInforme, instalacion→nombreSitio, tecnicos→tecnico, fechaInicio→fecha.
 - Modo de verificación: `USE_LOCAL_DB=true`, no toca producción.
 
 ---
@@ -213,10 +214,12 @@ app.get('/api/buscar', authMiddleware, async (req, res) => {
       .filter(i => matchTexto(q, i.codInforme, i.nombreSitio, i.codigoSitio, i.tecnico, i.numOT, i.eqNumero))
       .map(i => ({ tipo: 'informe', subtipo: 'Tigo', id: i.id, codInforme: i.codInforme,
         nombreSitio: i.nombreSitio, tecnico: i.tecnico, fecha: i.fecha, filename: i.filename, empresaId: i.empresaId }));
+    // OJO: el objeto WOM (fromWom) NO tiene codInforme/nombreSitio/numOT. Sus campos
+    // reales son: ticket, codInterno, instalacion, tipoActividad, tecnicos, equipo, fechaInicio.
     const womR = wom
-      .filter(i => matchTexto(q, i.codInforme, i.nombreSitio, i.codigoSitio, i.tecnicos, i.numOT, i.equipo))
-      .map(i => ({ tipo: 'informe', subtipo: 'WOM', id: i.id, codInforme: i.codInforme,
-        nombreSitio: i.nombreSitio, tecnico: i.tecnicos, fecha: i.fecha, filename: i.filename, empresaId: i.empresaId }));
+      .filter(i => matchTexto(q, i.ticket, i.codInterno, i.instalacion, i.tipoActividad, i.tecnicos, i.equipo))
+      .map(i => ({ tipo: 'informe', subtipo: 'WOM', id: i.id, codInforme: i.ticket || i.codInterno || '',
+        nombreSitio: i.instalacion, tecnico: i.tecnicos, fecha: i.fechaInicio, filename: i.filename, empresaId: i.empresaId }));
     out.informes = (await scopeBusqueda(req, 'informe', [...climaR, ...womR])).slice(0, 8);
   } catch (e) { console.error('buscar informes:', e.message); }
 
