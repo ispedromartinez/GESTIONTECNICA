@@ -273,6 +273,14 @@ tr:hover td{background:var(--p-subtle);}
 @media(prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important;}
 }
+
+/* ── Auditoría: badges y detalle ── */
+.aud-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;}
+.aud-crear{background:#DCFCE7;color:#166534;}
+.aud-borrar{background:#FEE2E2;color:#991B1B;}
+.aud-vincular{background:#DBEAFE;color:#1E40AF;}
+.aud-otro{background:#E5E7EB;color:#374151;}
+.aud-det{color:#64748B;font-size:12px;max-width:340px;overflow-wrap:anywhere;}
 </style>
 <link rel="stylesheet" href="/animations.css">
 <script defer src="/animations.js"></script>
@@ -394,6 +402,50 @@ const VIEWS = {};
 
 // ── Auditoría ──────────────────────────────────────────────────
 let _auditRows = [];
+const AUD_ACCION = { crear:'Creó', borrar:'Borró', vincular:'Vinculó', desvincular:'Desvinculó' };
+const AUD_ENTIDAD = { empresa:'empresa', usuario:'usuario', proyecto:'proyecto', supervisor_tecnico:'técnico' };
+function auditAccionLabel(r){
+  const a = AUD_ACCION[r.accion] || r.accion;
+  const e = AUD_ENTIDAD[r.entidad] || r.entidad;
+  return `${a} ${e}`;
+}
+function auditBadgeClass(accion){
+  if(accion==='crear') return 'aud-crear';
+  if(accion==='borrar') return 'aud-borrar';
+  if(accion==='vincular'||accion==='desvincular') return 'aud-vincular';
+  return 'aud-otro';
+}
+function auditFechaFmt(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return esc(iso||'');
+  return esc(d.toLocaleString('es-CL', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }));
+}
+function auditDetalle(r){
+  if(!r.detalle) return '—';
+  let obj; try { obj = JSON.parse(r.detalle); } catch { return esc(String(r.detalle)); }
+  if(obj && typeof obj === 'object'){
+    const parts = Object.entries(obj).map(([k,v]) => `${esc(k)}: ${esc(String(v))}`);
+    return parts.join(' · ') || '—';
+  }
+  return esc(String(obj));
+}
+function renderAuditVista(){
+  const rows = _auditRows.map(r => `<tr>
+    <td>${auditFechaFmt(r.fecha)}</td>
+    <td>${esc(r.usuario_email || '—')}</td>
+    <td><span class="aud-badge ${auditBadgeClass(r.accion)}">${esc(auditAccionLabel(r))}</span></td>
+    <td>${esc(r.entidad_id || '—')}</td>
+    <td class="aud-det">${auditDetalle(r)}</td>
+  </tr>`);
+  $('content').innerHTML = sectionTable({
+    name: 'Registro de auditoría',
+    sub: `${_auditRows.length} acciones registradas`,
+    head: ['Fecha', 'Usuario', 'Acción', 'ID entidad', 'Detalle'],
+    rows,
+    emptyIcon: '📋',
+    emptyMsg: 'Sin registros de auditoría todavía.'
+  });
+}
 VIEWS.auditoria = async () => {
   try {
     _auditRows = await api('/api/gestion/auditoria');
@@ -405,7 +457,7 @@ VIEWS.auditoria = async () => {
     return;
   }
   // Task 2 reemplaza esta línea por renderAuditVista().
-  $('content').innerHTML = `<div class="section"><div class="empty-state">${_auditRows.length} registros cargados</div></div>`;
+  renderAuditVista();
 };
 
 // ── Empresas / Clientes (superadmin) — LISTA ──
