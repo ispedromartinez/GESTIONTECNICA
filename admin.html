@@ -141,6 +141,7 @@ a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,
 .btn-del:hover{background:#FEE2E2;}
 select.filter,input.filter{border:1.5px solid var(--p-border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;color:var(--p-text);background:var(--p-surface);outline:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
 select.filter:focus,input.filter:focus{border-color:var(--p-accent);box-shadow:0 0 0 3px rgba(0,115,234,.12);}
+.inp-sm{padding:6px 10px;border:1px solid var(--p-border);border-radius:8px;font-size:13px;background:var(--p-surface);color:inherit;}
 
 table{width:100%;border-collapse:collapse;}
 th{text-align:left;font-size:11px;font-weight:700;color:var(--p-muted);text-transform:uppercase;letter-spacing:.5px;padding:12px 22px;border-bottom:1px solid var(--p-border);background:var(--p-subtle);}
@@ -402,6 +403,7 @@ const VIEWS = {};
 
 // ── Auditoría ──────────────────────────────────────────────────
 let _auditRows = [];
+let auditFiltros = { accion:'', usuario:'', texto:'' };
 const AUD_ACCION = { crear:'Creó', borrar:'Borró', vincular:'Vinculó', desvincular:'Desvinculó' };
 const AUD_ENTIDAD = { empresa:'empresa', usuario:'usuario', proyecto:'proyecto', supervisor_tecnico:'técnico' };
 function auditAccionLabel(r){
@@ -429,8 +431,37 @@ function auditDetalle(r){
   }
   return esc(String(obj));
 }
+function auditFiltradas(){
+  const f = auditFiltros;
+  const u = f.usuario.trim().toLowerCase();
+  const t = f.texto.trim().toLowerCase();
+  return _auditRows.filter(r => {
+    if(f.accion && r.accion !== f.accion) return false;
+    if(u && !String(r.usuario_email||'').toLowerCase().includes(u)) return false;
+    if(t){
+      const hay = `${r.usuario_email||''} ${r.entidad||''} ${r.entidad_id||''} ${r.detalle||''}`.toLowerCase();
+      if(!hay.includes(t)) return false;
+    }
+    return true;
+  });
+}
+function auditAplicar(){
+  auditFiltros.accion = $('audAccion').value;
+  auditFiltros.usuario = $('audUsuario').value;
+  auditFiltros.texto = $('audTexto').value;
+  renderAuditVista();
+}
 function renderAuditVista(){
-  const rows = _auditRows.map(r => `<tr>
+  const data = auditFiltradas();
+  const accionesUnicas = [...new Set(_auditRows.map(r => r.accion))].sort();
+  const opts = ['<option value="">Todas las acciones</option>']
+    .concat(accionesUnicas.map(a => `<option value="${esc(a)}" ${auditFiltros.accion===a?'selected':''}>${esc(AUD_ACCION[a]||a)}</option>`))
+    .join('');
+  const tools = `
+    <select id="audAccion" class="inp-sm" onchange="auditAplicar()">${opts}</select>
+    <input id="audUsuario" class="inp-sm" placeholder="Filtrar por usuario" value="${esc(auditFiltros.usuario)}" oninput="auditAplicar()">
+    <input id="audTexto" class="inp-sm" placeholder="Buscar…" value="${esc(auditFiltros.texto)}" oninput="auditAplicar()">`;
+  const rows = data.map(r => `<tr>
     <td>${auditFechaFmt(r.fecha)}</td>
     <td>${esc(r.usuario_email || '—')}</td>
     <td><span class="aud-badge ${auditBadgeClass(r.accion)}">${esc(auditAccionLabel(r))}</span></td>
@@ -439,12 +470,18 @@ function renderAuditVista(){
   </tr>`);
   $('content').innerHTML = sectionTable({
     name: 'Registro de auditoría',
-    sub: `${_auditRows.length} acciones registradas`,
+    sub: `${data.length} de ${_auditRows.length} acciones`,
+    tools,
     head: ['Fecha', 'Usuario', 'Acción', 'ID entidad', 'Detalle'],
     rows,
     emptyIcon: '📋',
-    emptyMsg: 'Sin registros de auditoría todavía.'
+    emptyMsg: _auditRows.length ? 'Ningún registro coincide con los filtros.' : 'Sin registros de auditoría todavía.'
   });
+  // Mantener foco tras re-render de inputs de texto
+  const foco = document.activeElement && document.activeElement.id;
+  if(foco==='audUsuario' || foco==='audTexto'){
+    const el = $(foco); if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  }
 }
 VIEWS.auditoria = async () => {
   try {
