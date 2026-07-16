@@ -24,8 +24,9 @@ function scopeEmpresa(req, res, next) {
 }
 
 const ROLES_VALIDOS = ['superadmin','admin_empresa','supervisor','tecnico'];
-// Mismas 3 categorías ya usadas en proyectos (admin.html CAT_LABEL), como áreas por defecto.
-const AREAS_DEFAULT = ['Clima', 'Energía', 'Obras Civiles (OOCC)'];
+// Mismas categorías ya usadas en proyectos (admin.html CAT_LABEL) + Multitarea,
+// como áreas por defecto de cada empresa nueva.
+const AREAS_DEFAULT = ['Clima', 'Energía', 'Obras Civiles (OOCC)', 'Multitarea'];
 
 // ════════════════════════════════════════════════════════════════
 // EMPRESAS
@@ -197,8 +198,10 @@ router.post('/empresas/:id/modulos', soloSuper, async (req, res) => {
 // POST /api/usuarios — crear usuario (campos de la tabla + perfil + área)
 router.post('/usuarios', adminEmpresa, async (req, res) => {
   try {
-    const { nombre, apellidos, email, password, rut, cargo, area_id } = req.body;
+    const { nombre, apellidos, email, password, rut, cargo, area_id, area_ids } = req.body;
     let { rol, empresa_id } = req.body;
+    // Acepta varias áreas (area_ids) o una sola (area_id, compat)
+    const areasFinal = [...new Set(Array.isArray(area_ids) ? area_ids : (area_id ? [area_id] : []))];
     if (!nombre || !email || !password || !rol)
       return res.status(400).json({ error: 'nombre, email, password y rol requeridos' });
     // usuarios.nombre guarda el nombre COMPLETO (display/login); el perfil conserva
@@ -226,9 +229,9 @@ router.post('/usuarios', adminEmpresa, async (req, res) => {
         return res.status(409).json({ error: 'Ese RUT ya está registrado' });
     }
 
-    // Área (opcional): debe pertenecer a la empresa del usuario
-    if (area_id) {
-      const area = await db.areaById(area_id);
+    // Áreas (opcionales): todas deben pertenecer a la empresa del usuario
+    for (const areaId of areasFinal) {
+      const area = await db.areaById(areaId);
       if (!area || area.empresa_id !== empresa_id)
         return res.status(400).json({ error: 'El área no pertenece a esta empresa' });
     }
@@ -242,8 +245,8 @@ router.post('/usuarios', adminEmpresa, async (req, res) => {
     // Perfil (nombre / apellidos / RUT / cargo) y asignación de área, ya con el id del usuario
     if (rutNorm || cargo || apellidos)
       await db.perfilUpsert({ usuario_id: usuario.id, rut: rutNorm, nombre, apellidos: apellidos || null, cargo: cargo || null });
-    if (area_id)
-      await db.usuarioAreaUpsert(usuario.id, area_id, req.user.usuario_id);
+    for (const areaId of areasFinal)
+      await db.usuarioAreaUpsert(usuario.id, areaId, req.user.usuario_id);
 
     audit.registrar(req, 'crear', 'usuario', usuario.id, { email: usuario.email, rol: usuario.rol });
     res.json({ ok: true, usuario });

@@ -42,9 +42,33 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 .field label{display:block;font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
 .field input,.field select,.field textarea{width:100%;border:1.5px solid #E2E8F0;border-radius:9px;padding:10px 14px;font-size:14px;color:#0F172A;font-family:inherit;outline:none;transition:.15s;background:#fff;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:#0073EA;box-shadow:0 0 0 3px rgba(0,115,234,.1);}
+/* Select mejorado (searchable-select): el script copia box-sizing:content-box del
+   nativo y con width:100% quedaba MÁS ANCHO que los inputs de al lado (desalineado).
+   Mismo parche que admin.html / informe_wom_app.html. */
+.field .ss-disp{width:100%;box-sizing:border-box!important;height:auto!important;}
 .field textarea{resize:vertical;min-height:80px;line-height:1.6;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .field-hint{font-size:11px;color:var(--faint);margin-top:5px;}
+
+/* ÁREA DEL PROYECTO: pills seleccionables (una sola) + crear área inline */
+.area-picks{display:flex;flex-wrap:wrap;gap:8px;}
+.area-pick{position:relative;display:inline-flex;}
+.area-pick input{position:absolute;opacity:0;pointer-events:none;}
+.area-pick span{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:999px;border:1.5px solid #E2E8F0;background:#fff;font-size:12.5px;font-weight:600;color:#64748B;cursor:pointer;user-select:none;transition:.15s;}
+.area-pick span::before{content:'';width:13px;height:13px;border-radius:50%;border:1.5px solid #CBD5E1;background:#fff;flex:none;transition:.15s;}
+.area-pick span:hover{border-color:#CBD5E1;color:#0F172A;}
+.area-pick input:checked + span{background:#EAF3FE;border-color:#0073EA;color:#0073EA;}
+.area-pick input:checked + span::before{border-color:#0073EA;background:#0073EA;box-shadow:inset 0 0 0 3px #EAF3FE;}
+.area-pick input:focus-visible + span{outline:2px solid #0073EA;outline-offset:2px;}
+.area-add{display:inline-flex;align-items:center;padding:8px 15px;border-radius:999px;border:1.5px dashed #CBD5E1;background:#fff;font-size:12.5px;font-weight:600;color:#64748B;cursor:pointer;font-family:inherit;transition:.15s;}
+.area-add:hover{border-color:#0073EA;color:#0073EA;}
+.area-new{display:flex;gap:8px;margin-top:10px;}
+.area-new input{flex:1;}
+/* Estado vacío del picker de áreas: bloque con la misma altura visual que las pills,
+   para que el campo no quede como texto suelto mientras no hay empresa elegida. */
+.area-empty{display:flex;align-items:center;width:100%;padding:10px 14px;border:1.5px dashed #E2E8F0;border-radius:9px;background:#F8FAFC;font-size:12.5px;color:#94A3B8;}
+.area-new button{border:none;border-radius:9px;background:#0073EA;color:#fff;font-size:13px;font-weight:700;padding:0 18px;cursor:pointer;font-family:inherit;transition:.15s;}
+.area-new button:hover{background:#0060C7;}
 
 /* SLUG PREVIEW */
 .slug-preview{font-size:12px;background:#F0F2F8;padding:8px 12px;border-radius:7px;margin-top:6px;color:#64748B;font-family:monospace;}
@@ -254,12 +278,13 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
       <div class="field-hint">Define cómo se agrupan sus informes y tareas (correctivo / preventivo).</div>
     </div>
     <div class="field">
-      <label>Categoría</label>
-      <select id="pCategoria">
-        <option value="clima">Clima</option>
-        <option value="energia">Energía</option>
-        <option value="obras_civiles">Obras civiles</option>
-      </select>
+      <label>Área</label>
+      <div class="area-picks" id="pAreas"><div class="area-empty">Las áreas aparecerán al seleccionar la empresa.</div></div>
+      <div class="area-new" id="pAreaNewRow" style="display:none">
+        <input type="text" id="pAreaNombre" placeholder="Nombre del área nueva (ej: Redes)">
+        <button type="button" onclick="crearAreaProyecto()">Crear área</button>
+      </div>
+      <div class="field-hint">Se toma de las áreas de la empresa. Si creas una nueva aquí, también se agrega a la empresa.</div>
     </div>
     <div class="field">
       <label>Identificador (slug)</label>
@@ -488,7 +513,7 @@ const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
 let state = {
   empresa_id:'', empresa_nombre:'',
   nombre:'', color:'#0073EA', logo: null,
-  tipo:'correctivo', categoria:'clima',
+  tipo:'correctivo', categoria:null,
   template: null, sitios: [], supervisores: [], tecnicos: []
 };
 let sitiosCSV = []; // sitios importados desde archivo
@@ -521,11 +546,13 @@ function validarPaso(n) {
     const nom = document.getElementById('pNombre').value.trim();
     if (!emp.value) { showErr('Selecciona la empresa del proyecto.'); return false; }
     if (!nom) { showErr('El nombre del proyecto es requerido.'); return false; }
+    const areaSel = document.querySelector('input[name="pArea"]:checked');
+    if (areasEmpresa.length && !areaSel) { showErr('Selecciona el área del proyecto.'); return false; }
     state.empresa_id = emp.value;
     state.empresa_nombre = emp.options[emp.selectedIndex].text;
     state.nombre = nom;
     state.tipo = document.getElementById('pTipo').value;
-    state.categoria = document.getElementById('pCategoria').value;
+    state.categoria = areaSel ? areaSel.value : null;
     state.color  = document.getElementById('pColor').value;
   }
   if (n===3) {
@@ -539,6 +566,60 @@ function syncColorText() { document.getElementById('pColorText').value = documen
 function syncColorPicker() {
   const v = document.getElementById('pColorText').value;
   if (/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById('pColor').value = v;
+}
+
+// ── Áreas de la empresa (pills, una sola) ────────────────────────
+let areasEmpresa = [];
+async function cargarAreas() {
+  const empId = document.getElementById('pEmpresa').value;
+  const cont = document.getElementById('pAreas');
+  if (!empId) {
+    areasEmpresa = [];
+    cont.innerHTML = '<div class="area-empty">Las áreas aparecerán al seleccionar la empresa.</div>';
+    return;
+  }
+  try {
+    const r = await fetch('/auth/areas?empresa_id=' + encodeURIComponent(empId), { headers: authH() });
+    areasEmpresa = r.ok ? await r.json() : [];
+  } catch { areasEmpresa = []; }
+  renderAreas();
+}
+function renderAreas() {
+  const cont = document.getElementById('pAreas');
+  // conserva la selección si sigue existiendo; si no, preselecciona la primera
+  const previa = document.querySelector('input[name="pArea"]:checked')?.value || state.categoria;
+  const sel = areasEmpresa.some(a => a.nombre === previa) ? previa : (areasEmpresa[0]?.nombre || null);
+  cont.innerHTML = areasEmpresa.map(a =>
+    `<label class="area-pick"><input type="radio" name="pArea" value="${esc(a.nombre)}" ${a.nombre===sel?'checked':''}><span>${esc(a.nombre)}</span></label>`
+  ).join('') + `<button type="button" class="area-add" onclick="toggleAreaNueva()">+ Nueva área</button>`;
+}
+function toggleAreaNueva() {
+  const row = document.getElementById('pAreaNewRow');
+  const abrir = row.style.display === 'none';
+  row.style.display = abrir ? 'flex' : 'none';
+  if (abrir) document.getElementById('pAreaNombre').focus();
+}
+async function crearAreaProyecto() {
+  const nombre = document.getElementById('pAreaNombre').value.trim();
+  const empId = document.getElementById('pEmpresa').value;
+  if (!empId) { showErr('Selecciona primero la empresa.'); return; }
+  if (!nombre) { showErr('Escribe el nombre del área nueva.'); return; }
+  try {
+    const r = await fetch('/auth/crear-area', {
+      method: 'POST',
+      headers: authH({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ nombre, empresa_id: empId })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'No se pudo crear el área');
+    state.categoria = data.area.nombre;
+    document.getElementById('pAreaNombre').value = '';
+    document.getElementById('pAreaNewRow').style.display = 'none';
+    await cargarAreas();
+    // dejar seleccionada la recién creada (el radio previo sigue marcado tras re-render)
+    document.querySelectorAll('input[name="pArea"]').forEach(i => { i.checked = (i.value === data.area.nombre); });
+    toast('✓ Área creada y agregada a la empresa', 'ok');
+  } catch (e) { showErr(e.message); }
 }
 
 // ── Paso 2: Logo ────────────────────────────────────────────────
@@ -790,7 +871,8 @@ async function cargarEmpresas() {
 }
 
 // ── Init: primer sitio vacío y primer persona vacía ──────────────
-cargarEmpresas();
+cargarEmpresas().then(cargarAreas);
+document.getElementById('pEmpresa').addEventListener('change', cargarAreas);
 addSitioRow();
 addPersona('sup');
 addPersona('tec');

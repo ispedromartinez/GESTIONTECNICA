@@ -243,12 +243,20 @@ app.post('/api/proyectos', authMiddleware, requireRol('superadmin', 'admin_empre
     // Admin, el dashboard y el panel del técnico). No rompe la creación si falla.
     try {
       const TIPOS = ['correctivo', 'preventivo', 'temporal'];
-      const CATS = ['clima', 'energia', 'obras_civiles'];
+      // El área del proyecto (columna "categoria") debe ser un área activa de la
+      // empresa (por nombre) o uno de los slugs legacy clima/energia/obras_civiles.
+      const CATS_LEGACY = ['clima', 'energia', 'obras_civiles'];
+      let categoriaFinal = null;
+      if (categoria) {
+        const areasEmp = await gestionDb.areasByEmpresa(empresa_id).catch(() => []);
+        if (CATS_LEGACY.includes(categoria) || areasEmp.some(a => a.nombre === categoria))
+          categoriaFinal = categoria;
+      }
       await gestionDb.proyectoInsert({
         empresa_id, nombre, slug: proyecto.slug, estado: 'activo', fecha_inicio: null,
         logo: logoPath, template, color: proyecto.color,
         tipo: TIPOS.includes(tipo) ? tipo : 'correctivo',
-        categoria: CATS.includes(categoria) ? categoria : 'clima'
+        categoria: categoriaFinal
       });
     } catch (e) { console.error('proyecto relacional:', e.message); }
     res.json({ ok:true, proyecto });
