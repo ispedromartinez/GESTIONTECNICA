@@ -501,6 +501,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
   </div>
 </div>
 
+<script src="/common.js"></script>
 <script>
 // ── Auth fetch interceptor ──────────────────────────────────
 const _origFetch = window.fetch;
@@ -574,6 +575,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   addEquipo();
   addFotoGrupo('FOTOS 1: EXTERIOR NODO');
   addFotoGrupo('FOTOS 2: INTERIOR / EQUIPOS');
+  // Restaura un borrador local si existe (y no vino precargado desde una
+  // tarea/informe asignado, que es la fuente de verdad en ese caso).
+  if (!tareaId && !p.get('informeId')) await restaurarBorradorPreventivo();
 
   // Cargar sitios y tracker en paralelo
   try {
@@ -962,10 +966,10 @@ function loadPhotoFileP(gi,si,file){
   createPhotoSlotP(gi,si);
   gFiles[gi][si]=file;
   const reader=new FileReader();
-  reader.onload=ev=>{
-    gUrls[gi][si]=ev.target.result;
+  reader.onload=async ev=>{
+    gUrls[gi][si]=await comprimirImagenDataURL(ev.target.result);
     const img=document.getElementById(`img_g${gi}_${si}`);
-    img.src=ev.target.result;
+    img.src=gUrls[gi][si];
     const slot=document.getElementById(`slot_g${gi}_${si}`);
     slot.classList.add('filled');
     const refW=slot.clientWidth||200,refH=slot.clientHeight||150;
@@ -1110,6 +1114,116 @@ function collectFotos() {
   return grupos;
 }
 
+// ── Borrador (autoguardado offline) ─────────────────────────────
+// Esta página no tenía autoguardado — se agrega con el mismo módulo
+// compartido (common.js) que usan TIGO y WOM, para no perder el informe
+// (campos, equipos, lecturas y fotos) si se cierra la pestaña o se corta
+// la señal antes de enviar.
+function snapshotBorradorPreventivo(){
+  return {
+    nombreNodo:g('nombreNodo'), direccion:g('direccion'), ciudad:g('ciudad'),
+    empresa:g('empresa'), ejecutante:g('ejecutante'),
+    fecha:g('fecha'), hora:g('hora'), crq:g('crq'), idAcceso:g('idAcceso'),
+    criticidad:g('criticidad'), categoria:g('categoria'), sala:g('sala'),
+    observaciones:g('observaciones'),
+    equipos: collectEquipos(),
+    resumenLecturas: collectResumen(),
+    fotoTitulos: [...document.querySelectorAll('[id^="fgtitulo-"]')].map(el=>el.value),
+    gUrls, gTransforms, gRots, gDescs
+  };
+}
+function guardarBorradorPreventivo(){ guardarBorrador('preventivo', snapshotBorradorPreventivo()); }
+
+function restaurarEquiposPreventivo(equiposGuardados){
+  if(!equiposGuardados||!equiposGuardados.length)return;
+  // Limpia el equipo por defecto creado al iniciar la página.
+  document.querySelectorAll('[id^="equipo-"]').forEach(el=>el.remove());
+  equiposGuardados.forEach(()=>addEquipo());
+  const nums=getEquipoNums();
+  equiposGuardados.forEach((eq,idx)=>{
+    const n=nums[idx]; if(n==null)return;
+    setSelectField(`eq${n}_marca`, eq.marca);
+    ['modelo','serie','capBtu'].forEach(campo=>{
+      const el=document.getElementById(`eq${n}_${campo}`);
+      if(el && eq[campo]!=null) el.value=eq[campo];
+    });
+    (eq.filas||[]).forEach(fila=>{
+      const slug=(fila.motor||'').replace(/\s/g,'').toLowerCase();
+      const sufijos={voltajeTipo:'vtipo',vR:'vr',vS:'vs',vT:'vt',iR:'ir',iS:'is',iT:'it',
+        verificacion:'verif',limpSerpentines:'ls',reapreteConex:'rc',limpFiltro:'lf',
+        limpBandeja:'lb',limpEvaporador:'le',aseoGeneral:'ag',observaciones:'obs'};
+      Object.entries(sufijos).forEach(([campo,suf])=>{
+        const el=document.getElementById(`eq${n}_${slug}_${suf}`);
+        if(el && fila[campo]!=null) el.value=fila[campo];
+      });
+    });
+  });
+}
+
+function restaurarResumenPreventivo(resumenGuardado){
+  if(!resumenGuardado||!resumenGuardado.length)return;
+  updateResumenTable(); // recrea res${n}_* una vez restaurados los equipos
+  const nums=getEquipoNums();
+  resumenGuardado.forEach((r,idx)=>{
+    const n=nums[idx]; if(n==null)return;
+    RES_FIELDS.forEach(campo=>{
+      const el=document.getElementById(`res${n}_${campo}`);
+      if(el && r[campo]!=null) el.value=r[campo];
+    });
+  });
+}
+
+function restaurarFotosPreventivo(titulos,gUrlsGuardado,gTransformsGuardado,gRotsGuardado,gDescsGuardado){
+  if(!gUrlsGuardado||!gUrlsGuardado.length)return;
+  // Limpia los grupos por defecto creados al iniciar la página.
+  document.querySelectorAll('[id^="fotogrupo-"]').forEach(el=>el.remove());
+  gFiles.length=0;gUrls.length=0;gTransforms.length=0;gRots.length=0;gDescs.length=0;
+  fotoGrupoCount=0;
+  gUrlsGuardado.forEach((urls,idx)=>{
+    addFotoGrupo((titulos&&titulos[idx])||`FOTOS ${idx+1}`);
+    const gi=fotoGrupoCount;
+    (urls||[]).forEach((url,si)=>{
+      if(!url)return;
+      createPhotoSlotP(gi,si);
+      gFiles[gi][si]=true;
+      gUrls[gi][si]=url;
+      const img=document.getElementById(`img_g${gi}_${si}`);
+      if(img)img.src=url;
+      const slot=document.getElementById(`slot_g${gi}_${si}`);
+      if(slot)slot.classList.add('filled');
+      const refW=(slot&&slot.clientWidth)||200, refH=(slot&&slot.clientHeight)||150;
+      gTransforms[gi][si]=(gTransformsGuardado&&gTransformsGuardado[idx]&&gTransformsGuardado[idx][si])||{x:0,y:0,scale:1,refW,refH};
+      gRots[gi][si]=(gRotsGuardado&&gRotsGuardado[idx]&&gRotsGuardado[idx][si])||0;
+      applyTransformP(gi,si);
+      const desc=document.getElementById(`desc_g${gi}_${si}`);
+      const savedDesc=(gDescsGuardado&&gDescsGuardado[idx]&&gDescsGuardado[idx][si])||'';
+      if(desc){desc.style.display='block';desc.value=savedDesc;}
+      gDescs[gi][si]=savedDesc;
+    });
+    ensureTrailingSlotP(gi);
+  });
+}
+
+async function restaurarBorradorPreventivo(){
+  const s=await cargarBorrador('preventivo');
+  if(!s)return;
+  try{
+    ['nombreNodo','direccion','ciudad','empresa','ejecutante','fecha','hora','crq','idAcceso',
+     'sala','observaciones'].forEach(campo=>{
+      const el=document.getElementById(campo);
+      if(el && s[campo]!=null) el.value=s[campo];
+    });
+    if(s.criticidad)setSelectField('criticidad',s.criticidad);
+    if(s.categoria)setSelectField('categoria',s.categoria);
+    restaurarEquiposPreventivo(s.equipos);
+    restaurarResumenPreventivo(s.resumenLecturas);
+    restaurarFotosPreventivo(s.fotoTitulos,s.gUrls,s.gTransforms,s.gRots,s.gDescs);
+  }catch(e){console.error('No se pudo restaurar el borrador:',e);}
+}
+
+document.addEventListener('input',()=>guardarBorradorPreventivo());
+document.addEventListener('change',()=>guardarBorradorPreventivo());
+
 // ── Generate ───────────────────────────────────────────────────
 function showPdfOverlay(state, title, sub) {
   const overlay = document.getElementById('pdfOverlay');
@@ -1162,6 +1276,41 @@ function hidePdfOverlay() {
   }, 500);
 }
 
+// Descarga el PDF y hace el post-procesamiento de un envío exitoso — se usa
+// tanto en el envío en vivo como al reintentar uno que quedó pendiente.
+async function procesarPdfExitoso(data, res, status) {
+  const blob = await res.blob();
+  const cd   = res.headers.get('Content-Disposition')||'';
+  const fname = (cd.match(/filename="([^"]+)"/) || [])[1] || 'informe_preventivo.pdf';
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+
+  borrarBorrador('preventivo');
+
+  const tareaId = data.tareaId;
+  if (tareaId) {
+    try {
+      // Endpoint de solo-estado: el técnico asignado también puede cerrar.
+      await fetch(`/tareas/${tareaId}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 'Cerrado' })
+      });
+    } catch(e) { console.warn('No se pudo cerrar tarea:', e); }
+    // Vuelve a la página de origen (?volver=/panel desde el panel del
+    // técnico); por defecto, al módulo de mantenimiento preventivo.
+    const volverRaw = new URLSearchParams(location.search).get('volver');
+    const volver = (volverRaw && volverRaw.startsWith('/') && !volverRaw.startsWith('//')) ? volverRaw : '/preventivo.html';
+    showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado. Tarea cerrada. Redirigiendo…`);
+    setTimeout(() => { hidePdfOverlay(); window.location.href = volver; }, 2500);
+  } else {
+    showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado y guardado en base de datos.`);
+    setTimeout(hidePdfOverlay, 3000);
+    if (status) { status.className = 'status ok'; status.textContent = `✓ "${fname}" generado.`; }
+  }
+}
+
 async function generarInforme() {
   const btn     = document.getElementById('btnGenerar');
   const btnText = document.getElementById('btnText');
@@ -1191,45 +1340,31 @@ async function generarInforme() {
 
   showPdfOverlay('loading', 'Generando PDF', 'Procesando datos del informe, esto puede tomar unos segundos…');
 
+  let res;
   try {
-    const res = await fetch('/generar-preventivo', {
+    res = await fetch('/generar-preventivo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+  } catch (netErr) {
+    // No hubo respuesta del servidor (sin señal) — se encola para reintentar
+    // solo cuando vuelva la conexión, no se pierde el trabajo del técnico.
+    await encolarPendiente('preventivo', '/generar-preventivo', data);
+    hidePdfOverlay();
+    status.className = 'status info'; status.textContent = '📥 Sin conexión — informe guardado, se enviará cuando vuelva la señal';
+    btn.disabled = false;
+    document.getElementById('btnIcon').outerHTML = '<span id="btnIcon">📕</span>';
+    btnText.textContent = 'Generar PDF & Guardar';
+    return;
+  }
+
+  try {
     if (!res.ok) {
       const e = await res.json().catch(()=>({error:'Error desconocido'}));
       throw new Error(e.error||`HTTP ${res.status}`);
     }
-    const blob = await res.blob();
-    const cd   = res.headers.get('Content-Disposition')||'';
-    const fname = (cd.match(/filename="([^"]+)"/) || [])[1] || 'informe_preventivo.pdf';
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a'); a.href = url; a.download = fname; a.click();
-    URL.revokeObjectURL(url);
-
-    const tareaId = g('tareaId');
-    if (tareaId) {
-      try {
-        // Endpoint de solo-estado: el técnico asignado también puede cerrar.
-        await fetch(`/tareas/${tareaId}/estado`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ estado: 'Cerrado' })
-        });
-      } catch(e) { console.warn('No se pudo cerrar tarea:', e); }
-      // Vuelve a la página de origen (?volver=/panel desde el panel del
-      // técnico); por defecto, al módulo de mantenimiento preventivo.
-      const volverRaw = new URLSearchParams(location.search).get('volver');
-      const volver = (volverRaw && volverRaw.startsWith('/') && !volverRaw.startsWith('//')) ? volverRaw : '/preventivo.html';
-      showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado. Tarea cerrada. Redirigiendo…`);
-      setTimeout(() => { hidePdfOverlay(); window.location.href = volver; }, 2500);
-    } else {
-      showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado y guardado en base de datos.`);
-      setTimeout(hidePdfOverlay, 3000);
-      status.className = 'status ok';
-      status.textContent = `✓ "${fname}" generado.`;
-    }
+    await procesarPdfExitoso(data, res, status);
   } catch(e) {
     showPdfOverlay('error', 'Error al generar', e.message);
     setTimeout(hidePdfOverlay, 4000);
@@ -1240,6 +1375,10 @@ async function generarInforme() {
     btnText.textContent = 'Generar PDF & Guardar';
   }
 }
+
+// Reintenta automáticamente informes que quedaron pendientes por falta de
+// conexión (de esta sesión o de una anterior en el mismo navegador).
+iniciarSincronizacionOffline('preventivo', (pendiente, resp) => procesarPdfExitoso(pendiente.payload, resp));
 </script>
 </body>
 </html>

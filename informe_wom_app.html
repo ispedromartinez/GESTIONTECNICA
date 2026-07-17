@@ -800,8 +800,8 @@ function addFiles(files) {
   if (slots <= 0) { toast('Máximo 30 fotos permitidas','err'); return; }
   arr.slice(0, slots).forEach(f => {
     const reader = new FileReader();
-    reader.onload = e => {
-      photos.push(e.target.result);
+    reader.onload = async e => {
+      photos.push(await comprimirImagenDataURL(e.target.result));
       captions.push('');
       photoTransforms.push({x:0,y:0,scale:1});
       photoRotations.push(0);
@@ -848,6 +848,31 @@ function renderFotos() {
   setupFotoInteractions();
 }
 
+// Descarga el .docx y hace el post-procesamiento de un envío exitoso — se
+// usa tanto en el envío en vivo como al reintentar uno que quedó pendiente.
+async function descargarYFinalizarWom(payload, resp) {
+  const blob = await resp.blob();
+  const cd   = resp.headers.get('Content-Disposition') || '';
+  const name = cd.match(/filename="?([^"]+)"?/)?.[1] || `${payload.ticket}_WOM.docx`;
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+
+  toast(`✓ Informe "${name}" generado`, 'ok');
+  // Registra la instalación en el catálogo (módulo wom) para el desplegable.
+  if (payload.instalacion) {
+    try {
+      await fetch('/api/sitios-auto?modulo=wom', { method:'POST', headers:authH({'Content-Type':'application/json'}),
+        body: JSON.stringify({ nombre: payload.instalacion, direccion: payload.direccion }) });
+    } catch {}
+  }
+  clearState();
+  // Actividad asignada (venía con ?informeId=): ya cumplió su propósito,
+  // se vuelve sola a inicio en vez de dejar el formulario abierto.
+  if (payload.gestionInformeId) { setTimeout(() => { window.location.href = HOME_URL; }, 1400); }
+}
+
 // ── Generar informe ───────────────────────────────────────────
 async function generarInforme() {
   const btn = g('btn-generar');
@@ -882,34 +907,27 @@ async function generarInforme() {
     captions
   };
 
+  let resp;
   try {
-    const resp = await fetch('/generar-wom', {
+    resp = await fetch('/generar-wom', {
       method: 'POST',
       headers: authH({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload)
     });
+  } catch (netErr) {
+    // No hubo respuesta del servidor (sin señal) — se encola para reintentar
+    // solo cuando vuelva la conexión, no se pierde el trabajo del técnico.
+    await encolarPendiente('wom', '/generar-wom', payload);
+    toast('Sin conexión — informe guardado, se enviará cuando vuelva la señal', 'warn');
+    btn.disabled = false;
+    btn.innerHTML = 'Generar Informe WOM';
+    document.getElementById('genOverlay').classList.remove('show');
+    return;
+  }
+
+  try {
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error||'Error del servidor'); }
-
-    const blob = await resp.blob();
-    const cd   = resp.headers.get('Content-Disposition') || '';
-    const name = cd.match(/filename="?([^"]+)"?/)?.[1] || `${payload.ticket}_WOM.docx`;
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = name; a.click();
-    URL.revokeObjectURL(url);
-
-    toast(`✓ Informe "${name}" generado`, 'ok');
-    // Registra la instalación en el catálogo (módulo wom) para el desplegable.
-    if (payload.instalacion) {
-      try {
-        await fetch('/api/sitios-auto?modulo=wom', { method:'POST', headers:authH({'Content-Type':'application/json'}),
-          body: JSON.stringify({ nombre: payload.instalacion, direccion: payload.direccion }) });
-      } catch {}
-    }
-    clearState();
-    // Actividad asignada (venía con ?informeId=): ya cumplió su propósito,
-    // se vuelve sola a inicio en vez de dejar el formulario abierto.
-    if (payload.gestionInformeId) { setTimeout(() => { window.location.href = HOME_URL; }, 1400); return; }
+    await descargarYFinalizarWom(payload, resp);
   } catch(err) {
     toast(`Error: ${err.message}`, 'err');
   } finally {
@@ -979,15 +997,16 @@ async function eliminar(id, btn) {
   } catch { toast('Error al eliminar','err'); btn.disabled = false; }
 }
 
-// ── Draft persistence (localStorage) ─────────────────────────
-const DRAFT_KEY = 'wom_draft_v1';
+// ── Draft persistence (IndexedDB, vía common.js) ──────────────
+// Antes vivía en localStorage (cupo ~5-10MB, riesgo real con hasta 30 fotos
+// por informe); ahora usa el mismo módulo offline que TIGO y Preventivo.
+const DRAFT_PAGINA = 'wom';
 
 function saveState() {
   const tecs = [...document.querySelectorAll('.tec-input')].map(i => i.value);
   const tabIdx = [...document.querySelectorAll('.tab')].findIndex(t => t.classList.contains('active'));
   const locked = [...document.querySelectorAll('.tab')].map(t => t.classList.contains('locked'));
-  try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+  guardarBorrador(DRAFT_PAGINA, {
       ticket:          g('ticket').value,
       codInterno:      g('cod-interno').value,
       fechaInicio:     g('fecha-inicio').value,
@@ -1013,15 +1032,13 @@ function saveState() {
       photoRotations,
       tabIdx,
       locked
-    }));
-  } catch(e) {}
+  });
 }
 
-function restoreState() {
+async function restoreState() {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return false;
-    const s = JSON.parse(raw);
+    const s = await cargarBorrador(DRAFT_PAGINA);
+    if (!s) return false;
 
     const map = {
       'ticket': s.ticket, 'cod-interno': s.codInterno,
@@ -1052,7 +1069,7 @@ function restoreState() {
   } catch(e) { return false; }
 }
 
-function clearState() { localStorage.removeItem(DRAFT_KEY); }
+function clearState() { borrarBorrador(DRAFT_PAGINA); }
 
 // Auto-guardar en cualquier cambio del formulario
 document.querySelector('main').addEventListener('input',  () => saveState());
@@ -1061,11 +1078,17 @@ document.querySelector('main').addEventListener('change', () => saveState());
 // ── Init ──────────────────────────────────────────────────────
 checkServer();
 setInterval(checkServer, 15000);
-if (!restoreState()) {
-  addTecnico();
-  g('fecha-inicio').valueAsDate = new Date();
-}
+(async () => {
+  if (!(await restoreState())) {
+    addTecnico();
+    g('fecha-inicio').valueAsDate = new Date();
+  }
+})();
 g('ticket').addEventListener('input', () => { updateBadge(); updateEstadoActual(); });
+
+// Reintenta automáticamente informes que quedaron pendientes por falta de
+// conexión (de esta sesión o de una anterior en el mismo navegador).
+iniciarSincronizacionOffline('wom', (pendiente, resp) => descargarYFinalizarWom(pendiente.payload, resp));
 </script>
 </body>
 </html>

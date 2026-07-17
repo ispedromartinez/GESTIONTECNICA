@@ -277,6 +277,7 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .status.ok{background:#f0fdf4;color:var(--green);display:block;border:1px solid #bbf7d0;}
 .status.err{background:#fef2f2;color:var(--red);display:block;border:1px solid #fecaca;}
 .status.loading{background:#eff6ff;color:var(--blue);display:block;border:1px solid #bfdbfe;}
+.status.warn{background:#fffbeb;color:#b45309;display:block;border:1px solid #fde68a;}
 code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 
 /* ── MODAL ── */
@@ -1321,10 +1322,10 @@ function loadPhotoFile(idx,file,focusDesc){
   createPhotoSlot(idx);
   photoFiles[idx]=file;
   const reader=new FileReader();
-  reader.onload=ev=>{
-    photoDataUrls[idx]=ev.target.result;
+  reader.onload=async ev=>{
+    photoDataUrls[idx]=await comprimirImagenDataURL(ev.target.result);
     const im=document.getElementById(`img${idx}`);
-    im.src=ev.target.result;
+    im.src=photoDataUrls[idx];
     const sl=document.getElementById(`slot${idx}`);
     sl.classList.add('filled');
     // Guardar dimensiones del slot mientras el tab está visible
@@ -1386,12 +1387,11 @@ function buildSummary(){
 
 // ══ GENERATE ══
 async function generateDocx(){
-  if(!serverOnline){await checkServer();}
-  if(!serverOnline){
-    const st=document.getElementById('statusMsg');
-    st.className='status err';st.innerHTML='❌ Servidor no activo.<br><strong>Ejecuta en terminal: <code>node server.js</code></strong>';
-    return;
-  }
+  // Antes esto bloqueaba el envío entero si /ping no respondía. Ahora solo
+  // refresca el badge informativo — el fetch de más abajo (con su propio
+  // try/catch) es quien decide si hay que encolar el informe para reintentar,
+  // así un fallo de red real sí se guarda en vez de perder el trabajo.
+  if(!serverOnline){checkServer();}
   const btn=document.getElementById('btnDocx');
   const status=document.getElementById('statusMsg');
   btn.disabled=true;status.className='status loading';status.textContent='⏳ Generando código y documento...';
@@ -1414,43 +1414,60 @@ async function generateDocx(){
     m_ev:document.getElementById('m_ev').value,m_ea:document.getElementById('m_ea').value,
     m_condv:document.getElementById('m_condv').value,m_conda:document.getElementById('m_conda').value,
     m_tinj:document.getElementById('m_tinj').value,m_tret:document.getElementById('m_tret').value,
-    photos:photoDataUrls,
+    photos:photoDataUrls.map((_,i)=> photoFiles[i] ? (getPhotoForExport(i)||photoDataUrls[i]) : null),
     photoDescs:photoDescs,
     tareaId:TAREA_ID,
     gestionInformeId:new URLSearchParams(location.search).get('informeId')||null
   };
+  let resp;
   try{
-    const resp=await fetch(SERVER+'/generar',{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(payload)});
+    resp=await fetch(SERVER+'/generar',{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(payload)});
+  }catch(netErr){
+    // No hubo respuesta del servidor (sin señal) — se encola para reintentar
+    // solo cuando vuelva la conexión, no se pierde el trabajo del técnico.
+    await encolarPendiente('tigo','/generar',payload);
+    status.className='status warn';status.textContent='📥 Sin conexión — informe guardado, se enviará cuando vuelva la señal';
+    btn.disabled=false;document.getElementById('genOverlay').classList.remove('show');
+    return;
+  }
+  try{
     if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error||`Error del servidor: ${resp.status}`); }
-    const blob=await resp.blob();
-    const disp=resp.headers.get('Content-Disposition')||'';
-    const fnMatch=disp.match(/filename="(.+)"/);
-    const fname=fnMatch?fnMatch[1]:`${cod}.docx`;
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=fname;a.click();URL.revokeObjectURL(url);
-    status.className='status ok';status.textContent=`✅ "${fname}" generado y guardado en el historial`;
-    // Registra el sitio en el catálogo (módulo tigo) para el desplegable.
-    if(payload.nombreSitio){
-      try{
-        await fetch(SERVER+'/api/sitios-auto?modulo=tigo',{method:'POST',headers:authH({'Content-Type':'application/json'}),
-          body:JSON.stringify({nombre:payload.nombreSitio,direccion:payload.direccion,codigo:payload.codigoSitio})});
-        cargarCatalogoSitiosTigo();
-      }catch{}
-    }
-    // Cierra el ciclo: si el informe vino de una tarea preventiva, la marca como Cerrada.
-    if(TAREA_ID){
-      try{
-        const rc=await fetch(SERVER+'/tareas/'+TAREA_ID,{method:'PUT',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify({estado:'Cerrado'})});
-        if(rc.ok)status.textContent=`✅ "${fname}" generado. Tarea preventiva marcada como Cerrada.`;
-      }catch(e){console.error('No se pudo cerrar la tarea preventiva:',e);}
-    }
-    setTimeout(()=>loadHist(true),800);
-    // Actividad asignada (venía con ?informeId=): ya cumplió su propósito,
-    // se vuelve sola a inicio en vez de dejar el formulario abierto.
-    if(payload.gestionInformeId){ setTimeout(()=>{ window.location.href = HOME_URL; }, 1400); }
+    await descargarYFinalizarTigo(cod,payload,resp,status);
   }catch(err){
     status.className='status err';status.textContent='❌ '+err.message;
   }finally{btn.disabled=false;document.getElementById('genOverlay').classList.remove('show');}
+}
+
+// Descarga el .docx y hace el post-procesamiento de un envío exitoso — se
+// usa tanto en el envío en vivo como al reintentar uno que quedó pendiente.
+async function descargarYFinalizarTigo(cod,payload,resp,status){
+  const blob=await resp.blob();
+  const disp=resp.headers.get('Content-Disposition')||'';
+  const fnMatch=disp.match(/filename="(.+)"/);
+  const fname=fnMatch?fnMatch[1]:`${cod}.docx`;
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=fname;a.click();URL.revokeObjectURL(url);
+  if(status){status.className='status ok';status.textContent=`✅ "${fname}" generado y guardado en el historial`;}
+  // Registra el sitio en el catálogo (módulo tigo) para el desplegable.
+  if(payload.nombreSitio){
+    try{
+      await fetch(SERVER+'/api/sitios-auto?modulo=tigo',{method:'POST',headers:authH({'Content-Type':'application/json'}),
+        body:JSON.stringify({nombre:payload.nombreSitio,direccion:payload.direccion,codigo:payload.codigoSitio})});
+      cargarCatalogoSitiosTigo();
+    }catch{}
+  }
+  // Cierra el ciclo: si el informe vino de una tarea preventiva, la marca como Cerrada.
+  if(payload.tareaId){
+    try{
+      const rc=await fetch(SERVER+'/tareas/'+payload.tareaId,{method:'PUT',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify({estado:'Cerrado'})});
+      if(rc.ok&&status)status.textContent=`✅ "${fname}" generado. Tarea preventiva marcada como Cerrada.`;
+    }catch(e){console.error('No se pudo cerrar la tarea preventiva:',e);}
+  }
+  borrarBorrador('tigo');
+  setTimeout(()=>loadHist(true),800);
+  // Actividad asignada (venía con ?informeId=): ya cumplió su propósito,
+  // se vuelve sola a inicio en vez de dejar el formulario abierto.
+  if(payload.gestionInformeId){ setTimeout(()=>{ window.location.href = HOME_URL; }, 1400); }
 }
 
 // ══ HISTORIAL ══
@@ -1701,6 +1718,111 @@ async function precargarDesdeTarea(){
   }catch(e){console.error('No se pudo precargar la tarea:',e);}
 }
 precargarDesdeTarea();
+
+// ══ BORRADOR (autoguardado offline) ══
+// A diferencia de WOM, esta página no tenía autoguardado — se agrega con el
+// mismo módulo compartido (common.js) que usan WOM y Preventivo, para no
+// perder el formulario+fotos si se cierra la pestaña o se corta la señal.
+function snapshotBorradorTigo(){
+  return {
+    nombreSitio:document.getElementById('nombreSitio').value,
+    codigoSitio:document.getElementById('codigoSitio').value,
+    direccion:document.getElementById('direccion').value,
+    sala:document.getElementById('sala').value,
+    tecnico:document.getElementById('tecnico').value,
+    supervisor:document.getElementById('supervisor').value,
+    fechaEjecucion:document.getElementById('fechaEjecucion').value,
+    numOT:document.getElementById('numOT').value,
+    lpu:document.getElementById('lpu').value,
+    eqCircuito:document.getElementById('eqCircuito').value,
+    ticketInc:document.getElementById('ticketInc').value,
+    ticketTE:document.getElementById('ticketTE').value,
+    ticketTI:document.getElementById('ticketTI').value,
+    ticketRED:document.getElementById('ticketRED').value,
+    resumen:document.getElementById('resumen').value,
+    observaciones:document.getElementById('observaciones').value,
+    eqSala:document.getElementById('eqSala').value,
+    eqNumero:document.getElementById('eqNumero').value,
+    eqTipo:document.getElementById('eqTipo').value,
+    eqMarca:document.getElementById('eqMarca').value,
+    eqModelo:document.getElementById('eqModelo').value,
+    m_cv:document.getElementById('m_cv').value,m_ca:document.getElementById('m_ca').value,
+    m_ev:document.getElementById('m_ev').value,m_ea:document.getElementById('m_ea').value,
+    m_condv:document.getElementById('m_condv').value,m_conda:document.getElementById('m_conda').value,
+    m_tinj:document.getElementById('m_tinj').value,m_tret:document.getElementById('m_tret').value,
+    photoDataUrls,photoDescs,photoTransforms,photoRotations
+  };
+}
+function guardarBorradorTigo(){ guardarBorrador('tigo', snapshotBorradorTigo()); }
+
+function restaurarFotosTigo(urls,descs,transforms,rotations){
+  (urls||[]).forEach((url,idx)=>{
+    if(!url)return;
+    createPhotoSlot(idx);
+    photoFiles[idx]=true;
+    photoDataUrls[idx]=url;
+    const im=document.getElementById(`img${idx}`);
+    im.src=url;
+    const sl=document.getElementById(`slot${idx}`);
+    sl.classList.add('filled');
+    const refW=sl.clientWidth||200, refH=sl.clientHeight||150;
+    photoTransforms[idx]=(transforms&&transforms[idx])||{x:0,y:0,scale:1,refW,refH};
+    photoRotations[idx]=(rotations&&rotations[idx])||0;
+    applyTransform(idx);
+    const d=document.getElementById(`desc${idx}`);
+    if(d){ d.style.display='block'; d.value=(descs&&descs[idx])||''; photoDescs[idx]=(descs&&descs[idx])||''; }
+  });
+  document.getElementById('photoTabNum').textContent=photoFiles.filter(Boolean).length;
+  ensureTrailingSlot();
+}
+
+async function restaurarBorradorTigo(){
+  const params=new URLSearchParams(location.search);
+  // Si viene precargado desde una tarea/informe asignado, esa es la fuente
+  // de verdad — no pisarla con un borrador local que puede estar desactualizado.
+  if(params.get('tareaId')||params.get('informeId'))return;
+  const s=await cargarBorrador('tigo');
+  if(!s)return;
+  try{
+    if(s.nombreSitio)selectSite(s.nombreSitio,s.direccion||'');
+    if(s.codigoSitio)document.getElementById('codigoSitio').value=s.codigoSitio;
+    if(s.sala)document.getElementById('sala').value=s.sala;
+    if(s.tecnico)selectTec(s.tecnico);
+    if(s.supervisor)selectSup(s.supervisor);
+    if(s.fechaEjecucion)document.getElementById('fechaEjecucion').value=s.fechaEjecucion;
+    if(s.numOT)document.getElementById('numOT').value=s.numOT;
+    if(s.lpu)document.getElementById('lpu').value=s.lpu;
+    if(s.eqCircuito)document.getElementById('eqCircuito').value=s.eqCircuito;
+    if(s.ticketInc)document.getElementById('ticketInc').value=s.ticketInc;
+    if(s.ticketTE)document.getElementById('ticketTE').value=s.ticketTE;
+    if(s.ticketTI)document.getElementById('ticketTI').value=s.ticketTI;
+    if(s.ticketRED)document.getElementById('ticketRED').value=s.ticketRED;
+    if(s.resumen)document.getElementById('resumen').value=s.resumen;
+    if(s.observaciones)document.getElementById('observaciones').value=s.observaciones;
+    if(s.eqSala)document.getElementById('eqSala').value=s.eqSala;
+    if(s.eqNumero)document.getElementById('eqNumero').value=s.eqNumero;
+    if(s.eqTipo)document.getElementById('eqTipo').value=s.eqTipo;
+    if(s.eqMarca)document.getElementById('eqMarca').value=s.eqMarca;
+    if(s.eqModelo)document.getElementById('eqModelo').value=s.eqModelo;
+    if(s.m_cv)document.getElementById('m_cv').value=s.m_cv;
+    if(s.m_ca)document.getElementById('m_ca').value=s.m_ca;
+    if(s.m_ev)document.getElementById('m_ev').value=s.m_ev;
+    if(s.m_ea)document.getElementById('m_ea').value=s.m_ea;
+    if(s.m_condv)document.getElementById('m_condv').value=s.m_condv;
+    if(s.m_conda)document.getElementById('m_conda').value=s.m_conda;
+    if(s.m_tinj)document.getElementById('m_tinj').value=s.m_tinj;
+    if(s.m_tret)document.getElementById('m_tret').value=s.m_tret;
+    restaurarFotosTigo(s.photoDataUrls,s.photoDescs,s.photoTransforms,s.photoRotations);
+    previewCod();
+  }catch(e){console.error('No se pudo restaurar el borrador:',e);}
+}
+restaurarBorradorTigo();
+document.body.addEventListener('input',()=>guardarBorradorTigo());
+document.body.addEventListener('change',()=>guardarBorradorTigo());
+
+// Reintenta automáticamente informes que quedaron pendientes por falta de
+// conexión (de esta sesión o de una anterior en el mismo navegador).
+iniciarSincronizacionOffline('tigo',(pendiente,resp)=>descargarYFinalizarTigo(pendiente.payload.codInforme,pendiente.payload,resp,document.getElementById('statusMsg')));
 
 // Auto nueva línea al escribir punto en resumen
 document.getElementById('resumen').addEventListener('input', function(){
