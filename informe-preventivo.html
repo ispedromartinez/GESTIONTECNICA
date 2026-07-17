@@ -311,7 +311,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
       <div class="section-head">
         <div>
           <div class="eyebrow">Datos del Sitio</div>
-          <h2>Datos Generales del Nodo</h2>
+          <h2>Datos Generales del Mantenimiento</h2>
         </div>
         <div class="qr-shell">
           <div class="qr-badge">
@@ -661,6 +661,11 @@ async function cargarDatosTarea(id) {
       }, 200);
       setTimeout(() => clearInterval(waitSitios), 5000);
     }
+    // Dirección/comuna tampoco son editables cuando viene de una tarea
+    // asignada — sin importar si el dato lo trae la tarea directamente o el
+    // catálogo de sitios (autoFillSitio). Se bloquea ya (readOnly no impide
+    // asignar el valor por JS), autoFillSitio puede llenarlo después sin problema.
+    if (nodoVal) { lockField('direccion'); lockField('ciudad'); }
   } catch(e) { console.error('cargarDatosTarea:', e); }
 }
 

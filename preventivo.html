@@ -32,6 +32,10 @@ main{padding:22px 28px;max-width:1280px;margin:0 auto;}
 .filtros button:hover{background:#E2E8F0;}
 .filtros select,.filtros input[type=date]{padding:5px 10px;border:1px solid rgba(15,23,42,.1);border-radius:8px;font-size:12px;font-family:inherit;color:#334155;background:#F8FAFC;}
 .filtros label{font-size:11px;font-weight:600;color:var(--faint);}
+/* Agrupa cada label con su input para que no se separen al envolver en
+   pantallas angostas (si no, "Desde"/"Hasta" quedan pegados al campo
+   anterior en vez del propio, por ser flex items sueltos). */
+.filtro-item{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
 
 /* TOOLBAR */
 .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
@@ -88,6 +92,16 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 .col-tiempo .tiempo-ayer{background:rgba(37,99,235,.1);color:#2563EB;}
 .col-tiempo .tiempo-reciente{background:rgba(5,150,105,.1);color:#059669;}
 @media(max-width:900px){.col-tiempo{display:none;}}
+
+/* Ancho completo: la tabla usa toda la pantalla en vez del contenedor centrado */
+main.vista-ancho{max-width:none;}
+
+/* Densidad compacta: filas más bajas y letra más chica, más filas sin scroll */
+.table-wrap.compacta th,.table-wrap.compacta td{padding:4px 10px;font-size:11px;}
+.table-wrap.compacta th{font-size:9.5px;}
+.table-wrap.compacta .estado-badge{padding:2px 10px;font-size:10px;}
+.table-wrap.compacta .btn-gen-informe,.table-wrap.compacta .btn-dl-informe{padding:2px 0;font-size:10px;}
+.table-wrap.compacta .col-tiempo .tiempo-valor{padding:2px 7px;font-size:10px;}
 /* mobile: ocultar columnas de baja prioridad, mantener Técnico/Sitio/Estado/Informe */
 @media(max-width:640px){
   .col-sala,.col-crq,.col-desc,.col-fecha-i,.col-fecha-v{display:none;}
@@ -178,10 +192,14 @@ tbody tr.destacada:hover{background:#FFF1C8;}
     <select id="filtroSemanaSel" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
       <option value="">Elegir semana...</option>
     </select>
-    <label style="font-size:12px;color:#64748B;">Desde</label>
-    <input type="date" id="filtroDesde" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
-    <label style="font-size:12px;color:#64748B;">Hasta</label>
-    <input type="date" id="filtroHasta" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
+    <div class="filtro-item">
+      <label style="font-size:12px;color:#64748B;">Desde</label>
+      <input type="date" id="filtroDesde" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
+    </div>
+    <div class="filtro-item">
+      <label style="font-size:12px;color:#64748B;">Hasta</label>
+      <input type="date" id="filtroHasta" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
+    </div>
     <button id="btnBuscarRango">Buscar rango</button>
     <button id="btnLimpiarFiltro" style="display:none;">Mostrar todas</button>
   </div>
@@ -1064,6 +1082,21 @@ poblarTecnicos();
 poblarSelectorSemanas();
 cargarCatalogoSitios();
 cargarTareas();
+
+// ── Vista: ancho completo + densidad de la tabla ────────────────
+// Preferencia configurable desde el Perfil del usuario (perfil.html) — acá
+// solo se lee y se aplica, sin controles propios en esta página.
+const VISTA_KEY = 'vista_tablas_v1';
+function cargarVista() {
+  let v = { ancho: false, densidad: 'comodo' };
+  try { v = { ...v, ...JSON.parse(localStorage.getItem(VISTA_KEY) || '{}') }; } catch {}
+  return v;
+}
+function aplicarVista(v) {
+  document.querySelector('main').classList.toggle('vista-ancho', !!v.ancho);
+  document.querySelector('.table-wrap').classList.toggle('compacta', v.densidad === 'compacto');
+}
+aplicarVista(cargarVista());
 </script>
 </body>
 </html>
