@@ -424,12 +424,12 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 // ── Auth (sesión JWT del sistema) ───────────────────────────────
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 if (!TOKEN()) location.replace('/login');
-// Adjunta el Bearer token automáticamente a todas las llamadas internas.
+// El header Authorization ya lo agrega el interceptor global de common.js.
+// Acá solo se conserva el aviso de "módulo no habilitado" (403), propio de
+// esta página — se envuelve el fetch ya parchado, no se duplica el auth.
 const _origFetch = window.fetch.bind(window);
 window.fetch = async (url, opts = {}) => {
-  const headers = new Headers(opts.headers || {});
-  if (!headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + TOKEN());
-  const resp = await _origFetch(url, { ...opts, headers });
+  const resp = await _origFetch(url, opts);
   if (resp.status === 403) {
     const clone = resp.clone();
     clone.json().then(d => {

@@ -14,18 +14,25 @@ function escArg(s){
 
 // ── Interceptor global de fetch (auth) ─────────────────────────
 // Única fuente del header Authorization. Antes cada página resolvía esto por
-// su cuenta: TIGO/WOM tenían un authH() local que había que acordarse de
-// pasar a mano en cada fetch (fácil de olvidar en un fetch nuevo); Preventivo
-// en cambio ya parcheaba window.fetch acá mismo, a nivel de página. Se
-// unifica en el mecanismo de Preventivo (a prueba de olvidos) y se mueve a
-// común.js para que ninguna página tenga su propia copia — mismo motivo que
-// esc/escArg.
+// su cuenta, de formas distintas: la mayoría tenía un authH()/aH() local que
+// había que acordarse de pasar a mano en cada fetch (fácil de olvidar en un
+// fetch nuevo); un par tenían un objeto congelado calculado una sola vez;
+// preventivo.html (la página de tareas) ya parcheaba window.fetch acá mismo,
+// a nivel de página, con la variante más robusta (usa Headers real en vez de
+// spread de objeto plano, así funciona igual si algún call site pasa una
+// instancia de Headers en vez de un objeto literal). Se unifica en esa
+// versión y se mueve a común.js para que ninguna página tenga su propia
+// copia — mismo motivo que esc/escArg.
 (function(){
   const _origFetch = window.fetch;
   window.fetch = (url, opts={}) => {
     // El token puede estar en localStorage ("recordarme") o en sessionStorage.
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (token) { opts.headers = { ...(opts.headers||{}), 'Authorization': 'Bearer '+token }; }
+    if (token) {
+      const headers = new Headers(opts.headers || {});
+      if (!headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + token);
+      opts = { ...opts, headers };
+    }
     return _origFetch(url, opts);
   };
 })();

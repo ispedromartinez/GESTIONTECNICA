@@ -810,7 +810,7 @@ a.bento-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);}
 <script src="/common.js"></script>
 <script>
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
+// El Authorization ya lo agrega el interceptor global de fetch en common.js.
 
 // Guard
 if (!TOKEN()) { window.location.replace('/login'); }
@@ -832,7 +832,7 @@ function toast(msg) {
 // ── Init ─────────────────────────────────────────────────────────
 async function init() {
   try {
-    const r = await fetch('/auth/me', { headers: authH() });
+    const r = await fetch('/auth/me');
     if (!r.ok) { window.location.replace('/login'); return; }
     const { usuario, perfil = {}, areas = [] } = await r.json();
     const miRol = usuario.rol;
@@ -905,7 +905,7 @@ async function init() {
 // ── KPIs del tile hero (home) ────────────────────────────────────
 async function cargarHomeKpis() {
   try {
-    const r = await fetch('/api/dashboard', { headers: authH() });
+    const r = await fetch('/api/dashboard');
     if (!r.ok) return;
     const { stats } = await r.json();
     if (!stats) return;
@@ -920,8 +920,8 @@ async function cargarHomeKpis() {
 async function cargarMisProyectos() {
   try {
     const [r, rLegacy] = await Promise.all([
-      fetch('/api/gestion/mis-proyectos', { headers: authH() }),
-      fetch('/api/proyectos', { headers: authH() }).catch(() => null)
+      fetch('/api/gestion/mis-proyectos'),
+      fetch('/api/proyectos').catch(() => null)
     ]);
     if (!r.ok) return;
     const proyectos = await r.json();
@@ -971,7 +971,7 @@ async function cargarMisProyectos() {
 
 async function cargarProyectosCustom() {
   try {
-    const r = await fetch('/api/proyectos', { headers: authH() });
+    const r = await fetch('/api/proyectos');
     if (!r.ok) return;
     const proyectos = await r.json();
     if (!proyectos.length) return;
@@ -1040,7 +1040,7 @@ async function cargarModulosFijos() {
   const cont = document.getElementById('modulosFijosGrid');
   if (!cont) return;
   try {
-    const r = await fetch('/api/gestion/proyectos', { headers: authH() });
+    const r = await fetch('/api/gestion/proyectos');
     if (!r.ok) return;
     const proyectos = await r.json();
     let activos = new Set(proyectos.map(p => p.template).filter(t => MODULOS_FIJOS[t]));
@@ -1048,7 +1048,7 @@ async function cargarModulosFijos() {
     // Supervisor/técnico: solo ven el módulo si están asignados individualmente a él.
     // admin_empresa/superadmin administran toda la empresa y ven todos los activos.
     if (!['superadmin', 'admin_empresa'].includes(MIROL)) {
-      const rMis = await fetch('/api/gestion/mis-proyectos', { headers: authH() });
+      const rMis = await fetch('/api/gestion/mis-proyectos');
       const misProyectos = rMis.ok ? await rMis.json() : [];
       const misTemplates = new Set(misProyectos.map(p => p.template).filter(Boolean));
       activos = new Set([...activos].filter(t => misTemplates.has(t)));
@@ -1231,7 +1231,7 @@ let _chartPrevTec = null;
 let todasTareas = [];
 async function cargarPreventivo() {
   try {
-    const r = await fetch('/tareas', { headers: authH() });
+    const r = await fetch('/tareas');
     if (!r.ok) return;
     const tareas = await r.json();
     todasTareas = tareas;
@@ -1314,7 +1314,7 @@ let _chartEquipos = null;
 let todosEquipos = [];
 async function cargarEquiposChart() {
   try {
-    const r = await fetch('/api/equipos', { headers: authH() });
+    const r = await fetch('/api/equipos');
     if (!r.ok) return;
     const equipos = await r.json();
     todosEquipos = equipos;
@@ -1356,7 +1356,7 @@ async function cargarEquiposChart() {
 // ── Datos informes ────────────────────────────────────────────────
 async function cargarInformes() {
   try {
-    const r = await fetch('/api/dashboard', { headers: authH() });
+    const r = await fetch('/api/dashboard');
     if (!r.ok) throw new Error('Error del servidor');
     const { informes, stats } = await r.json();
     todosInformes = informes;
@@ -1484,8 +1484,8 @@ async function cargarInformesProy() {
   try {
     const ruta = MIROL === 'supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos';
     const [proyectos, resumen] = await Promise.all([
-      fetch(ruta, { headers: authH() }).then(r => r.ok ? r.json() : []),
-      fetch('/api/gestion/resumen', { headers: authH() }).then(r => r.ok ? r.json() : null).catch(() => null)
+      fetch(ruta).then(r => r.ok ? r.json() : []),
+      fetch('/api/gestion/resumen').then(r => r.ok ? r.json() : null).catch(() => null)
     ]);
     // Normaliza ambas formas (mis-proyectos: proyecto_id/proyecto_nombre · proyectos: id/nombre)
     // Solo proyectos CORRECTIVOS: aquí el supervisor asigna trabajo (sitio+técnico) a
@@ -1558,7 +1558,7 @@ async function cargarReportes(){
   const hasta = document.getElementById('repHasta').value; if (hasta) p.set('hasta', hasta);
   body.innerHTML = '<div class="empty-tbl"><p>Cargando reportes…</p></div>';
   try {
-    const r = await fetch('/api/reportes?' + p.toString(), { headers: authH() });
+    const r = await fetch('/api/reportes?' + p.toString());
     if (!r.ok) throw new Error('No se pudieron cargar los reportes');
     const { reportes, stats } = await r.json();
     // Stats
@@ -1596,7 +1596,7 @@ async function cargarSLA(){
   const d = document.getElementById('slaDesde').value; if (d) p.set('desde', d);
   const h = document.getElementById('slaHasta').value; if (h) p.set('hasta', h);
   try {
-    const r = await fetch('/tareas/sla?' + p.toString(), { headers: authH() });
+    const r = await fetch('/tareas/sla?' + p.toString());
     if (r.status === 403) { g.innerHTML = '<div class="empty-tbl"><p>Tu empresa no tiene el módulo Preventivo habilitado.</p></div>'; t.innerHTML=''; s.innerHTML=''; return; }
     if (!r.ok) throw new Error('No se pudo cargar el SLA');
     const { global, porTecnico, porSitio } = await r.json();
@@ -1640,7 +1640,7 @@ async function renderSidebarProyectos() {
   if (!cont) return;
   try {
     const ruta = MIROL === 'supervisor' ? '/api/gestion/mis-proyectos' : '/api/gestion/proyectos';
-    const proyectos = await fetch(ruta, { headers: authH() }).then(r => r.ok ? r.json() : []);
+    const proyectos = await fetch(ruta).then(r => r.ok ? r.json() : []);
     const arr = Array.isArray(proyectos) ? proyectos : [];
 
     // Módulos fijos activos (Tigo/WOM/Preventivo). Para supervisor/técnico solo
@@ -1648,7 +1648,7 @@ async function renderSidebarProyectos() {
     let fijos = new Set(arr.filter(p => MODULOS_FIJOS_NAV[p.template] && (p.estado || 'activo') === 'activo')
                            .map(p => p.template));
     if (!['superadmin', 'admin_empresa'].includes(MIROL)) {
-      const rMis = await fetch('/api/gestion/mis-proyectos', { headers: authH() }).then(r => r.ok ? r.json() : []);
+      const rMis = await fetch('/api/gestion/mis-proyectos').then(r => r.ok ? r.json() : []);
       const misT = new Set((Array.isArray(rMis) ? rMis : []).map(p => p.template).filter(Boolean));
       fijos = new Set([...fijos].filter(t => misT.has(t)));
     }
@@ -1689,7 +1689,7 @@ async function ipLoad() {
   const body = document.getElementById('ipBody');
   if (!pid) { body.innerHTML = ipEmpty('Selecciona un proyecto.', IP_ICO_DOC); return; }
   try {
-    const r = await fetch('/api/gestion/proyectos/' + pid + '/informes', { headers: authH() });
+    const r = await fetch('/api/gestion/proyectos/' + pid + '/informes');
     if (!r.ok) throw new Error('No se pudieron cargar los informes');
     const list = await r.json();
     body.innerHTML = `<div class="ip-toolbar"><button class="ip-btn ip-btn-prim ip-btn-sm" onclick="ipModalInforme('${escArg(pid)}')">+ Asignar tarea</button></div>
@@ -1718,7 +1718,7 @@ async function ipLoad() {
 let _ipTagTecnicos = [], _ipTagSel = null;
 async function ipReasignar(informeId, tecnicoActualId, pid, titulo) {
   let personal = [];
-  try { personal = await fetch('/api/gestion/proyectos/' + pid + '/personal', { headers: authH() }).then(r => r.ok ? r.json() : []); }
+  try { personal = await fetch('/api/gestion/proyectos/' + pid + '/personal').then(r => r.ok ? r.json() : []); }
   catch { personal = []; }
   _ipTagTecnicos = personal.filter(p => p.rol === 'tecnico');
   if (!_ipTagTecnicos.length) { toast('Este proyecto no tiene técnicos asignados.'); return; }
@@ -1786,7 +1786,7 @@ async function ipConfirmarReasignar(informeId) {
   const tecnico_id = _ipTagSel.id;
   try {
     const r = await fetch('/api/gestion/informes/' + informeId + '/tecnico', {
-      method: 'PATCH', headers: authH({ 'Content-Type': 'application/json' }),
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tecnico_id })
     });
     if (!r.ok) { const d = await r.json().catch(() => null); throw new Error((d && d.error) || 'No se pudo reasignar'); }
@@ -1804,7 +1804,7 @@ function ipFechaHora(s) {
 async function ipVerDoc(url, nombre) {
   url = decodeURIComponent(url); nombre = decodeURIComponent(nombre || '');
   try {
-    const r = await fetch(url, { headers: authH() });
+    const r = await fetch(url);
     if (!r.ok) throw new Error('No se pudo abrir el documento');
     const blob = await r.blob();
     const u = URL.createObjectURL(blob);
@@ -1821,7 +1821,7 @@ async function ipAbrirCalendario() {
   const pid = document.getElementById('ipProy').value;
   if (!pid) { toast('Selecciona un proyecto primero'); return; }
   try {
-    const r = await fetch('/api/gestion/proyectos/' + pid + '/informes', { headers: authH() });
+    const r = await fetch('/api/gestion/proyectos/' + pid + '/informes');
     if (!r.ok) throw new Error('No se pudieron cargar los informes');
     _ipCalInformes = await r.json();
   } catch (e) { toast('Error: ' + e.message); return; }
@@ -1923,7 +1923,7 @@ async function ipModalInforme(pid) {
   if (!proyectos.length) return toast('No hay proyectos disponibles');
   let sitios = window._ipSitios;
   if (!sitios) {
-    try { sitios = await fetch('/api/sitios-preventivos', { headers: authH() }).then(r => r.ok ? r.json() : []); }
+    try { sitios = await fetch('/api/sitios-preventivos').then(r => r.ok ? r.json() : []); }
     catch { sitios = []; }
     window._ipSitios = sitios;
   }
@@ -2021,7 +2021,7 @@ document.addEventListener('click', e => { const dd = document.getElementById('ip
 async function ipRecargarPersonal() {
   const pid = document.getElementById('ipMProy').value;
   let personal = [];
-  try { personal = await fetch('/api/gestion/proyectos/' + pid + '/personal', { headers: authH() }).then(r => r.ok ? r.json() : []); } catch {}
+  try { personal = await fetch('/api/gestion/proyectos/' + pid + '/personal').then(r => r.ok ? r.json() : []); } catch {}
   const tecs = personal.filter(p => p.rol === 'tecnico'), sups = personal.filter(p => p.rol === 'supervisor');
   const opt = arr => '<option value="">— ninguno —</option>' + arr.map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join('');
   const tEl = document.getElementById('ipMTec'), sEl = document.getElementById('ipMSup'), hEl = document.getElementById('ipMTecHint');
@@ -2045,7 +2045,7 @@ async function ipCrearInforme(btn) {
   btn.disabled = true;
   try {
     const r = await fetch('/api/gestion/proyectos/' + pid + '/informes', {
-      method: 'POST', headers: authH({ 'Content-Type': 'application/json' }), body: JSON.stringify(body)
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     const data = await r.json().catch(() => null);
     if (!r.ok) throw new Error((data && data.error) || 'No se pudo crear');

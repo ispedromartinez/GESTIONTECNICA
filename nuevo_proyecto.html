@@ -220,7 +220,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 (function(){
   const t = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (!t) { window.location.replace('/login'); throw ''; }
-  fetch('/auth/me', { headers: { Authorization: 'Bearer ' + t } })
+  fetch('/auth/me')
     .then(r => r.json())
     .then(d => {
       if (!['superadmin', 'admin_empresa'].includes(d.usuario?.rol)) { window.location.replace('/dashboard'); throw ''; }
@@ -505,8 +505,7 @@ header{background:#1C1F3B;padding:14px 24px;display:flex;align-items:center;just
 </div>
 
 <script>
-const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
+// El Authorization ya lo agrega el interceptor global de fetch en common.js.
 // Escapa datos antes de inyectarlos como HTML/atributo (anti-XSS).
 
 // ── Estado ──────────────────────────────────────────────────────
@@ -579,7 +578,7 @@ async function cargarAreas() {
     return;
   }
   try {
-    const r = await fetch('/auth/areas?empresa_id=' + encodeURIComponent(empId), { headers: authH() });
+    const r = await fetch('/auth/areas?empresa_id=' + encodeURIComponent(empId));
     areasEmpresa = r.ok ? await r.json() : [];
   } catch { areasEmpresa = []; }
   renderAreas();
@@ -607,7 +606,7 @@ async function crearAreaProyecto() {
   try {
     const r = await fetch('/auth/crear-area', {
       method: 'POST',
-      headers: authH({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, empresa_id: empId })
     });
     const data = await r.json();
@@ -822,7 +821,7 @@ async function crearProyecto() {
     };
     const r = await fetch('/api/proyectos', {
       method:'POST',
-      headers: authH({'Content-Type':'application/json'}),
+      headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
     });
     const data = await r.json();
@@ -846,7 +845,7 @@ function toast(msg, type='ok') {
 async function cargarEmpresas() {
   const sel = document.getElementById('pEmpresa');
   try {
-    const r = await fetch('/api/empresas', { headers: authH() });
+    const r = await fetch('/api/empresas');
     if (!r.ok) throw new Error('No se pudieron cargar las empresas');
     const empresas = await r.json();
     if (!empresas.length) {

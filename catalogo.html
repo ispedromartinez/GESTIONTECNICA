@@ -105,8 +105,7 @@ tbody tr:hover{background:#FAFBFF;}
   const t = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (!t) { window.location.replace('/login'); throw ''; }
 })();
-const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
+// El Authorization ya lo agrega el interceptor global de fetch en common.js.
 const NIVEL = { superadmin:4, admin_empresa:3, supervisor:2, tecnico:1 };
 </script>
 
@@ -219,7 +218,7 @@ function toast(msg){ const el=document.getElementById('toast'); el.textContent=m
 
 async function init(){
   try{
-    const me = await fetch('/auth/me', { headers: authH() });
+    const me = await fetch('/auth/me');
     if(!me.ok){ window.location.replace('/login'); return; }
     const { usuario } = await me.json();
     USUARIO_ROL = usuario.rol;
@@ -231,8 +230,8 @@ async function init(){
     }
 
     const [sR, pR] = await Promise.all([
-      fetch('/api/sitios-preventivos?'+qMod(), { headers: authH() }),
-      fetch('/api/proyectos', { headers: authH() })
+      fetch('/api/sitios-preventivos?'+qMod()),
+      fetch('/api/proyectos')
     ]);
     SITIOS = sR.ok ? await sR.json() : [];
     PROYECTOS = pR.ok ? await pR.json() : [];
@@ -293,7 +292,7 @@ async function confirmarAsignacion(){
   const btn = document.getElementById('btnConfirmar'); btn.disabled=true;
   try{
     const r = await fetch('/api/proyectos/sitios/asignar', {
-      method:'POST', headers: authH({'Content-Type':'application/json'}),
+      method:'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ sitios, slugs })
     });
     const d = await r.json();
@@ -301,7 +300,7 @@ async function confirmarAsignacion(){
     const n = (d.asignados||[]).length;
     toast(`${sitios.length} sitio(s) asignados a ${n} proyecto(s)` + ((d.omitidos&&d.omitidos.length)?` · ${d.omitidos.length} omitidos`:''));
     seleccion.clear(); cerrarModal();
-    const pR = await fetch('/api/proyectos', { headers: authH() }); // refresca contadores
+    const pR = await fetch('/api/proyectos'); // refresca contadores
     if(pR.ok) PROYECTOS = await pR.json();
     render();
   }catch(e){ toast('Error: '+e.message); }
@@ -315,7 +314,7 @@ function closeM2(){ document.getElementById('modal2').classList.remove('show'); 
 function val(id){ const e=document.getElementById(id); return e?(e.value||'').trim():''; }
 function fileB64(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); }); }
 async function recargarSitios(){
-  const sR = await fetch('/api/sitios-preventivos?'+qMod(),{ headers: authH() });
+  const sR = await fetch('/api/sitios-preventivos?'+qMod());
   if(sR.ok){ SITIOS = await sR.json(); seleccion.clear(); render(); }
 }
 
@@ -342,7 +341,7 @@ async function guardarSitio(btn){
     criticidad:val('nsCrit'), categoria:val('nsCat'), codigo:val('nsCod') };
   btn.disabled=true;
   try{
-    const r = await fetch('/api/sitios-preventivos?'+qMod(),{ method:'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify(body) });
+    const r = await fetch('/api/sitios-preventivos?'+qMod(),{ method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const d = await r.json();
     if(r.status===409){ mostrarDuplicadoUnico(body, d.existente); return; }
     if(!r.ok){ toast(d.error||'Error al guardar'); btn.disabled=false; return; }
@@ -367,7 +366,7 @@ async function importarSitios(btn){
   btn.disabled=true;
   try{
     const dataBase64 = await fileB64(f);
-    const r = await fetch('/api/sitios-preventivos/importar?'+qMod(),{ method:'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify({ dataBase64 }) });
+    const r = await fetch('/api/sitios-preventivos/importar?'+qMod(),{ method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ dataBase64 }) });
     const d = await r.json();
     if(!r.ok){ toast(d.error||'Error al importar'); btn.disabled=false; return; }
     await recargarSitios();
@@ -416,7 +415,7 @@ async function resolverDuplicados(btn){
   }));
   btn.disabled=true;
   try{
-    const r = await fetch('/api/sitios-preventivos/resolver?'+qMod(),{ method:'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify({ decisiones }) });
+    const r = await fetch('/api/sitios-preventivos/resolver?'+qMod(),{ method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ decisiones }) });
     const d = await r.json();
     if(!r.ok){ toast(d.error||'Error'); btn.disabled=false; return; }
     toast(d.reemplazados ? `${d.reemplazados} sitio(s) reemplazado(s)` : 'Sin cambios');
@@ -437,7 +436,7 @@ function cambiarVista(v){
 
 async function cargarEquipos(){
   try{
-    const r = await fetch('/api/equipos', { headers: authH() });
+    const r = await fetch('/api/equipos');
     allEquipos = await r.json();
     if(!r.ok) throw new Error(allEquipos.error||'Error');
     equiposCargados = true;
@@ -474,7 +473,7 @@ async function abrirEquipo(id){
   document.getElementById('eqModalBody').innerHTML = '<div class="empty">Cargando…</div>';
   bg.classList.add('show');
   try{
-    const r = await fetch(`/api/equipos/${encodeURIComponent(id)}/historial`, { headers: authH() });
+    const r = await fetch(`/api/equipos/${encodeURIComponent(id)}/historial`);
     const d = await r.json();
     if (!r.ok) throw new Error(d.error||'Error');
     const eq = d.equipo;
@@ -513,7 +512,7 @@ function verPdfInforme(tipo, id){
 
 async function descargarInforme(url, fn){
   try{
-    const r = await fetch(url, { headers: authH() });
+    const r = await fetch(url);
     if(!r.ok) throw new Error('Error al descargar');
     const blob = await r.blob();
     const u = URL.createObjectURL(blob); const a = document.createElement('a');
@@ -524,7 +523,7 @@ async function descargarInforme(url, fn){
 async function backfillEquipos(){
   const b = document.getElementById('btnBackfill'); b.disabled = true;
   try{
-    const r = await fetch('/api/equipos/backfill', { method:'POST', headers: authH() });
+    const r = await fetch('/api/equipos/backfill', { method:'POST' });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error||'Error');
     equiposCargados = false; await cargarEquipos();

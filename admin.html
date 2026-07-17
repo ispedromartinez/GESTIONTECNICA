@@ -346,9 +346,6 @@ tr:hover td{background:var(--p-subtle);}
 <div id="toast"></div>
 
 <script>
-const T = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-const aH = (x={}) => ({ Authorization:'Bearer '+T(), ...x });
-const jH = () => aH({ 'Content-Type':'application/json' });
 const $ = id => document.getElementById(id);
 const initials = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
@@ -358,7 +355,8 @@ function toast(msg,type='ok'){const e=$('toast');e.textContent=msg;e.className='
 function toggleMenu(open){$('sidebar').classList.toggle('open',open);$('overlay').classList.toggle('open',open);}
 
 async function api(path, opts={}){
-  const r = await fetch(path,{ headers: opts.body?jH():aH(), ...opts });
+  // El Authorization ya lo agrega el interceptor global de fetch en common.js.
+  const r = await fetch(path,{ headers: opts.body?{'Content-Type':'application/json'}:{}, ...opts });
   if(r.status===401){ localStorage.removeItem('token');sessionStorage.removeItem('token');location.replace('/login');throw new Error('401'); }
   const data = await r.json().catch(()=>null);
   if(!r.ok) throw new Error((data&&data.error)||('Error '+r.status));
@@ -1506,7 +1504,7 @@ function modalImportUsuarios(){
 async function descargarPlantillaUsuarios(btn){
   btn.disabled=true;
   try{
-    const r = await fetch('/api/usuarios/plantilla',{ headers: aH() });
+    const r = await fetch('/api/usuarios/plantilla');
     if(!r.ok) throw new Error('No se pudo descargar la plantilla');
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);

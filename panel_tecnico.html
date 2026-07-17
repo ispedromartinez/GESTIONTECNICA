@@ -554,7 +554,7 @@ const TITLES = {
 // Token de sesión (igual que selector.html / proyecto.html)
 const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 if (!token) { window.location.replace('/login'); }
-const authH = token ? { Authorization: 'Bearer ' + token } : {};
+// El Authorization ya lo agrega el interceptor global de fetch en common.js.
 
 function cerrarSesion() {
   localStorage.removeItem('token');
@@ -601,7 +601,7 @@ async function loadHistorial() {
   const hb = document.getElementById('historialBody');
   if (!hb) return;
   try {
-    const r = await fetch('/api/gestion/mis-informes', { headers: authH });
+    const r = await fetch('/api/gestion/mis-informes');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const all = await r.json();
     const list = Array.isArray(all) ? all : [];
@@ -632,7 +632,7 @@ async function loadHistorial() {
 // ── Proyectos asignados → Preventivo / Correctivo ──
 async function loadProyectos() {
   try {
-    const r = await fetch('/api/gestion/mis-proyectos', { headers: authH });
+    const r = await fetch('/api/gestion/mis-proyectos');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const list = await r.json();
     renderProyectos(Array.isArray(list) ? list : []);
@@ -724,7 +724,7 @@ async function loadTareasCorrectivas(){
   // ── Correctivos: informes de gestión asignados al técnico ──
   const corrEl = document.getElementById('tareasCorrBody');
   if (corrEl) try {
-    const r = await fetch('/api/gestion/mis-informes', { headers: authH });
+    const r = await fetch('/api/gestion/mis-informes');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const all = await r.json();
     const corr = (Array.isArray(all) ? all : [])
@@ -756,7 +756,7 @@ async function loadTareasPreventivas(){
   // ── Preventivos: tareas del módulo de mantenimiento (/tareas) ──
   const prevEl = document.getElementById('tareasPrevBody');
   if (prevEl) try {
-    const r = await fetch('/tareas', { headers: authH });
+    const r = await fetch('/tareas');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const all = await r.json();
     const pend = (Array.isArray(all) ? all : []).filter(t => (t.estado || 'Nuevo') !== 'Cerrado');
@@ -782,7 +782,7 @@ function genInforme(id, url){
 // Descargar/ver el documento generado (con el token, vía fetch + blob).
 async function verDocumento(url, nombre){
   try {
-    const r = await fetch(url, { headers: authH });
+    const r = await fetch(url);
     if (!r.ok) throw new Error('No se pudo abrir el documento');
     const blob = await r.blob();
     const u = URL.createObjectURL(blob);
@@ -794,7 +794,7 @@ async function verDocumento(url, nombre){
 async function cerrarInforme(id){
   try {
     const r = await fetch('/api/gestion/informes/' + id + '/estado', {
-      method: 'PATCH', headers: { ...authH, 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ estado: 'aprobado' })
     });
     if (!r.ok) { const d = await r.json().catch(() => null); throw new Error((d && d.error) || 'No se pudo cerrar'); }

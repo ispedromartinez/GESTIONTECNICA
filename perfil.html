@@ -205,10 +205,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
 <div class="toast" id="toast"></div>
 
+<script src="/common.js"></script>
 <script>
 const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 if (!token) { window.location.replace('/login'); }
-const authH = { Authorization: 'Bearer ' + token };
+// El Authorization ya lo agrega el interceptor global de fetch en common.js.
 
 const ROL_LABEL = { superadmin: 'Superadmin', admin_empresa: 'Jefe', supervisor: 'Supervisor', tecnico: 'Técnico' };
 let miRol = 'tecnico';
@@ -246,8 +247,8 @@ async function cargar() {
   let rol = 'tecnico';
   try {
     const [meR, perfR] = await Promise.all([
-      fetch('/auth/me', { headers: authH }),
-      fetch('/api/gestion/perfil', { headers: authH }),
+      fetch('/auth/me'),
+      fetch('/api/gestion/perfil'),
     ]);
     if (meR.ok) {
       const { usuario } = await meR.json();
@@ -289,7 +290,7 @@ async function cargarProyectos(rol) {
   const tituloEl = document.getElementById('projCardTitle');
   if (tituloEl) tituloEl.textContent = esTecnico ? 'Proyectos asignados' : 'Proyectos de tu empresa';
   try {
-    const r = await fetch(endpoint, { headers: authH });
+    const r = await fetch(endpoint);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const list = await r.json();
     if (!Array.isArray(list) || !list.length) {
@@ -332,7 +333,7 @@ async function guardar() {
   try {
     const r = await fetch('/api/gestion/perfil', {
       method: 'PUT',
-      headers: { ...authH, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const data = await r.json();
