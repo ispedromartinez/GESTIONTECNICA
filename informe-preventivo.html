@@ -430,6 +430,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
             <tr><td class="res-lbl">Flujo de Aire</td></tr>
             <tr><td class="res-lbl">Temperatura Inyección (°C)</td></tr>
             <tr><td class="res-lbl">Temperatura Retorno (°C)</td></tr>
+            <tr><td class="res-lbl">Setpoint (°C)</td></tr>
             <tr><td class="res-lbl">Tipo de Refrigerante</td></tr>
           </tbody>
         </table>
@@ -547,7 +548,7 @@ function toggleMarcaOtra(n) {
   inp.style.display = sel.value === 'OTRA' ? 'block' : 'none';
   if (sel.value === 'OTRA') inp.focus();
 }
-const RES_FIELDS = ['flujoAire','tempIny','tempRet','refrigerante'];
+const RES_FIELDS = ['flujoAire','tempIny','tempRet','setpoint','refrigerante'];
 
 // ── Init ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1089,6 +1090,7 @@ function collectResumen() {
     flujoAire:    g(`res${n}_flujoAire`),
     tempIny:      g(`res${n}_tempIny`),
     tempRet:      g(`res${n}_tempRet`),
+    setpoint:     g(`res${n}_setpoint`),
     refrigerante: g(`res${n}_refrigerante`)
   }));
 }

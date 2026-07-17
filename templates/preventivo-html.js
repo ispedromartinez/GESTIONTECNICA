@@ -223,6 +223,7 @@ body{ font-family: Calibri, Arial, sans-serif; font-size: 7pt; color: #000; }
     ${resRow('FLUJO DE AIRE','flujoAire')}
     ${resRow('TEMP. INYECCIÓN (°C)','tempIny')}
     ${resRow('TEMP. RETORNO (°C)','tempRet')}
+    ${resRow('SETPOINT (°C)','setpoint')}
     ${resRow('TIPO REFRIGERANTE','refrigerante')}
   </tbody>
 </table>
