@@ -300,7 +300,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
     <span class="nav-sep">—</span>
     <span class="nav-sub">Informe Preventivo</span>
   </div>
-  <button class="nav-back" onclick="window.location.href='/preventivo'">&#8592; Volver</button>
+  <button class="nav-back" onclick="window.location.href=destinoVolver()">&#8592; Volver</button>
 </nav>
 
 <div class="page">
@@ -506,6 +506,27 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
 <script>
 // El interceptor de fetch (Authorization automático) ahora vive en
 // common.js — antes esta página lo tenía duplicado acá mismo.
+
+// ── Volver / Inicio según rol ────────────────────────────────
+// El técnico no tiene acceso a /preventivo.html (la lista de tareas de
+// supervisor/admin) — su "casa" es /panel. Antes el botón "Volver" iba
+// siempre a /preventivo, sin importar el rol ni desde dónde se llegó.
+let HOME_URL = '/preventivo.html';
+(async () => {
+  try {
+    const r = await fetch('/auth/me');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d && d.usuario) HOME_URL = d.usuario.rol === 'tecnico' ? '/panel' : '/preventivo.html';
+  } catch {}
+})();
+// Respeta ?volver= (ej. "&volver=%2Fpanel" desde /panel) si viene informado;
+// si no, cae al home según rol.
+function destinoVolver() {
+  const volverRaw = new URLSearchParams(location.search).get('volver');
+  if (volverRaw && volverRaw.startsWith('/') && !volverRaw.startsWith('//')) return volverRaw;
+  return HOME_URL;
+}
 
 // ── State ───────────────────────────────────────────────────
 let equipoCount = 0;
@@ -1300,11 +1321,9 @@ async function procesarPdfExitoso(data, res, status) {
       });
     } catch(e) { console.warn('No se pudo cerrar tarea:', e); }
     // Vuelve a la página de origen (?volver=/panel desde el panel del
-    // técnico); por defecto, al módulo de mantenimiento preventivo.
-    const volverRaw = new URLSearchParams(location.search).get('volver');
-    const volver = (volverRaw && volverRaw.startsWith('/') && !volverRaw.startsWith('//')) ? volverRaw : '/preventivo.html';
+    // técnico); si no viene informado, cae al home según rol (destinoVolver()).
     showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado. Tarea cerrada. Redirigiendo…`);
-    setTimeout(() => { hidePdfOverlay(); window.location.href = volver; }, 2500);
+    setTimeout(() => { hidePdfOverlay(); window.location.href = destinoVolver(); }, 2500);
   } else {
     showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado y guardado en base de datos.`);
     setTimeout(hidePdfOverlay, 3000);

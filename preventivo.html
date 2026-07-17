@@ -183,7 +183,7 @@ main.vista-ancho{max-width:none;}
 
 <header>
   <h1>Mantenimiento Preventivo</h1>
-  <a href="/dashboard" class="ui-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</a>
+  <a href="/dashboard" id="btnHome" class="ui-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</a>
 </header>
 
 <main>
@@ -465,6 +465,12 @@ function ROL() {
   catch { return ''; }
 }
 const ES_TECNICO = ROL() === 'tecnico';
+// El técnico no tiene "casa" en /dashboard — la suya es /panel (antes el
+// botón Inicio lo mandaba siempre a /dashboard, sin importar el rol).
+if (ES_TECNICO) {
+  const btnHome = document.getElementById('btnHome');
+  if (btnHome) btnHome.href = '/panel';
+}
 // Descarga autenticada (reemplaza la navegación directa, que no puede mandar el token).
 async function descargarAuth(url, fallbackName) {
   const r = await fetch(url);
