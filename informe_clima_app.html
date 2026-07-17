@@ -720,10 +720,8 @@ function precargarSitioLpuAsignados(informeId, token, intentos){
 
 <script>
 const SERVER=window.location.origin;
-function authH(extra={}) {
-  const t = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-  return { Authorization: 'Bearer ' + t, ...extra };
-}
+// El Authorization ya lo agrega el interceptor global de fetch en common.js
+// — antes había que pasar authH() a mano en cada llamada de esta página.
 let serverOnline=false, allRecords=[], pendingDeleteId=null, pendingEmailId=null;
 
 // ══ SUPERVISORS list ══
@@ -1056,7 +1054,7 @@ async function buildCodigoFinal(){
   const base=buildCodigo();
   if(!base)return null;
   try{
-    const r=await fetch(SERVER+'/registro',{headers:authH()});
+    const r=await fetch(SERVER+'/registro');
     const records=await r.json();
     const existing=records.map(x=>x.codInforme||'').filter(c=>c.startsWith(base));
     if(!existing.length)return base;
@@ -1421,7 +1419,7 @@ async function generateDocx(){
   };
   let resp;
   try{
-    resp=await fetch(SERVER+'/generar',{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(payload)});
+    resp=await fetch(SERVER+'/generar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   }catch(netErr){
     // No hubo respuesta del servidor (sin señal) — se encola para reintentar
     // solo cuando vuelva la conexión, no se pierde el trabajo del técnico.
@@ -1451,7 +1449,7 @@ async function descargarYFinalizarTigo(cod,payload,resp,status){
   // Registra el sitio en el catálogo (módulo tigo) para el desplegable.
   if(payload.nombreSitio){
     try{
-      await fetch(SERVER+'/api/sitios-auto?modulo=tigo',{method:'POST',headers:authH({'Content-Type':'application/json'}),
+      await fetch(SERVER+'/api/sitios-auto?modulo=tigo',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({nombre:payload.nombreSitio,direccion:payload.direccion,codigo:payload.codigoSitio})});
       cargarCatalogoSitiosTigo();
     }catch{}
@@ -1459,7 +1457,7 @@ async function descargarYFinalizarTigo(cod,payload,resp,status){
   // Cierra el ciclo: si el informe vino de una tarea preventiva, la marca como Cerrada.
   if(payload.tareaId){
     try{
-      const rc=await fetch(SERVER+'/tareas/'+payload.tareaId,{method:'PUT',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify({estado:'Cerrado'})});
+      const rc=await fetch(SERVER+'/tareas/'+payload.tareaId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:'Cerrado'})});
       if(rc.ok&&status)status.textContent=`✅ "${fname}" generado. Tarea preventiva marcada como Cerrada.`;
     }catch(e){console.error('No se pudo cerrar la tarea preventiva:',e);}
   }
@@ -1479,7 +1477,7 @@ async function loadHist(silent=false){
   try{
     const q=document.getElementById('histSearch')?.value||'';
     const url=q?`${SERVER}/registro?q=${encodeURIComponent(q)}`:SERVER+'/registro';
-    const r=await fetch(url,{headers:authH()});allRecords=await r.json();renderHist(allRecords);
+    const r=await fetch(url);allRecords=await r.json();renderHist(allRecords);
   }catch{
     if(!silent)document.getElementById('histList').innerHTML='<div class="hist-empty"><div class="ei">⚠️</div><p>No se pudo conectar al servidor.<br><strong>Ejecuta: node server.js</strong></p></div>';
   }
@@ -1540,7 +1538,7 @@ function renderHist(records){
 function toggleInf(id){document.getElementById(`body_${id}`).classList.toggle('open');}
 async function downloadRecord(id){
   try{
-    const r=await fetch(`${SERVER}/descargar/${id}`,{headers:authH()});
+    const r=await fetch(`${SERVER}/descargar/${id}`);
     if(!r.ok)throw new Error('Error al descargar');
     const blob=await r.blob();
     const disp=r.headers.get('Content-Disposition')||'';
@@ -1554,7 +1552,7 @@ function verPdf(id){
 }
 function openConfirm(id,sitio){pendingDeleteId=id;document.getElementById('confirmMsg').textContent=`Se eliminará el informe de "${sitio}". Esta acción no se puede deshacer.`;document.getElementById('confirmDel').classList.add('open');}
 function closeConfirm(){document.getElementById('confirmDel').classList.remove('open');pendingDeleteId=null;}
-async function confirmDelete(){if(!pendingDeleteId)return;closeConfirm();try{await fetch(`${SERVER}/registro/${pendingDeleteId}`,{method:'DELETE',headers:authH()});await loadHist();}catch(e){alert('Error: '+e.message);}}
+async function confirmDelete(){if(!pendingDeleteId)return;closeConfirm();try{await fetch(`${SERVER}/registro/${pendingDeleteId}`,{method:'DELETE'});await loadHist();}catch(e){alert('Error: '+e.message);}}
 function openEmailModal(id,sitio,cod){pendingEmailId=id;document.getElementById('emailModalInfo').textContent=`Informe: ${cod} — Sitio: ${sitio}`;document.getElementById('emailStatus').style.display='none';document.getElementById('emailModal').classList.add('open');}
 function closeEmailModal(){document.getElementById('emailModal').classList.remove('open');pendingEmailId=null;}
 async function sendEmail(){
@@ -1562,7 +1560,7 @@ async function sendEmail(){
   if(!to){st.className='status err';st.textContent='⚠ Ingresa un correo destinatario.';return;}
   st.className='status loading';st.textContent='📤 Enviando...';
   try{
-    const r=await fetch(`${SERVER}/enviar/${pendingEmailId}`,{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify({to,smtpHost:document.getElementById('smtpHost').value,smtpPort:+document.getElementById('smtpPort').value,smtpUser:document.getElementById('smtpUser').value,smtpPass:document.getElementById('smtpPass').value})});
+    const r=await fetch(`${SERVER}/enviar/${pendingEmailId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to,smtpHost:document.getElementById('smtpHost').value,smtpPort:+document.getElementById('smtpPort').value,smtpUser:document.getElementById('smtpUser').value,smtpPass:document.getElementById('smtpPass').value})});
     const d=await r.json();if(!r.ok)throw new Error(d.error||'Error al enviar');
     st.className='status ok';st.textContent='✅ Informe enviado correctamente';setTimeout(closeEmailModal,2000);
   }catch(e){st.className='status err';st.textContent='❌ '+e.message;}
@@ -1576,7 +1574,7 @@ async function loadPapelera(silent=false) {
   try {
     const q = document.getElementById('papSearch')?.value||'';
     const url = q ? `${SERVER}/papelera?q=${encodeURIComponent(q)}` : SERVER+'/papelera';
-    const r = await fetch(url,{headers:authH()});
+    const r = await fetch(url);
     allPapelera = await r.json();
     renderPapelera(allPapelera);
   } catch {
@@ -1626,7 +1624,7 @@ function togglePap(id){ document.getElementById(`pbody_${id}`)?.classList.toggle
 
 async function restaurar(id) {
   try {
-    const r = await fetch(`${SERVER}/papelera/restaurar/${id}`, {method:'POST',headers:authH()});
+    const r = await fetch(`${SERVER}/papelera/restaurar/${id}`, {method:'POST'});
     if(!r.ok) throw new Error('Error al restaurar');
     await loadPapelera();
     await loadHist(true);
@@ -1650,7 +1648,7 @@ async function confirmPermDelete() {
   if(!pendingPermId) return;
   closeConfirmPerm();
   try {
-    await fetch(`${SERVER}/papelera/${pendingPermId}`, {method:'DELETE',headers:authH()});
+    await fetch(`${SERVER}/papelera/${pendingPermId}`, {method:'DELETE'});
     await loadPapelera();
   } catch(e){ alert('Error: '+e.message); }
 }
@@ -1660,7 +1658,7 @@ function closeConfirmVaciar(){ document.getElementById('confirmVaciar').classLis
 async function confirmVaciar(){
   closeConfirmVaciar();
   try{
-    await fetch(`${SERVER}/papelera`, {method:'DELETE',headers:authH()});
+    await fetch(`${SERVER}/papelera`, {method:'DELETE'});
     await loadPapelera();
   } catch(e){ alert('Error: '+e.message); }
 }
@@ -1676,7 +1674,7 @@ async function confirmDelete(){
   allRecords=allRecords.filter(r=>r.id!==id);
   document.getElementById('histTabNum').textContent=allRecords.length||'0';
   try{
-    await fetch(`${SERVER}/registro/${id}`,{method:'DELETE',headers:authH()});
+    await fetch(`${SERVER}/registro/${id}`,{method:'DELETE'});
     await loadHist(true);
     await loadPapelera(true);
   }catch(e){alert('Error al mover a papelera: '+e.message);}
@@ -1689,7 +1687,7 @@ document.getElementById('fechaEjecucion').valueAsDate=new Date();
 // Carga el catálogo de sitios de la empresa (módulo tigo) → [nombre,direccion].
 async function cargarCatalogoSitiosTigo(){
   try{
-    const r=await fetch(SERVER+'/api/sitios-preventivos?modulo=tigo',{headers:authH()});
+    const r=await fetch(SERVER+'/api/sitios-preventivos?modulo=tigo');
     if(!r.ok)return;
     const data=await r.json();
     SITES=(data||[]).map(s=>[s.nombre,s.direccion||'']);
@@ -1705,7 +1703,7 @@ async function precargarDesdeTarea(){
   const id=params.get('tareaId');
   if(!id)return;
   try{
-    const resp=await fetch(SERVER+'/tareas/'+id,{headers:authH()});
+    const resp=await fetch(SERVER+'/tareas/'+id);
     if(!resp.ok)return;
     const t=await resp.json();
     TAREA_ID=id;

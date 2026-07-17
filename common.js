@@ -12,6 +12,24 @@ function escArg(s){
   return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
 }
 
+// ── Interceptor global de fetch (auth) ─────────────────────────
+// Única fuente del header Authorization. Antes cada página resolvía esto por
+// su cuenta: TIGO/WOM tenían un authH() local que había que acordarse de
+// pasar a mano en cada fetch (fácil de olvidar en un fetch nuevo); Preventivo
+// en cambio ya parcheaba window.fetch acá mismo, a nivel de página. Se
+// unifica en el mecanismo de Preventivo (a prueba de olvidos) y se mueve a
+// común.js para que ninguna página tenga su propia copia — mismo motivo que
+// esc/escArg.
+(function(){
+  const _origFetch = window.fetch;
+  window.fetch = (url, opts={}) => {
+    // El token puede estar en localStorage ("recordarme") o en sessionStorage.
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (token) { opts.headers = { ...(opts.headers||{}), 'Authorization': 'Bearer '+token }; }
+    return _origFetch(url, opts);
+  };
+})();
+
 // ── Compresión de fotos ────────────────────────────────────────
 // Los informes (TIGO/WOM/Preventivo) embeben las fotos en el .docx/PDF a
 // ~210-235px de ancho (docx/clima.js, docx/wom.js) — no tiene sentido cargar
@@ -141,16 +159,13 @@ async function marcarPendienteConError(id, mensaje) {
   } catch (e) {}
 }
 
-function _authHeaderOffline() {
-  const t = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-  return t ? { Authorization: 'Bearer ' + t } : {};
-}
-
 // Reintenta enviar los pendientes de una página. Nunca descarta trabajo del
 // técnico salvo éxito confirmado (2xx): en falla de red se deja para el
 // próximo intento; en 401/403 se deja para cuando haya un token vigente; en
 // cualquier otro código se marca con el error y se saltea en las próximas
 // pasadas automáticas (se reintenta recién en la siguiente carga de página).
+// El Authorization lo agrega el interceptor global de fetch de más arriba —
+// no hace falta construirlo acá.
 async function reintentarPendientes(pagina, onExito) {
   const pendientes = await listarPendientes(pagina);
   for (const p of pendientes) {
@@ -159,7 +174,7 @@ async function reintentarPendientes(pagina, onExito) {
     try {
       resp = await fetch(p.url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ..._authHeaderOffline() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(p.payload)
       });
     } catch (e) {

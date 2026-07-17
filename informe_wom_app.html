@@ -510,7 +510,7 @@ function precargarSitioAsignadoWom(informeId, token, intentos){
 let RSO = {};
 async function cargarCatalogoSitiosWom(){
   try{
-    const r=await fetch('/api/sitios-preventivos?modulo=wom',{headers:authH()});
+    const r=await fetch('/api/sitios-preventivos?modulo=wom');
     if(!r.ok)return;
     const data=await r.json();
     const sel=g('instalacion'); if(!sel)return;
@@ -624,10 +624,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Helpers ──────────────────────────────────────────────────
 const g = id => document.getElementById(id);
-function authH(extra={}) {
-  const t = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-  return { Authorization: 'Bearer ' + t, ...extra };
-}
+// El Authorization ya lo agrega el interceptor global de fetch en common.js
+// — antes había que pasar authH() a mano en cada llamada de esta página.
 
 function toast(msg, type='ok') {
   const el = g('toast');
@@ -863,7 +861,7 @@ async function descargarYFinalizarWom(payload, resp) {
   // Registra la instalación en el catálogo (módulo wom) para el desplegable.
   if (payload.instalacion) {
     try {
-      await fetch('/api/sitios-auto?modulo=wom', { method:'POST', headers:authH({'Content-Type':'application/json'}),
+      await fetch('/api/sitios-auto?modulo=wom', { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ nombre: payload.instalacion, direccion: payload.direccion }) });
     } catch {}
   }
@@ -911,7 +909,7 @@ async function generarInforme() {
   try {
     resp = await fetch('/generar-wom', {
       method: 'POST',
-      headers: authH({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
   } catch (netErr) {
@@ -947,7 +945,7 @@ async function loadHistorial() {
   if (!body) return;
   body.innerHTML = '<div class="hist-empty">Cargando...</div>';
   try {
-    const data = await fetch('/registro-wom',{headers:authH()}).then(r=>r.json());
+    const data = await fetch('/registro-wom').then(r=>r.json());
     g('hist-count').textContent = `${data.length} informe(s)`;
     if (!data.length) { body.innerHTML = '<div class="hist-empty">No hay informes generados aún.</div>'; return; }
     body.innerHTML = data.map(e => `
@@ -971,7 +969,7 @@ async function loadHistorial() {
 
 async function descargar(id) {
   try {
-    const r = await fetch(`/descargar-wom/${id}`, {headers:authH()});
+    const r = await fetch(`/descargar-wom/${id}`);
     if (!r.ok) throw new Error('Error al descargar');
     const blob = await r.blob();
     const cd = r.headers.get('Content-Disposition') || '';
@@ -991,7 +989,7 @@ async function eliminar(id, btn) {
   if (!confirm('¿Mover este informe a la papelera?')) return;
   btn.disabled = true;
   try {
-    await fetch(`/registro-wom/${id}`, { method:'DELETE', headers:authH() });
+    await fetch(`/registro-wom/${id}`, { method:'DELETE' });
     toast('Informe movido a papelera');
     loadHistorial();
   } catch { toast('Error al eliminar','err'); btn.disabled = false; }

@@ -503,14 +503,8 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
 
 <script src="/common.js"></script>
 <script>
-// ── Auth fetch interceptor ──────────────────────────────────
-const _origFetch = window.fetch;
-window.fetch = (url, opts={}) => {
-  // El token puede estar en localStorage ("recordarme") o en sessionStorage.
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (token) { opts.headers = { ...(opts.headers||{}), 'Authorization': 'Bearer '+token }; }
-  return _origFetch(url, opts);
-};
+// El interceptor de fetch (Authorization automático) ahora vive en
+// common.js — antes esta página lo tenía duplicado acá mismo.
 
 // ── State ───────────────────────────────────────────────────
 let equipoCount = 0;
