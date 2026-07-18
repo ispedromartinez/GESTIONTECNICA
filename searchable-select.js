@@ -40,10 +40,17 @@
     // Copiar la métrica real del <select> original para NO agrandar la lista:
     // así en cada página el control mantiene el mismo tamaño/compacidad que antes.
     const cs = getComputedStyle(sel);
-    // getComputedStyle().height = alto de CONTENIDO (sin padding/borde). Por eso
-    // usamos box-sizing:content-box y sumamos padding+borde → caja idéntica al nativo.
+    // Con box-sizing:border-box (el reset global de la app) getComputedStyle().
+    // height/width YA son el alto/ancho TOTAL (incluyen padding+borde) — copiarlos
+    // tal cual con boxSizing:'border-box' reproduce la caja exacta del nativo.
+    // (Antes se asumía que .height era solo el contenido y se le sumaba el
+    // padding/borde de nuevo, lo que duplicaba ese espacio y dejaba el botón
+    // más alto que sus campos vecinos; y con content-box + width:100% heredado,
+    // un <select> con padding-right grande —p.ej. el espacio para la flecha
+    // nativa en informe-preventivo.html, 2rem— hacía que el botón terminara más
+    // ancho que su contenedor y se desbordara sobre el campo vecino.)
     const box = {
-      boxSizing: 'content-box',
+      boxSizing: 'border-box',
       fontSize: cs.fontSize, fontWeight: cs.fontWeight, fontFamily: cs.fontFamily, lineHeight: cs.lineHeight,
       color: cs.color, height: cs.height,
       paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft, paddingRight: cs.paddingRight,
@@ -78,7 +85,15 @@
     panel.className = 'ss-panel';
     panel.style.fontSize = cs.fontSize;
     panel.innerHTML = '<div class="ss-search"><input type="text" class="ss-in" placeholder="Buscar..." autocomplete="off" spellcheck="false"></div><div class="ss-list"></div>';
-    wrap.appendChild(panel);
+    // Se cuelga directo del <body> (no de wrap): el panel es position:fixed y
+    // se posiciona a mano con las coordenadas de disp.getBoundingClientRect()
+    // (ver positionPanel). Si quedara dentro de wrap, cualquier ancestro con
+    // transform/filter/backdrop-filter (p.ej. una tarjeta con animación de
+    // "reveal") pasa a ser el contenedor de referencia del fixed en vez del
+    // viewport — el panel terminaba desplazado y desbordando la pantalla en
+    // páginas con ese tipo de animaciones (informe-preventivo.html).
+    panel._disp = disp;
+    document.body.appendChild(panel);
 
     const input = panel.querySelector('.ss-in');
     const list = panel.querySelector('.ss-list');
@@ -153,6 +168,11 @@
     }
     function positionPanel() {
       const r = disp.getBoundingClientRect();
+      // El panel siempre queda al ras del campo: mismo ancho, mismo borde
+      // izquierdo — nunca angosto ni centrado. (Antes se angostaba en
+      // teléfono pensando que así se evitaba el desborde, pero la causa real
+      // del desborde era el bug de box-sizing ya corregido más arriba; angostar
+      // el panel solo lograba que quedara desalineado del campo.)
       panel.style.left = r.left + 'px';
       panel.style.width = r.width + 'px';
       panel.classList.remove('drop-up');
@@ -207,7 +227,7 @@
       else if (e.key === 'Enter') { e.preventDefault(); const el = els[hi] || els[0]; if (el && el.dataset.i != null) pick(+el.dataset.i); }
       else if (e.key === 'Escape') { e.preventDefault(); close(); disp.focus(); }
     });
-    document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+    document.addEventListener('click', e => { if (!wrap.contains(e.target) && !panel.contains(e.target)) close(); });
 
     // La app cambia opciones (innerHTML) o el valor por código → re-sincronizar vista.
     sel.addEventListener('change', syncDisp);
@@ -229,7 +249,7 @@
   }
 
   function closeAll(except) {
-    document.querySelectorAll('.ss-panel.open').forEach(p => { if (p !== except) { p.classList.remove('open'); const d = p.previousElementSibling; if (d) d.classList.remove('open'); } });
+    document.querySelectorAll('.ss-panel.open').forEach(p => { if (p !== except) { p.classList.remove('open'); if (p._disp) p._disp.classList.remove('open'); } });
   }
 
   function enhanceAll(root) {
