@@ -205,11 +205,14 @@ const db = {
 };
 
 // ── POST /auth/login ─────────────────────────────────────────
-// Anti fuerza bruta por IP: máx. 20 intentos FALLIDOS cada 15 min.
+// Anti fuerza bruta por IP: máx. 8 intentos FALLIDOS cada 15 min.
 // Solo cuenta fallos (un login correcto limpia el contador) y el
 // superadmin nunca queda bloqueado: siempre puede iniciar sesión.
-const LOGIN_MAX = 20;
+// A partir del 5º intento fallido, el mensaje de error avisa cuántos
+// intentos quedan antes del bloqueo temporal.
+const LOGIN_MAX = 8;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_AVISO_DESDE = 5;
 const loginFails = new Map(); // ip -> { count, reset }
 const ipDe = req => req.ip || (req.connection && req.connection.remoteAddress) || 'unknown';
 function loginBloqueado(ip) {
@@ -223,8 +226,19 @@ function loginFallo(ip) {
   let rec = loginFails.get(ip);
   if (!rec || now > rec.reset) { rec = { count: 0, reset: now + LOGIN_WINDOW_MS }; loginFails.set(ip, rec); }
   rec.count++;
+  return rec.count;
 }
 const loginReset = ip => loginFails.delete(ip);
+
+// Agrega el aviso de intentos restantes (desde el 5º intento fallido) a un
+// mensaje de error de login. No aplica al superadmin, que nunca se bloquea.
+function conAvisoIntentos(mensaje, count, esSuper) {
+  if (esSuper || count < LOGIN_AVISO_DESDE) return mensaje;
+  const restantes = Math.max(LOGIN_MAX - count, 0);
+  if (restantes <= 0) return `${mensaje} Sin intentos restantes: la IP queda bloqueada temporalmente.`;
+  const plural = restantes === 1 ? '' : 's';
+  return `${mensaje} Te queda${restantes === 1 ? '' : 'n'} ${restantes} intento${plural} antes del bloqueo temporal.`;
+}
 
 router.post('/login', async (req, res) => {
   try {
@@ -241,23 +255,29 @@ router.post('/login', async (req, res) => {
       return res.status(429).json({ error: 'Demasiados intentos de inicio de sesión. Espera unos minutos.' });
 
     // Mismo mensaje para email no encontrado y contraseña incorrecta — evita enumeración
-    if (!usuario) { loginFallo(ip); return res.status(401).json({ error: 'Credenciales inválidas' }); }
+    if (!usuario) {
+      const count = loginFallo(ip);
+      return res.status(401).json({ error: conAvisoIntentos('Correo o contraseña incorrecta.', count, false) });
+    }
     if (!usuario.activo) return res.status(403).json({ error: 'Cuenta desactivada' });
 
     const ok = await bcrypt.compare(password, usuario.password_hash);
-    if (!ok) { if (!esSuper) loginFallo(ip); return res.status(401).json({ error: 'Credenciales inválidas' }); }
+    if (!ok) {
+      const count = esSuper ? 0 : loginFallo(ip);
+      return res.status(401).json({ error: conAvisoIntentos('Correo o contraseña incorrecta.', count, esSuper) });
+    }
 
     // Validar empresa si se envió en el formulario
     // superadmin no tiene empresa asignada → se omite la validación
     if (empresaSlug && usuario.rol !== 'superadmin') {
       const empresa = await db.findEmpresaBySlug(empresaSlug.toLowerCase().trim());
       if (!empresa) {
-        loginFallo(ip);
-        return res.status(401).json({ error: 'Empresa no encontrada o inactiva' });
+        const count = loginFallo(ip);
+        return res.status(401).json({ error: conAvisoIntentos('Empresa no encontrada o inactiva.', count, false) });
       }
       if (empresa.id !== usuario.empresa_id) {
-        loginFallo(ip);
-        return res.status(401).json({ error: 'Credenciales inválidas' });
+        const count = loginFallo(ip);
+        return res.status(401).json({ error: conAvisoIntentos('Correo o contraseña incorrecta.', count, false) });
       }
     }
 
