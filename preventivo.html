@@ -119,7 +119,7 @@ main.vista-ancho{max-width:none;}
 .modal h2{display:none;}
 
 /* top bar */
-.modal-topbar{padding:16px 18px 16px 20px;background:#fff;border-bottom:1px solid #EEF1F6;border-radius:21px 21px 0 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-topbar{flex:none;padding:16px 18px 16px 20px;background:#fff;border-bottom:1px solid #EEF1F6;border-radius:21px 21px 0 0;display:flex;align-items:center;justify-content:space-between;}
 .modal-topbar-left{display:flex;align-items:center;gap:12px;}
 .modal-topbar-ico{flex:none;width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;background:#EFF6FF;}
 .modal-topbar-title{font-size:15px;font-weight:800;letter-spacing:-.01em;text-transform:none;color:#0F172A;}
@@ -130,14 +130,16 @@ main.vista-ancho{max-width:none;}
 .modal-topbar .guardar-salir:active{transform:translateY(0);}
 
 /* tabs */
-.modal-tabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid #F1F5F9;overflow-x:auto;scrollbar-width:none;background:#FAFBFF;}
+.modal-tabs{flex:none;display:flex;gap:0;padding:0 20px;border-bottom:1px solid #F1F5F9;overflow-x:auto;scrollbar-width:none;background:#FAFBFF;}
 .modal-tabs::-webkit-scrollbar{display:none;}
 .tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:11px 14px;font-size:11.5px;font-weight:700;color:var(--faint);cursor:pointer;white-space:nowrap;letter-spacing:.03em;transition:color .15s,border-color .15s;}
 .tab-btn:hover{color:#0073EA;}
 .tab-btn.active{color:#0073EA;border-bottom-color:#0073EA;}
 
-/* form */
-.tab-panel{padding:18px 22px;overflow-y:auto;flex:1;scrollbar-gutter:stable;}
+/* form — flex:1 + min-height:0 es lo que permite que SOLO este panel
+   scrollee: sin min-height:0 el item flex no se encoge por debajo de su
+   contenido y termina arrastrando topbar/tabs/footer con el scroll. */
+.tab-panel{padding:18px 22px;overflow-y:auto;flex:1;min-height:0;scrollbar-gutter:stable;}
 .tab-panel[hidden]{display:none;}
 .tab-placeholder{font-size:13px;color:var(--faint);padding:20px 0;}
 
@@ -162,7 +164,7 @@ main.vista-ancho{max-width:none;}
 .modal select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;}
 
 /* actions */
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 22px;border-top:1px solid #F1F5F9;background:#FAFBFF;border-radius:0 0 21px 21px;}
+.modal-actions{flex:none;display:flex;justify-content:flex-end;gap:8px;padding:12px 22px;border-top:1px solid #F1F5F9;background:#FAFBFF;border-radius:0 0 21px 21px;}
 .modal-actions button{padding:8px 18px;border-radius:100px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;letter-spacing:.02em;transition:transform .12s,box-shadow .12s;}
 .modal-actions button:active{transform:scale(.97);}
 .modal-actions .cancelar{background:#F1F5F9;color:#475569;}
@@ -778,7 +780,14 @@ function cambiarTab(nombre){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === nombre));
   document.querySelectorAll('.tab-panel').forEach(p => p.hidden = p.dataset.panel !== nombre);
 }
-document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => cambiarTab(b.dataset.tab)));
+// mousedown con preventDefault: evita que el navegador enfoque el botón al
+// hacer clic y, con ello, el auto-scroll que desplazaba toda la fila de tabs
+// (.modal-tabs tiene overflow-x:auto porque 6 tabs no caben en el modal).
+// El foco por teclado (Tab) sigue funcionando normal para accesibilidad.
+document.querySelectorAll('.tab-btn').forEach(b => {
+  b.addEventListener('mousedown', e => e.preventDefault());
+  b.addEventListener('click', () => cambiarTab(b.dataset.tab));
+});
 document.getElementById('fFechaInicio').addEventListener('change', actualizarSemanaIso);
 document.getElementById('btnGenerarInforme').addEventListener('click', () => {
   const id = document.getElementById('fId').value;
@@ -804,10 +813,16 @@ function abrirModal(tarea){
   document.getElementById('fSitioBuscar').value = tarea ? (tarea.sitio || '') : '';
   document.getElementById('fNombreCliente').value = tarea ? (tarea.nombreCliente || '') : '';
   document.getElementById('fNombreClienteInput').value = tarea ? (tarea.nombreCliente || '') : '';
-  document.getElementById('fDireccion').value = tarea ? (tarea.direccion || '') : '';
-  document.getElementById('fCiudad').value = tarea ? (tarea.ciudad || '') : '';
-  document.getElementById('fCriticidad').value = tarea ? (tarea.criticidad || '') : '';
-  document.getElementById('fCategoriaSitio').value = tarea ? (tarea.categoriaSitio || '') : '';
+  // Si la tarea no trae dirección/ciudad/criticidad propias (import viejo, alta manual
+  // sin esos datos, etc.), se completan desde el catálogo de sitios por nombre — no
+  // deberían quedar vacíos si el sitio ya está mapeado ahí.
+  const sitioRef = tarea && (tarea.nombreCliente || tarea.sitio)
+    ? SITIOS_PREVENTIVO.find(s => (s.nombre||'').trim().toLowerCase() === (tarea.nombreCliente||tarea.sitio||'').trim().toLowerCase())
+    : null;
+  document.getElementById('fDireccion').value = tarea ? (tarea.direccion || (sitioRef && sitioRef.calle) || '') : '';
+  document.getElementById('fCiudad').value = tarea ? (tarea.ciudad || (sitioRef && sitioRef.ciudad) || '') : '';
+  document.getElementById('fCriticidad').value = tarea ? (tarea.criticidad || (sitioRef && sitioRef.criticidad) || '') : '';
+  document.getElementById('fCategoriaSitio').value = tarea ? (tarea.categoriaSitio || (sitioRef && sitioRef.categoria) || '') : '';
   document.getElementById('fIdAcceso').value = tarea ? (tarea.idAcceso || '') : '';
   document.getElementById('fSala').value = tarea ? (tarea.sala || '') : '';
   document.getElementById('fNombreEmpleado').value = tarea ? (tarea.nombreEmpleado || '') : '';
