@@ -214,7 +214,6 @@ main.vista-ancho{max-width:none;}
       <button id="btnHerramientas">🛠 Herramientas ▾</button>
       <div class="dropdown-menu" id="herramientasMenu">
         <button class="dd-item" id="ddImportarTareas">Importar tareas</button>
-        <button class="dd-item" id="ddExportarTareasJson">Exportar tareas</button>
         <button class="dd-item" id="ddVistaExcel">Vista de lista de tareas a Excel</button>
       </div>
     </div>
@@ -386,7 +385,7 @@ main.vista-ancho{max-width:none;}
       <input type="text" id="fNombreEmpleado">
       <label>N°CRQ/INC</label>
       <input type="text" id="fCrqInc">
-      <label>Número del empleado</label>
+      <label>Rut Colaborador</label>
       <input type="text" id="fNumeroEmpleado">
       <label>Número del cliente</label>
       <input type="text" id="fNumeroCliente">
@@ -979,11 +978,6 @@ document.getElementById('ddVistaExcel').addEventListener('click', () => {
   }
   if (tecnico && tecnico !== 'Todos') params.set('tecnico', tecnico);
   descargarAuth('/tareas/exportar?' + params.toString(), 'tareas-preventivo.xlsx');
-  herramientasMenu.classList.remove('open');
-});
-
-document.getElementById('ddExportarTareasJson').addEventListener('click', () => {
-  descargarAuth('/tareas/backup', 'tareas-backup.json');
   herramientasMenu.classList.remove('open');
 });
 

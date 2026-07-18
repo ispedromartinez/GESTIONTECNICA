@@ -222,7 +222,7 @@ function buildReporteExcel(colMap, validColumns, rows, sheetName = 'Tareas') {
 const TAREAS_COLUMNAS = {
   nombreCliente: 'Nombre del Cliente', sala: 'SALA',
   nombreEmpleado: 'Nombre del empleado', crqInc: 'N°CRQ/INC',
-  descripcion: 'Descripción', numeroEmpleado: 'Número del empleado',
+  descripcion: 'Descripción', numeroEmpleado: 'Rut Colaborador',
   fechaInicio: 'Fecha de inicio', fechaVencimiento: 'Fecha de vencimiento',
   categoria: 'Categoría de tarea', numeroCliente: 'Número del cliente',
   nWorkflow: 'N° Workflow', nLpu: 'N°LPU', comuna: 'Comuna',
@@ -454,15 +454,6 @@ router.post('/:id/destacar', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
-router.get('/backup', async (req, res) => {
-  try {
-    const rows = filtraEmpresa(await dbTareasList(), req.user);
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename="tareas-backup.json"');
-    res.send(JSON.stringify(rows, null, 2));
-  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
-});
-
 router.get('/exportar', async (req, res) => {
   try {
     const { semana, tecnico, desde, hasta } = req.query;
@@ -495,7 +486,7 @@ router.get('/informes-map', (req, res) => {
   } catch { res.json({}); }
 });
 
-// Va después de las rutas literales /backup, /exportar, /plantilla
+// Va después de las rutas literales /exportar, /plantilla
 // para que ":id" no las intercepte.
 router.get('/:id', async (req, res) => {
   try {
