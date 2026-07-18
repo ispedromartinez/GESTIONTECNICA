@@ -483,7 +483,7 @@ async function abrirEquipo(id){
         <span class="badge ${i.tipo==='TIGO'?'badge--info':'badge--warning'}">${esc(i.tipo)}</span>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600">${esc(i.codigo)}</div>
-          <div style="font-size:11px;color:#64748B">${esc(i.fecha)||'—'} · ${esc(i.tecnico)}</div>
+          <div style="font-size:11px;color:#64748B">${esc(fmtFechaCL(i.fecha))||'—'} · ${esc(i.tecnico)}</div>
         </div>
         <button class="btn btn-ghost" style="padding:6px 10px" onclick="descargarInforme('${escArg(i.urlDescarga)}','${escArg(i.filename||'informe')}')">⬇</button>
         <button class="btn btn-ghost" style="padding:6px 10px" title="Ver informe" onclick="verPdfInforme('${i.tipo==='WOM'?'wom':'clima'}','${escArg(i.id)}')">👁</button>

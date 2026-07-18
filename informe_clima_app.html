@@ -1517,7 +1517,7 @@ function renderHist(records){
       </div>
       <div class="inf-body" id="body_${r.id}">
         <div class="inf-detail-grid">
-          <div class="id-row"><div class="id-lbl">Fecha Ejecución</div><div class="id-val">${esc(r.fecha)||'—'}</div></div>
+          <div class="id-row"><div class="id-lbl">Fecha Ejecución</div><div class="id-val">${esc(fmtFechaCL(r.fecha))||'—'}</div></div>
           <div class="id-row"><div class="id-lbl">Código Sitio</div><div class="id-val">${esc(r.codigoSitio)||'—'}</div></div>
           <div class="id-row"><div class="id-lbl">Supervisor</div><div class="id-val">${esc(r.supervisor)||'—'}</div></div>
           <div class="id-row"><div class="id-lbl">N° OT</div><div class="id-val">${esc(r.numOT)||'—'}</div></div>
@@ -1606,7 +1606,7 @@ function renderPapelera(records) {
         <div class="pap-meta">
           <div class="pap-sitio">${esc(r.nombreSitio)||'Sin sitio'}</div>
           <div class="pap-cod">${esc(r.codInforme)||'—'}</div>
-          <div class="pap-sub">Técnico: ${esc(r.tecnico)||'—'} · ${esc(r.fecha)||'—'}</div>
+          <div class="pap-sub">Técnico: ${esc(r.tecnico)||'—'} · ${esc(fmtFechaCL(r.fecha))||'—'}</div>
         </div>
         <div class="pap-date">Eliminado<br>${delStr.replace(',','<br>')}</div>
       </div>

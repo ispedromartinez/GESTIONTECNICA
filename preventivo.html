@@ -62,7 +62,7 @@ main{padding:22px 28px;max-width:1280px;margin:0 auto;}
 /* TABLE */
 .table-wrap{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(15,23,42,.07);border:1px solid rgba(15,23,42,.07);overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
-th,td{padding:10px 14px;text-align:left;font-size:12.5px;border-bottom:1px solid rgba(15,23,42,.09);border-right:1px solid rgba(15,23,42,.05);}
+th,td{padding:10px 14px;text-align:center;font-size:12.5px;border-bottom:1px solid rgba(15,23,42,.09);border-right:1px solid rgba(15,23,42,.05);}
 th:last-child,td:last-child{border-right:none;}
 th{background:#F8FAFC;color:#64748B;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;}
 /* Cabeceras ordenables: clic alterna asc/desc; la flecha marca la activa */
@@ -87,7 +87,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 .estado-Nuevo{background:rgba(37,99,235,.1);color:#2563EB;}
 .estado-En-Progreso{background:rgba(217,119,6,.1);color:#B45309;}
 .estado-Cerrado{background:rgba(5,150,105,.12);color:#059669;}
-.col-tiempo{white-space:nowrap;font-size:11.5px;color:#64748B;}
+.col-tiempo{white-space:nowrap;font-size:11.5px;color:#64748B;text-align:center;}
 .col-tiempo .tiempo-valor{display:inline-block;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;background:#F1F5F9;color:#475569;}
 .col-tiempo .tiempo-ayer{background:rgba(37,99,235,.1);color:#2563EB;}
 .col-tiempo .tiempo-reciente{background:rgba(5,150,105,.1);color:#059669;}
@@ -561,10 +561,7 @@ function poblarSelectorSemanas(){
   const semanaActualNum = numeroSemanaExcel(hoy);
   let html = '<option value="">Elegir semana...</option>';
   for (let w = 1; w <= semanaActualNum; w++){
-    const inicio = inicioSemanaExcel(year, w);
-    const fin = new Date(inicio); fin.setDate(fin.getDate() + 6);
-    const fmt = x => x.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
-    html += `<option value="${year}-${w}">Semana ${w} (${fmt(inicio)} – ${fmt(fin)})</option>`;
+    html += `<option value="${year}-${w}">${w}</option>`;
   }
   sel.innerHTML = html;
 }
@@ -724,8 +721,8 @@ function renderTabla(){
       <td class="col-sala">${esc(t.sala)}</td>
       <td class="col-crq">${esc(t.crqInc)}</td>
       <td class="col-desc">${esc(t.descripcion)}</td>
-      <td class="col-fecha-i">${esc(t.fechaInicio)}</td>
-      <td class="col-fecha-v">${esc(t.fechaVencimiento)}</td>
+      <td class="col-fecha-i">${esc(fmtFechaCL(t.fechaInicio))}</td>
+      <td class="col-fecha-v">${esc(fmtFechaCL(t.fechaVencimiento))}</td>
       <td><div class="estado-cell"><span class="estado-badge estado-${esc(est.replace(' ','-'))}">${esc(est)}</span>${!esCerrada?`<button class="btn-gen-informe" data-gen="${t.id}">📄 Generar informe</button>`:informesMap[t.id]?`<a class="btn-dl-informe" data-dl-id="${informesMap[t.id].informeId}" data-dl-name="${esc(informesMap[t.id].filename)}" data-dl-tipo="${esc(informesMap[t.id].tipo||'prev')}">⬇ Descargar PDF</a>`:''}</div></td>
       <td class="col-tiempo">${tiempoRelativo(t.estadoCambiadoEn)}</td>
     </tr>`;

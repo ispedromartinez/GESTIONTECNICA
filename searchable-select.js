@@ -113,11 +113,28 @@
     // absolute-al-wrap: así no lo recorta ningún ancestro con overflow:hidden
     // (tarjetas ".section", modales con scroll, etc.) ni queda atrapado detrás
     // de otro contenido con su propio stacking context.
+    // Un ancestro position:fixed es la firma de todo modal de esta app
+    // (.modal-overlay, .modal-bg, .ip-modal-bg, .fmt-modal-bg, etc. — nombres
+    // distintos por página, pero todos son overlays fixed;inset:0). Solo ahí
+    // tiene sentido acotar al próximo elemento visible: fuera de un modal el
+    // desplegable vive en el flujo normal de la página (con su propio
+    // scroll), así que no hay razón real para no abrir hacia abajo.
+    function dentroDeModal() {
+      let el = wrap.parentElement;
+      for (let hops = 0; el && el !== document.body && hops < 8; hops++, el = el.parentElement) {
+        if (getComputedStyle(el).position === 'fixed') return true;
+      }
+      return false;
+    }
     // Próximo elemento visible que quede realmente DEBAJO (no al lado, como un
     // botón en la misma fila) en el flujo del documento: p.ej. los botones de
     // un modal justo después del campo. Ese es el límite real que le importa
-    // al usuario, más preciso que "hasta el borde de la ventana".
+    // al usuario, más preciso que "hasta el borde de la ventana" — pero solo
+    // dentro de un modal (ver dentroDeModal). En la página normal se usa el
+    // alto completo de la ventana: es normal que el panel se superponga
+    // temporalmente al contenido de abajo mientras está abierto.
     function nextVisibleBelow() {
+      if (!dentroDeModal()) return window.innerHeight;
       let el = wrap;
       // Tope de 3 niveles: alcanza para llegar a los botones de un modal
       // (wrap → field → field-row → acciones) sin llegar tan arriba que
@@ -164,8 +181,11 @@
     }
     function close() { panel.classList.remove('open'); disp.classList.remove('open'); hi = -1; }
     window.addEventListener('resize', () => { if (panel.classList.contains('open')) positionPanel(); });
-    // Un scroll debajo (página, modal, tabla) invalida las coordenadas fijas: se cierra en vez de quedar mal ubicado.
-    window.addEventListener('scroll', () => { if (panel.classList.contains('open')) close(); }, true);
+    // Un scroll debajo (página, modal, tabla) invalida las coordenadas fijas: se cierra en vez de quedar mal
+    // ubicado. Pero el scroll DENTRO de la propia lista (.ss-list, al recorrer muchas opciones) también dispara
+    // 'scroll' en fase de captura — sin el filtro por e.target, cerraba el panel apenas el usuario intentaba
+    // bajar la lista.
+    window.addEventListener('scroll', e => { if (panel.classList.contains('open') && !panel.contains(e.target)) close(); }, true);
     function pick(idx) {
       if (idx === sel.selectedIndex) { close(); disp.focus(); return; }
       INDEX_DESC.set.call(sel, idx);

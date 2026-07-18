@@ -953,7 +953,7 @@ async function loadHistorial() {
         <div class="hist-info">
           <div class="hist-ticket">${esc(e.ticket)||'—'}</div>
           <div class="hist-sub">
-            ${esc(e.tipoActividad)} · ${esc(e.instalacion)} · ${esc(e.fechaInicio)}
+            ${esc(e.tipoActividad)} · ${esc(e.instalacion)} · ${esc(fmtFechaCL(e.fechaInicio))}
             ${e.codInterno ? `<span class="hist-inc"> · INC-${esc(e.codInterno)}</span>` : ''}
           </div>
           <div class="hist-sub">${esc((e.tecnicos||'').split(',').join(' / '))} · ${e.photoCount||0} foto(s)</div>

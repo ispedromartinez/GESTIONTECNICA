@@ -1425,8 +1425,7 @@ function listaFiltrada() {
 }
 
 function fmtFecha(f) {
-  if (!f) return '—';
-  const [y,m,d] = f.split('-'); return d ? `${d}/${m}/${y}` : f;
+  return f ? fmtFechaCL(f) : '—';
 }
 
 function renderTabla() {
@@ -1578,7 +1577,7 @@ async function cargarReportes(){
         <td><span class="rep-badge pb-${r.modulo==='wom'?'wom':(r.modulo==='preventivo'?'prev':'tigo')}">${REP_MOD[r.modulo]||r.modulo}</span></td>
         <td><b>${esc(r.sitio)}</b></td>
         <td>${esc(r.tecnico)}</td>
-        <td class="muted">${esc(r.fecha)||'—'}</td>
+        <td class="muted">${esc(fmtFechaCL(r.fecha))||'—'}</td>
         <td class="muted">${esc(r.codigo)||'—'}</td>
         <td style="text-align:right"><button class="ip-btn ip-btn-sm" onclick="ipVerDoc('${encodeURIComponent(r.descargaUrl)}','${encodeURIComponent(r.filename)}')">↓ Descargar</button></td>
       </tr>`).join('')}

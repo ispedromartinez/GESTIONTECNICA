@@ -12,6 +12,25 @@ function escArg(s){
   return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
 }
 
+// ── Formato de fecha único: DD-MM-AAAA en toda la app ──────────
+// Antes cada página mostraba lo que llegara del servidor tal cual: algunas
+// ya guardaban la fecha pre-formateada DD-MM-AAAA (climate usa fmtDate() al
+// enviar el form), otras guardaban el ISO crudo del <input type="date">
+// (YYYY-MM-DD) sin reformatear al mostrarlo — de ahí tablas mostrando
+// "2026-06-22" en vez de "22-06-2026". fmtFechaCL() es idempotente: si ya
+// viene DD-MM-AAAA la deja igual, así se puede envolver cualquier campo de
+// fecha sin tener que rastrear en qué formato quedó guardado cada uno.
+function fmtFechaCL(valor){
+  if (!valor) return '';
+  if (valor instanceof Date) return isNaN(valor) ? '' : valor.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const s = String(valor).trim();
+  if (/^\d{2}-\d{2}-\d{4}/.test(s)) return s.slice(0,10);
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}-${iso[2]}-${iso[1]}`;
+  const d = new Date(s);
+  return isNaN(d) ? s : d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
 // ── Interceptor global de fetch (auth) ─────────────────────────
 // Única fuente del header Authorization. Antes cada página resolvía esto por
 // su cuenta, de formas distintas: la mayoría tenía un authH()/aH() local que
