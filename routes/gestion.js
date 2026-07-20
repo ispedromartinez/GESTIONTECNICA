@@ -25,7 +25,15 @@ const esAdmin = rol => ROLES_ADMIN.includes(rol);
 // Rama del proyecto: los informes heredan esta clasificación de su proyecto.
 const TIPOS_PROYECTO = ['correctivo', 'preventivo', 'temporal'];
 // Categoría / especialidad del proyecto.
+// Slugs legacy de proyectos antiguos. Hoy la "categoría" es el ÁREA del
+// proyecto: se valida contra las áreas activas de la empresa (por nombre).
 const CATEGORIAS_PROYECTO = ['clima', 'energia', 'obras_civiles'];
+async function categoriaValida(categoria, empresa_id) {
+  if (CATEGORIAS_PROYECTO.includes(categoria)) return true; // legacy
+  if (!empresa_id) return false;
+  const areas = await db.areasByEmpresa(empresa_id).catch(() => []);
+  return areas.some(a => a.nombre === categoria);
+}
 
 // ── Helper: carga un proyecto y aplica la REGLA 1 ──────────────
 // Un usuario solo accede a proyectos de SU empresa (superadmin: todos).
@@ -242,12 +250,12 @@ router.post('/proyectos', requireRol(...ROLES_ADMIN), async (req, res) => {
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
     if (tipo !== undefined && tipo !== null && !TIPOS_PROYECTO.includes(tipo))
       return res.status(400).json({ error: 'tipo inválido' });
-    if (categoria !== undefined && categoria !== null && !CATEGORIAS_PROYECTO.includes(categoria))
-      return res.status(400).json({ error: 'categoría inválida' });
     const empresa_id = req.user.rol === 'superadmin'
       ? req.body.empresa_id
       : req.user.empresa_id;
     if (!empresa_id) return res.status(400).json({ error: 'empresa_id requerido' });
+    if (categoria !== undefined && categoria !== null && !(await categoriaValida(categoria, empresa_id)))
+      return res.status(400).json({ error: 'El área no existe en esta empresa' });
 
     const proyecto = await db.proyectoInsert({
       empresa_id, nombre, slug, estado, fecha_inicio, logo, template, color, tipo, categoria
@@ -276,8 +284,10 @@ router.put('/proyectos/:id', cargarProyecto, requireRol(...ROLES_ADMIN), async (
       fields.tipo = tipo || null;
     }
     if (categoria !== undefined) {
-      if (categoria !== null && !CATEGORIAS_PROYECTO.includes(categoria))
-        return res.status(400).json({ error: 'categoría inválida' });
+      const empresaProy = (req.user.rol === 'superadmin' && empresa_id !== undefined)
+        ? empresa_id : req.proyecto.empresa_id;
+      if (categoria !== null && !(await categoriaValida(categoria, empresaProy)))
+        return res.status(400).json({ error: 'El área no existe en esta empresa' });
       fields.categoria = categoria || null;
     }
     if (empresa_id !== undefined && req.user.rol === 'superadmin') fields.empresa_id = empresa_id;

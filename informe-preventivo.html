@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/theme.css">
+<script src="/searchable-select.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -300,7 +301,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
     <span class="nav-sep">—</span>
     <span class="nav-sub">Informe Preventivo</span>
   </div>
-  <button class="nav-back" onclick="window.location.href='/preventivo'">&#8592; Volver</button>
+  <button class="nav-back" onclick="window.location.href=destinoVolver()">&#8592; Volver</button>
 </nav>
 
 <div class="page">
@@ -311,7 +312,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
       <div class="section-head">
         <div>
           <div class="eyebrow">Datos del Sitio</div>
-          <h2>Datos Generales del Nodo</h2>
+          <h2>Datos Generales del Mantenimiento</h2>
         </div>
         <div class="qr-shell">
           <div class="qr-badge">
@@ -363,7 +364,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
         <div class="field">
           <label>Criticidad</label>
           <div class="field-locked-wrap">
-            <select id="criticidad" class="locked" tabindex="-1">
+            <select id="criticidad" class="locked" tabindex="-1" data-no-enhance>
               <option>N1</option><option selected>N2</option><option>N3</option><option>N4</option>
               <option>DATACENTER</option><option>MEGACENTRALES</option>
             </select>
@@ -380,7 +381,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
         <div class="field">
           <label>Sala</label>
           <div class="field-locked-wrap">
-            <select id="sala" class="locked" tabindex="-1">
+            <select id="sala" class="locked" tabindex="-1" data-no-enhance>
               <option>CX</option><option>DC</option><option>TX</option><option>Otra</option>
             </select>
             <span class="lock-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
@@ -430,6 +431,7 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
             <tr><td class="res-lbl">Flujo de Aire</td></tr>
             <tr><td class="res-lbl">Temperatura Inyección (°C)</td></tr>
             <tr><td class="res-lbl">Temperatura Retorno (°C)</td></tr>
+            <tr><td class="res-lbl">Setpoint (°C)</td></tr>
             <tr><td class="res-lbl">Tipo de Refrigerante</td></tr>
           </tbody>
         </table>
@@ -501,15 +503,31 @@ select.locked,select.locked:focus{background:#F8FAFC;border-color:rgba(15,23,42,
   </div>
 </div>
 
+<script src="/common.js"></script>
 <script>
-// ── Auth fetch interceptor ──────────────────────────────────
-const _origFetch = window.fetch;
-window.fetch = (url, opts={}) => {
-  // El token puede estar en localStorage ("recordarme") o en sessionStorage.
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (token) { opts.headers = { ...(opts.headers||{}), 'Authorization': 'Bearer '+token }; }
-  return _origFetch(url, opts);
-};
+// El interceptor de fetch (Authorization automático) ahora vive en
+// common.js — antes esta página lo tenía duplicado acá mismo.
+
+// ── Volver / Inicio según rol ────────────────────────────────
+// El técnico no tiene acceso a /preventivo.html (la lista de tareas de
+// supervisor/admin) — su "casa" es /panel. Antes el botón "Volver" iba
+// siempre a /preventivo, sin importar el rol ni desde dónde se llegó.
+let HOME_URL = '/preventivo.html';
+(async () => {
+  try {
+    const r = await fetch('/auth/me');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d && d.usuario) HOME_URL = d.usuario.rol === 'tecnico' ? '/panel' : '/preventivo.html';
+  } catch {}
+})();
+// Respeta ?volver= (ej. "&volver=%2Fpanel" desde /panel) si viene informado;
+// si no, cae al home según rol.
+function destinoVolver() {
+  const volverRaw = new URLSearchParams(location.search).get('volver');
+  if (volverRaw && volverRaw.startsWith('/') && !volverRaw.startsWith('//')) return volverRaw;
+  return HOME_URL;
+}
 
 // ── State ───────────────────────────────────────────────────
 let equipoCount = 0;
@@ -552,7 +570,7 @@ function toggleMarcaOtra(n) {
   inp.style.display = sel.value === 'OTRA' ? 'block' : 'none';
   if (sel.value === 'OTRA') inp.focus();
 }
-const RES_FIELDS = ['flujoAire','tempIny','tempRet','refrigerante'];
+const RES_FIELDS = ['flujoAire','tempIny','tempRet','setpoint','refrigerante'];
 
 // ── Init ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -572,8 +590,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
   document.getElementById('hora').value = new Date().toTimeString().slice(0,5);
   addEquipo();
-  addFotoGrupo('FOTOS 1: EXTERIOR NODO');
+  addFotoGrupo('FOTOS 1: EXTERIOR');
   addFotoGrupo('FOTOS 2: INTERIOR / EQUIPOS');
+  // Restaura un borrador local si existe (y no vino precargado desde una
+  // tarea/informe asignado, que es la fuente de verdad en ese caso).
+  if (!tareaId && !p.get('informeId')) await restaurarBorradorPreventivo();
 
   // Cargar sitios y tracker en paralelo
   try {
@@ -662,6 +683,11 @@ async function cargarDatosTarea(id) {
       }, 200);
       setTimeout(() => clearInterval(waitSitios), 5000);
     }
+    // Dirección/comuna tampoco son editables cuando viene de una tarea
+    // asignada — sin importar si el dato lo trae la tarea directamente o el
+    // catálogo de sitios (autoFillSitio). Se bloquea ya (readOnly no impide
+    // asignar el valor por JS), autoFillSitio puede llenarlo después sin problema.
+    if (nodoVal) { lockField('direccion'); lockField('ciudad'); }
   } catch(e) { console.error('cargarDatosTarea:', e); }
 }
 
@@ -962,10 +988,10 @@ function loadPhotoFileP(gi,si,file){
   createPhotoSlotP(gi,si);
   gFiles[gi][si]=file;
   const reader=new FileReader();
-  reader.onload=ev=>{
-    gUrls[gi][si]=ev.target.result;
+  reader.onload=async ev=>{
+    gUrls[gi][si]=await comprimirImagenDataURL(ev.target.result);
     const img=document.getElementById(`img_g${gi}_${si}`);
-    img.src=ev.target.result;
+    img.src=gUrls[gi][si];
     const slot=document.getElementById(`slot_g${gi}_${si}`);
     slot.classList.add('filled');
     const refW=slot.clientWidth||200,refH=slot.clientHeight||150;
@@ -1091,6 +1117,7 @@ function collectResumen() {
     flujoAire:    g(`res${n}_flujoAire`),
     tempIny:      g(`res${n}_tempIny`),
     tempRet:      g(`res${n}_tempRet`),
+    setpoint:     g(`res${n}_setpoint`),
     refrigerante: g(`res${n}_refrigerante`)
   }));
 }
@@ -1109,6 +1136,116 @@ function collectFotos() {
   });
   return grupos;
 }
+
+// ── Borrador (autoguardado offline) ─────────────────────────────
+// Esta página no tenía autoguardado — se agrega con el mismo módulo
+// compartido (common.js) que usan TIGO y WOM, para no perder el informe
+// (campos, equipos, lecturas y fotos) si se cierra la pestaña o se corta
+// la señal antes de enviar.
+function snapshotBorradorPreventivo(){
+  return {
+    nombreNodo:g('nombreNodo'), direccion:g('direccion'), ciudad:g('ciudad'),
+    empresa:g('empresa'), ejecutante:g('ejecutante'),
+    fecha:g('fecha'), hora:g('hora'), crq:g('crq'), idAcceso:g('idAcceso'),
+    criticidad:g('criticidad'), categoria:g('categoria'), sala:g('sala'),
+    observaciones:g('observaciones'),
+    equipos: collectEquipos(),
+    resumenLecturas: collectResumen(),
+    fotoTitulos: [...document.querySelectorAll('[id^="fgtitulo-"]')].map(el=>el.value),
+    gUrls, gTransforms, gRots, gDescs
+  };
+}
+function guardarBorradorPreventivo(){ guardarBorrador('preventivo', snapshotBorradorPreventivo()); }
+
+function restaurarEquiposPreventivo(equiposGuardados){
+  if(!equiposGuardados||!equiposGuardados.length)return;
+  // Limpia el equipo por defecto creado al iniciar la página.
+  document.querySelectorAll('[id^="equipo-"]').forEach(el=>el.remove());
+  equiposGuardados.forEach(()=>addEquipo());
+  const nums=getEquipoNums();
+  equiposGuardados.forEach((eq,idx)=>{
+    const n=nums[idx]; if(n==null)return;
+    setSelectField(`eq${n}_marca`, eq.marca);
+    ['modelo','serie','capBtu'].forEach(campo=>{
+      const el=document.getElementById(`eq${n}_${campo}`);
+      if(el && eq[campo]!=null) el.value=eq[campo];
+    });
+    (eq.filas||[]).forEach(fila=>{
+      const slug=(fila.motor||'').replace(/\s/g,'').toLowerCase();
+      const sufijos={voltajeTipo:'vtipo',vR:'vr',vS:'vs',vT:'vt',iR:'ir',iS:'is',iT:'it',
+        verificacion:'verif',limpSerpentines:'ls',reapreteConex:'rc',limpFiltro:'lf',
+        limpBandeja:'lb',limpEvaporador:'le',aseoGeneral:'ag',observaciones:'obs'};
+      Object.entries(sufijos).forEach(([campo,suf])=>{
+        const el=document.getElementById(`eq${n}_${slug}_${suf}`);
+        if(el && fila[campo]!=null) el.value=fila[campo];
+      });
+    });
+  });
+}
+
+function restaurarResumenPreventivo(resumenGuardado){
+  if(!resumenGuardado||!resumenGuardado.length)return;
+  updateResumenTable(); // recrea res${n}_* una vez restaurados los equipos
+  const nums=getEquipoNums();
+  resumenGuardado.forEach((r,idx)=>{
+    const n=nums[idx]; if(n==null)return;
+    RES_FIELDS.forEach(campo=>{
+      const el=document.getElementById(`res${n}_${campo}`);
+      if(el && r[campo]!=null) el.value=r[campo];
+    });
+  });
+}
+
+function restaurarFotosPreventivo(titulos,gUrlsGuardado,gTransformsGuardado,gRotsGuardado,gDescsGuardado){
+  if(!gUrlsGuardado||!gUrlsGuardado.length)return;
+  // Limpia los grupos por defecto creados al iniciar la página.
+  document.querySelectorAll('[id^="fotogrupo-"]').forEach(el=>el.remove());
+  gFiles.length=0;gUrls.length=0;gTransforms.length=0;gRots.length=0;gDescs.length=0;
+  fotoGrupoCount=0;
+  gUrlsGuardado.forEach((urls,idx)=>{
+    addFotoGrupo((titulos&&titulos[idx])||`FOTOS ${idx+1}`);
+    const gi=fotoGrupoCount;
+    (urls||[]).forEach((url,si)=>{
+      if(!url)return;
+      createPhotoSlotP(gi,si);
+      gFiles[gi][si]=true;
+      gUrls[gi][si]=url;
+      const img=document.getElementById(`img_g${gi}_${si}`);
+      if(img)img.src=url;
+      const slot=document.getElementById(`slot_g${gi}_${si}`);
+      if(slot)slot.classList.add('filled');
+      const refW=(slot&&slot.clientWidth)||200, refH=(slot&&slot.clientHeight)||150;
+      gTransforms[gi][si]=(gTransformsGuardado&&gTransformsGuardado[idx]&&gTransformsGuardado[idx][si])||{x:0,y:0,scale:1,refW,refH};
+      gRots[gi][si]=(gRotsGuardado&&gRotsGuardado[idx]&&gRotsGuardado[idx][si])||0;
+      applyTransformP(gi,si);
+      const desc=document.getElementById(`desc_g${gi}_${si}`);
+      const savedDesc=(gDescsGuardado&&gDescsGuardado[idx]&&gDescsGuardado[idx][si])||'';
+      if(desc){desc.style.display='block';desc.value=savedDesc;}
+      gDescs[gi][si]=savedDesc;
+    });
+    ensureTrailingSlotP(gi);
+  });
+}
+
+async function restaurarBorradorPreventivo(){
+  const s=await cargarBorrador('preventivo');
+  if(!s)return;
+  try{
+    ['nombreNodo','direccion','ciudad','empresa','ejecutante','fecha','hora','crq','idAcceso',
+     'sala','observaciones'].forEach(campo=>{
+      const el=document.getElementById(campo);
+      if(el && s[campo]!=null) el.value=s[campo];
+    });
+    if(s.criticidad)setSelectField('criticidad',s.criticidad);
+    if(s.categoria)setSelectField('categoria',s.categoria);
+    restaurarEquiposPreventivo(s.equipos);
+    restaurarResumenPreventivo(s.resumenLecturas);
+    restaurarFotosPreventivo(s.fotoTitulos,s.gUrls,s.gTransforms,s.gRots,s.gDescs);
+  }catch(e){console.error('No se pudo restaurar el borrador:',e);}
+}
+
+document.addEventListener('input',()=>guardarBorradorPreventivo());
+document.addEventListener('change',()=>guardarBorradorPreventivo());
 
 // ── Generate ───────────────────────────────────────────────────
 function showPdfOverlay(state, title, sub) {
@@ -1162,6 +1299,39 @@ function hidePdfOverlay() {
   }, 500);
 }
 
+// Descarga el PDF y hace el post-procesamiento de un envío exitoso — se usa
+// tanto en el envío en vivo como al reintentar uno que quedó pendiente.
+async function procesarPdfExitoso(data, res, status) {
+  const blob = await res.blob();
+  const cd   = res.headers.get('Content-Disposition')||'';
+  const fname = (cd.match(/filename="([^"]+)"/) || [])[1] || 'informe_preventivo.pdf';
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+
+  borrarBorrador('preventivo');
+
+  const tareaId = data.tareaId;
+  if (tareaId) {
+    try {
+      // Endpoint de solo-estado: el técnico asignado también puede cerrar.
+      await fetch(`/tareas/${tareaId}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 'Cerrado' })
+      });
+    } catch(e) { console.warn('No se pudo cerrar tarea:', e); }
+    // Vuelve a la página de origen (?volver=/panel desde el panel del
+    // técnico); si no viene informado, cae al home según rol (destinoVolver()).
+    showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado. Tarea cerrada. Redirigiendo…`);
+    setTimeout(() => { hidePdfOverlay(); window.location.href = destinoVolver(); }, 2500);
+  } else {
+    showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado y guardado en base de datos.`);
+    setTimeout(hidePdfOverlay, 3000);
+    if (status) { status.className = 'status ok'; status.textContent = `✓ "${fname}" generado.`; }
+  }
+}
+
 async function generarInforme() {
   const btn     = document.getElementById('btnGenerar');
   const btnText = document.getElementById('btnText');
@@ -1191,45 +1361,31 @@ async function generarInforme() {
 
   showPdfOverlay('loading', 'Generando PDF', 'Procesando datos del informe, esto puede tomar unos segundos…');
 
+  let res;
   try {
-    const res = await fetch('/generar-preventivo', {
+    res = await fetch('/generar-preventivo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+  } catch (netErr) {
+    // No hubo respuesta del servidor (sin señal) — se encola para reintentar
+    // solo cuando vuelva la conexión, no se pierde el trabajo del técnico.
+    await encolarPendiente('preventivo', '/generar-preventivo', data);
+    hidePdfOverlay();
+    status.className = 'status info'; status.textContent = '📥 Sin conexión — informe guardado, se enviará cuando vuelva la señal';
+    btn.disabled = false;
+    document.getElementById('btnIcon').outerHTML = '<span id="btnIcon">📕</span>';
+    btnText.textContent = 'Generar PDF & Guardar';
+    return;
+  }
+
+  try {
     if (!res.ok) {
       const e = await res.json().catch(()=>({error:'Error desconocido'}));
       throw new Error(e.error||`HTTP ${res.status}`);
     }
-    const blob = await res.blob();
-    const cd   = res.headers.get('Content-Disposition')||'';
-    const fname = (cd.match(/filename="([^"]+)"/) || [])[1] || 'informe_preventivo.pdf';
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a'); a.href = url; a.download = fname; a.click();
-    URL.revokeObjectURL(url);
-
-    const tareaId = g('tareaId');
-    if (tareaId) {
-      try {
-        // Endpoint de solo-estado: el técnico asignado también puede cerrar.
-        await fetch(`/tareas/${tareaId}/estado`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ estado: 'Cerrado' })
-        });
-      } catch(e) { console.warn('No se pudo cerrar tarea:', e); }
-      // Vuelve a la página de origen (?volver=/panel desde el panel del
-      // técnico); por defecto, al módulo de mantenimiento preventivo.
-      const volverRaw = new URLSearchParams(location.search).get('volver');
-      const volver = (volverRaw && volverRaw.startsWith('/') && !volverRaw.startsWith('//')) ? volverRaw : '/preventivo.html';
-      showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado. Tarea cerrada. Redirigiendo…`);
-      setTimeout(() => { hidePdfOverlay(); window.location.href = volver; }, 2500);
-    } else {
-      showPdfOverlay('success', '¡PDF Generado!', `"${fname}" descargado y guardado en base de datos.`);
-      setTimeout(hidePdfOverlay, 3000);
-      status.className = 'status ok';
-      status.textContent = `✓ "${fname}" generado.`;
-    }
+    await procesarPdfExitoso(data, res, status);
   } catch(e) {
     showPdfOverlay('error', 'Error al generar', e.message);
     setTimeout(hidePdfOverlay, 4000);
@@ -1240,6 +1396,10 @@ async function generarInforme() {
     btnText.textContent = 'Generar PDF & Guardar';
   }
 }
+
+// Reintenta automáticamente informes que quedaron pendientes por falta de
+// conexión (de esta sesión o de una anterior en el mismo navegador).
+iniciarSincronizacionOffline('preventivo', (pendiente, resp) => procesarPdfExitoso(pendiente.payload, resp));
 </script>
 </body>
 </html>

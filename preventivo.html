@@ -32,6 +32,10 @@ main{padding:22px 28px;max-width:1280px;margin:0 auto;}
 .filtros button:hover{background:#E2E8F0;}
 .filtros select,.filtros input[type=date]{padding:5px 10px;border:1px solid rgba(15,23,42,.1);border-radius:8px;font-size:12px;font-family:inherit;color:#334155;background:#F8FAFC;}
 .filtros label{font-size:11px;font-weight:600;color:var(--faint);}
+/* Agrupa cada label con su input para que no se separen al envolver en
+   pantallas angostas (si no, "Desde"/"Hasta" quedan pegados al campo
+   anterior en vez del propio, por ser flex items sueltos). */
+.filtro-item{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
 
 /* TOOLBAR */
 .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
@@ -58,7 +62,7 @@ main{padding:22px 28px;max-width:1280px;margin:0 auto;}
 /* TABLE */
 .table-wrap{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(15,23,42,.07);border:1px solid rgba(15,23,42,.07);overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
-th,td{padding:10px 14px;text-align:left;font-size:12.5px;border-bottom:1px solid rgba(15,23,42,.09);border-right:1px solid rgba(15,23,42,.05);}
+th,td{padding:10px 14px;text-align:center;font-size:12.5px;border-bottom:1px solid rgba(15,23,42,.09);border-right:1px solid rgba(15,23,42,.05);}
 th:last-child,td:last-child{border-right:none;}
 th{background:#F8FAFC;color:#64748B;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;}
 /* Cabeceras ordenables: clic alterna asc/desc; la flecha marca la activa */
@@ -83,11 +87,21 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 .estado-Nuevo{background:rgba(37,99,235,.1);color:#2563EB;}
 .estado-En-Progreso{background:rgba(217,119,6,.1);color:#B45309;}
 .estado-Cerrado{background:rgba(5,150,105,.12);color:#059669;}
-.col-tiempo{white-space:nowrap;font-size:11.5px;color:#64748B;}
+.col-tiempo{white-space:nowrap;font-size:11.5px;color:#64748B;text-align:center;}
 .col-tiempo .tiempo-valor{display:inline-block;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;background:#F1F5F9;color:#475569;}
 .col-tiempo .tiempo-ayer{background:rgba(37,99,235,.1);color:#2563EB;}
 .col-tiempo .tiempo-reciente{background:rgba(5,150,105,.1);color:#059669;}
 @media(max-width:900px){.col-tiempo{display:none;}}
+
+/* Ancho completo: la tabla usa toda la pantalla en vez del contenedor centrado */
+main.vista-ancho{max-width:none;}
+
+/* Densidad compacta: filas más bajas y letra más chica, más filas sin scroll */
+.table-wrap.compacta th,.table-wrap.compacta td{padding:4px 10px;font-size:11px;}
+.table-wrap.compacta th{font-size:9.5px;}
+.table-wrap.compacta .estado-badge{padding:2px 10px;font-size:10px;}
+.table-wrap.compacta .btn-gen-informe,.table-wrap.compacta .btn-dl-informe{padding:2px 0;font-size:10px;}
+.table-wrap.compacta .col-tiempo .tiempo-valor{padding:2px 7px;font-size:10px;}
 /* mobile: ocultar columnas de baja prioridad, mantener Técnico/Sitio/Estado/Informe */
 @media(max-width:640px){
   .col-sala,.col-crq,.col-desc,.col-fecha-i,.col-fecha-v{display:none;}
@@ -105,7 +119,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 .modal h2{display:none;}
 
 /* top bar */
-.modal-topbar{padding:16px 18px 16px 20px;background:#fff;border-bottom:1px solid #EEF1F6;border-radius:21px 21px 0 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-topbar{flex:none;padding:16px 18px 16px 20px;background:#fff;border-bottom:1px solid #EEF1F6;border-radius:21px 21px 0 0;display:flex;align-items:center;justify-content:space-between;}
 .modal-topbar-left{display:flex;align-items:center;gap:12px;}
 .modal-topbar-ico{flex:none;width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;background:#EFF6FF;}
 .modal-topbar-title{font-size:15px;font-weight:800;letter-spacing:-.01em;text-transform:none;color:#0F172A;}
@@ -116,14 +130,16 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 .modal-topbar .guardar-salir:active{transform:translateY(0);}
 
 /* tabs */
-.modal-tabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid #F1F5F9;overflow-x:auto;scrollbar-width:none;background:#FAFBFF;}
+.modal-tabs{flex:none;display:flex;gap:0;padding:0 20px;border-bottom:1px solid #F1F5F9;overflow-x:auto;scrollbar-width:none;background:#FAFBFF;}
 .modal-tabs::-webkit-scrollbar{display:none;}
 .tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:11px 14px;font-size:11.5px;font-weight:700;color:var(--faint);cursor:pointer;white-space:nowrap;letter-spacing:.03em;transition:color .15s,border-color .15s;}
 .tab-btn:hover{color:#0073EA;}
 .tab-btn.active{color:#0073EA;border-bottom-color:#0073EA;}
 
-/* form */
-.tab-panel{padding:18px 22px;overflow-y:auto;flex:1;scrollbar-gutter:stable;}
+/* form — flex:1 + min-height:0 es lo que permite que SOLO este panel
+   scrollee: sin min-height:0 el item flex no se encoge por debajo de su
+   contenido y termina arrastrando topbar/tabs/footer con el scroll. */
+.tab-panel{padding:18px 22px;overflow-y:auto;flex:1;min-height:0;scrollbar-gutter:stable;}
 .tab-panel[hidden]{display:none;}
 .tab-placeholder{font-size:13px;color:var(--faint);padding:20px 0;}
 
@@ -148,7 +164,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 .modal select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;}
 
 /* actions */
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 22px;border-top:1px solid #F1F5F9;background:#FAFBFF;border-radius:0 0 21px 21px;}
+.modal-actions{flex:none;display:flex;justify-content:flex-end;gap:8px;padding:12px 22px;border-top:1px solid #F1F5F9;background:#FAFBFF;border-radius:0 0 21px 21px;}
 .modal-actions button{padding:8px 18px;border-radius:100px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;letter-spacing:.02em;transition:transform .12s,box-shadow .12s;}
 .modal-actions button:active{transform:scale(.97);}
 .modal-actions .cancelar{background:#F1F5F9;color:#475569;}
@@ -169,7 +185,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 
 <header>
   <h1>Mantenimiento Preventivo</h1>
-  <a href="/dashboard" class="ui-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</a>
+  <a href="/dashboard" id="btnHome" class="ui-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</a>
 </header>
 
 <main>
@@ -178,10 +194,14 @@ tbody tr.destacada:hover{background:#FFF1C8;}
     <select id="filtroSemanaSel" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
       <option value="">Elegir semana...</option>
     </select>
-    <label style="font-size:12px;color:#64748B;">Desde</label>
-    <input type="date" id="filtroDesde" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
-    <label style="font-size:12px;color:#64748B;">Hasta</label>
-    <input type="date" id="filtroHasta" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
+    <div class="filtro-item">
+      <label style="font-size:12px;color:#64748B;">Desde</label>
+      <input type="date" id="filtroDesde" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
+    </div>
+    <div class="filtro-item">
+      <label style="font-size:12px;color:#64748B;">Hasta</label>
+      <input type="date" id="filtroHasta" style="padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
+    </div>
     <button id="btnBuscarRango">Buscar rango</button>
     <button id="btnLimpiarFiltro" style="display:none;">Mostrar todas</button>
   </div>
@@ -194,7 +214,6 @@ tbody tr.destacada:hover{background:#FFF1C8;}
       <button id="btnHerramientas">🛠 Herramientas ▾</button>
       <div class="dropdown-menu" id="herramientasMenu">
         <button class="dd-item" id="ddImportarTareas">Importar tareas</button>
-        <button class="dd-item" id="ddExportarTareasJson">Exportar tareas</button>
         <button class="dd-item" id="ddVistaExcel">Vista de lista de tareas a Excel</button>
       </div>
     </div>
@@ -366,7 +385,7 @@ tbody tr.destacada:hover{background:#FFF1C8;}
       <input type="text" id="fNombreEmpleado">
       <label>N°CRQ/INC</label>
       <input type="text" id="fCrqInc">
-      <label>Número del empleado</label>
+      <label>Rut Colaborador</label>
       <input type="text" id="fNumeroEmpleado">
       <label>Número del cliente</label>
       <input type="text" id="fNumeroCliente">
@@ -424,12 +443,12 @@ tbody tr.destacada:hover{background:#FFF1C8;}
 // ── Auth (sesión JWT del sistema) ───────────────────────────────
 const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 if (!TOKEN()) location.replace('/login');
-// Adjunta el Bearer token automáticamente a todas las llamadas internas.
+// El header Authorization ya lo agrega el interceptor global de common.js.
+// Acá solo se conserva el aviso de "módulo no habilitado" (403), propio de
+// esta página — se envuelve el fetch ya parchado, no se duplica el auth.
 const _origFetch = window.fetch.bind(window);
 window.fetch = async (url, opts = {}) => {
-  const headers = new Headers(opts.headers || {});
-  if (!headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + TOKEN());
-  const resp = await _origFetch(url, { ...opts, headers });
+  const resp = await _origFetch(url, opts);
   if (resp.status === 403) {
     const clone = resp.clone();
     clone.json().then(d => {
@@ -447,6 +466,12 @@ function ROL() {
   catch { return ''; }
 }
 const ES_TECNICO = ROL() === 'tecnico';
+// El técnico no tiene "casa" en /dashboard — la suya es /panel (antes el
+// botón Inicio lo mandaba siempre a /dashboard, sin importar el rol).
+if (ES_TECNICO) {
+  const btnHome = document.getElementById('btnHome');
+  if (btnHome) btnHome.href = '/panel';
+}
 // Descarga autenticada (reemplaza la navegación directa, que no puede mandar el token).
 async function descargarAuth(url, fallbackName) {
   const r = await fetch(url);
@@ -537,10 +562,7 @@ function poblarSelectorSemanas(){
   const semanaActualNum = numeroSemanaExcel(hoy);
   let html = '<option value="">Elegir semana...</option>';
   for (let w = 1; w <= semanaActualNum; w++){
-    const inicio = inicioSemanaExcel(year, w);
-    const fin = new Date(inicio); fin.setDate(fin.getDate() + 6);
-    const fmt = x => x.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
-    html += `<option value="${year}-${w}">Semana ${w} (${fmt(inicio)} – ${fmt(fin)})</option>`;
+    html += `<option value="${year}-${w}">${w}</option>`;
   }
   sel.innerHTML = html;
 }
@@ -700,8 +722,8 @@ function renderTabla(){
       <td class="col-sala">${esc(t.sala)}</td>
       <td class="col-crq">${esc(t.crqInc)}</td>
       <td class="col-desc">${esc(t.descripcion)}</td>
-      <td class="col-fecha-i">${esc(t.fechaInicio)}</td>
-      <td class="col-fecha-v">${esc(t.fechaVencimiento)}</td>
+      <td class="col-fecha-i">${esc(fmtFechaCL(t.fechaInicio))}</td>
+      <td class="col-fecha-v">${esc(fmtFechaCL(t.fechaVencimiento))}</td>
       <td><div class="estado-cell"><span class="estado-badge estado-${esc(est.replace(' ','-'))}">${esc(est)}</span>${!esCerrada?`<button class="btn-gen-informe" data-gen="${t.id}">📄 Generar informe</button>`:informesMap[t.id]?`<a class="btn-dl-informe" data-dl-id="${informesMap[t.id].informeId}" data-dl-name="${esc(informesMap[t.id].filename)}" data-dl-tipo="${esc(informesMap[t.id].tipo||'prev')}">⬇ Descargar PDF</a>`:''}</div></td>
       <td class="col-tiempo">${tiempoRelativo(t.estadoCambiadoEn)}</td>
     </tr>`;
@@ -757,7 +779,14 @@ function cambiarTab(nombre){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === nombre));
   document.querySelectorAll('.tab-panel').forEach(p => p.hidden = p.dataset.panel !== nombre);
 }
-document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => cambiarTab(b.dataset.tab)));
+// mousedown con preventDefault: evita que el navegador enfoque el botón al
+// hacer clic y, con ello, el auto-scroll que desplazaba toda la fila de tabs
+// (.modal-tabs tiene overflow-x:auto porque 6 tabs no caben en el modal).
+// El foco por teclado (Tab) sigue funcionando normal para accesibilidad.
+document.querySelectorAll('.tab-btn').forEach(b => {
+  b.addEventListener('mousedown', e => e.preventDefault());
+  b.addEventListener('click', () => cambiarTab(b.dataset.tab));
+});
 document.getElementById('fFechaInicio').addEventListener('change', actualizarSemanaIso);
 document.getElementById('btnGenerarInforme').addEventListener('click', () => {
   const id = document.getElementById('fId').value;
@@ -783,10 +812,16 @@ function abrirModal(tarea){
   document.getElementById('fSitioBuscar').value = tarea ? (tarea.sitio || '') : '';
   document.getElementById('fNombreCliente').value = tarea ? (tarea.nombreCliente || '') : '';
   document.getElementById('fNombreClienteInput').value = tarea ? (tarea.nombreCliente || '') : '';
-  document.getElementById('fDireccion').value = tarea ? (tarea.direccion || '') : '';
-  document.getElementById('fCiudad').value = tarea ? (tarea.ciudad || '') : '';
-  document.getElementById('fCriticidad').value = tarea ? (tarea.criticidad || '') : '';
-  document.getElementById('fCategoriaSitio').value = tarea ? (tarea.categoriaSitio || '') : '';
+  // Si la tarea no trae dirección/ciudad/criticidad propias (import viejo, alta manual
+  // sin esos datos, etc.), se completan desde el catálogo de sitios por nombre — no
+  // deberían quedar vacíos si el sitio ya está mapeado ahí.
+  const sitioRef = tarea && (tarea.nombreCliente || tarea.sitio)
+    ? SITIOS_PREVENTIVO.find(s => (s.nombre||'').trim().toLowerCase() === (tarea.nombreCliente||tarea.sitio||'').trim().toLowerCase())
+    : null;
+  document.getElementById('fDireccion').value = tarea ? (tarea.direccion || (sitioRef && sitioRef.calle) || '') : '';
+  document.getElementById('fCiudad').value = tarea ? (tarea.ciudad || (sitioRef && sitioRef.ciudad) || '') : '';
+  document.getElementById('fCriticidad').value = tarea ? (tarea.criticidad || (sitioRef && sitioRef.criticidad) || '') : '';
+  document.getElementById('fCategoriaSitio').value = tarea ? (tarea.categoriaSitio || (sitioRef && sitioRef.categoria) || '') : '';
   document.getElementById('fIdAcceso').value = tarea ? (tarea.idAcceso || '') : '';
   document.getElementById('fSala').value = tarea ? (tarea.sala || '') : '';
   document.getElementById('fNombreEmpleado').value = tarea ? (tarea.nombreEmpleado || '') : '';
@@ -946,11 +981,6 @@ document.getElementById('ddVistaExcel').addEventListener('click', () => {
   herramientasMenu.classList.remove('open');
 });
 
-document.getElementById('ddExportarTareasJson').addEventListener('click', () => {
-  descargarAuth('/tareas/backup', 'tareas-backup.json');
-  herramientasMenu.classList.remove('open');
-});
-
 const fileImportar = document.getElementById('fileImportar');
 const importarOverlay = document.getElementById('importarOverlay');
 function importarShowForm(){ document.getElementById('importarForm').hidden=false; document.getElementById('importarLoading').hidden=true; document.getElementById('importarExito').hidden=true; document.getElementById('importarError').hidden=true; document.getElementById('importarActions').style.display=''; }
@@ -1064,6 +1094,21 @@ poblarTecnicos();
 poblarSelectorSemanas();
 cargarCatalogoSitios();
 cargarTareas();
+
+// ── Vista: ancho completo + densidad de la tabla ────────────────
+// Preferencia configurable desde el Perfil del usuario (perfil.html) — acá
+// solo se lee y se aplica, sin controles propios en esta página.
+const VISTA_KEY = 'vista_tablas_v1';
+function cargarVista() {
+  let v = { ancho: false, densidad: 'comodo' };
+  try { v = { ...v, ...JSON.parse(localStorage.getItem(VISTA_KEY) || '{}') }; } catch {}
+  return v;
+}
+function aplicarVista(v) {
+  document.querySelector('main').classList.toggle('vista-ancho', !!v.ancho);
+  document.querySelector('.table-wrap').classList.toggle('compacta', v.densidad === 'compacto');
+}
+aplicarVista(cargarVista());
 </script>
 </body>
 </html>

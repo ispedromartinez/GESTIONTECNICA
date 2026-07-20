@@ -72,7 +72,7 @@ a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,
 .menu-toggle{display:none;background:var(--p-navy);color:#fff;border:none;border-radius:8px;width:38px;height:38px;font-size:18px;cursor:pointer;}
 .tb-home{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;background:var(--p-bg);color:var(--p-text);border:1px solid var(--p-border);font-size:13px;font-weight:700;font-family:inherit;text-decoration:none;cursor:pointer;transition:.15s;white-space:nowrap;}
 .tb-home:hover{background:var(--p-accent-soft);border-color:var(--p-accent);color:var(--p-accent);}
-.content{padding:24px 28px 60px;max-width:1180px;width:100%;margin:0 auto;}
+.content{padding:24px 28px 60px;max-width:1600px;width:100%;margin:0 auto;}
 
 /* ── CARDS / STATS — planas: borde y fondo, sin sombra ni lift
    (no son clicables; la elevación se reserva para modales y menús) ── */
@@ -111,6 +111,7 @@ a:focus-visible,button:focus-visible,.sb-item:focus-visible,input:focus-visible,
 
 /* ── SECTION / TABLE — plana: borde sin sombra ── */
 .section{background:var(--p-surface);border:1px solid var(--p-border);border-radius:12px;margin-bottom:20px;overflow:hidden;}
+.tbl-wrap{overflow-x:auto;}
 .sec-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--p-border);flex-wrap:wrap;gap:12px;}
 .sec-name{font-size:15px;font-weight:700;letter-spacing:-.01em;}
 .sec-sub{font-size:12px;color:var(--p-muted);margin-top:1px;}
@@ -157,6 +158,7 @@ tr:hover td{background:var(--p-subtle);}
 .pill-superadmin{background:#FEF3C7;color:#B45309;}.pill-admin_empresa{background:var(--p-accent-soft);color:var(--p-accent);}
 .pill-supervisor{background:var(--p-green-soft);color:var(--p-green);}.pill-tecnico{background:var(--p-indigo-soft);color:var(--p-indigo);}
 .pill-correctivo{background:var(--p-accent-soft);color:var(--p-accent);}.pill-preventivo{background:var(--p-green-soft);color:var(--p-green);}.pill-temporal{background:var(--p-amber-soft);color:var(--p-amber);}
+.pill-area{background:var(--p-accent-soft);color:var(--p-accent);}
 .empty-state{padding:44px;text-align:center;color:var(--p-muted);font-size:13px;}
 .modal .empty-state{padding:22px 16px;}
 /* Select de "Asignar mis técnicos": un punto más compacto que el resto. */
@@ -203,7 +205,27 @@ tr:hover td{background:var(--p-subtle);}
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 12px center;background-size:12px;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--p-accent);box-shadow:0 0 0 3px rgba(3,105,161,.12);}
+/* Select mejorado (searchable-select) dentro de un .field: el script copia
+   box-sizing:content-box del nativo y, con width:100%, el control medía
+   100% + padding + borde → desbordaba el modal (scrollbar horizontal).
+   Mismo parche que .sec-tools / .eq-emp-field. */
+.field .ss-disp{width:100%;box-sizing:border-box!important;height:auto!important;}
 .field .hint{font-size:11px;color:var(--p-faint);margin-top:5px;}
+/* ── Áreas como pills seleccionables (multi-área: un técnico puede tener varias) ── */
+.area-checks{display:flex;flex-wrap:wrap;gap:8px;}
+.area-check{position:relative;display:inline-flex;}
+.area-check input{position:absolute;opacity:0;pointer-events:none;}
+.area-check span{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1.5px solid var(--p-border);background:var(--p-surface);font-size:12.5px;font-weight:600;color:var(--p-muted);cursor:pointer;user-select:none;transition:background .15s,border-color .15s,color .15s;}
+.area-check span::before{content:'';display:flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:4px;border:1.5px solid var(--p-border);background:var(--p-surface);flex:none;font-size:9.5px;font-weight:800;color:#fff;transition:background .15s,border-color .15s;}
+.area-check span:hover{border-color:#CBD5E1;color:var(--p-text);}
+.area-check input:checked + span{background:var(--p-accent-soft);border-color:var(--p-accent);color:var(--p-accent);}
+.area-check input:checked + span::before{content:'✓';background:var(--p-accent);border-color:var(--p-accent);}
+.area-check input:focus-visible + span{outline:2px solid var(--p-accent);outline-offset:2px;}
+/* Pill de área con acciones (renombrar / eliminar) en la sección Áreas de la empresa */
+.area-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 7px 5px 13px;border-radius:999px;background:var(--p-subtle);border:1px solid var(--p-border);font-size:12px;font-weight:600;color:var(--p-text);}
+.area-pill button{border:none;background:transparent;cursor:pointer;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--p-muted);font-size:11px;line-height:1;padding:0;transition:background .15s,color .15s;}
+.area-pill button:hover{background:rgba(15,23,42,.1);color:var(--p-text);}
+.area-pill button.del:hover{background:var(--p-red-soft);color:var(--p-red);}
 /* ── Logo del proyecto (editar proyecto) ── */
 .logo-zone{border:2px dashed var(--p-border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;position:relative;background:var(--p-subtle);}
 .logo-zone:hover{border-color:var(--p-accent);background:var(--p-accent-soft);}
@@ -324,9 +346,6 @@ tr:hover td{background:var(--p-subtle);}
 <div id="toast"></div>
 
 <script>
-const T = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-const aH = (x={}) => ({ Authorization:'Bearer '+T(), ...x });
-const jH = () => aH({ 'Content-Type':'application/json' });
 const $ = id => document.getElementById(id);
 const initials = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
@@ -336,7 +355,8 @@ function toast(msg,type='ok'){const e=$('toast');e.textContent=msg;e.className='
 function toggleMenu(open){$('sidebar').classList.toggle('open',open);$('overlay').classList.toggle('open',open);}
 
 async function api(path, opts={}){
-  const r = await fetch(path,{ headers: opts.body?jH():aH(), ...opts });
+  // El Authorization ya lo agrega el interceptor global de fetch en common.js.
+  const r = await fetch(path,{ headers: opts.body?{'Content-Type':'application/json'}:{}, ...opts });
   if(r.status===401){ localStorage.removeItem('token');sessionStorage.removeItem('token');location.replace('/login');throw new Error('401'); }
   const data = await r.json().catch(()=>null);
   if(!r.ok) throw new Error((data&&data.error)||('Error '+r.status));
@@ -368,8 +388,22 @@ const CAT_LABEL = { clima:'Clima', energia:'Energía', obras_civiles:'Obras Civi
 // Filas módulo legacy fijas (Tigo/WOM/Preventivo) dentro de la tabla proyectos:
 // se excluyen de las pantallas de proyecto genérico (Asignaciones, "Asignar existente").
 const MODULOS_FIJOS_TEMPLATES = ['tigo', 'wom', 'preventivo'];
-const catOpciones = (sel) => Object.entries(CAT_LABEL)
-  .map(([v,l])=>`<option value="${v}" ${sel===v?'selected':''}>${l}</option>`).join('');
+// ── Área del proyecto: pills (una sola), tomadas de las áreas de la empresa.
+// Si el proyecto tiene un valor legacy (clima/energia/obras_civiles) o un área
+// ya eliminada, se agrega como pill extra para no perder la selección actual.
+const areaPickHtml = (areas, sel, name) => {
+  const items = (areas||[]).map(a=>({v:a.nombre, l:a.nombre}));
+  if (sel && !items.some(i=>i.v===sel)) items.unshift({v:sel, l:CAT_LABEL[sel]||sel});
+  return items.length
+    ? `<div class="area-checks">${items.map(i=>`<label class="area-check"><input type="radio" name="${name}" value="${esc(i.v)}" ${i.v===sel?'checked':''}><span>${esc(i.l)}</span></label>`).join('')}</div>`
+    : `<div class="hint">La empresa no tiene áreas. Créalas en su detalle (sección Áreas).</div>`;
+};
+const areaPickVal = name => document.querySelector(`input[name="${name}"]:checked`)?.value || null;
+async function cargarAreaPick(contId, empresaId, sel, name){
+  const cont = $(contId); if(!cont) return;
+  let areas=[]; try{ areas = await api('/auth/areas'+(empresaId?'?empresa_id='+encodeURIComponent(empresaId):'')); }catch{}
+  cont.innerHTML = areaPickHtml(areas, sel, name);
+}
 
 function buildSidebar(){
   const items = MENU[ME.rol] || ['config'];
@@ -539,6 +573,7 @@ async function verEmpresa(id){
     api('/api/empresas/'+id), api('/api/empresas/'+id+'/usuarios'), api('/api/empresas/'+id+'/proyectos'),
     api('/auth/areas?empresa_id='+encodeURIComponent(id)).catch(()=>[])
   ]);
+  window._areasEmpresa = areas;
   $('tbTitle').textContent = emp.nombre; $('tbSub').textContent = 'Detalle de empresa';
   const puedeVincular = ['superadmin','admin_empresa'].includes(ME.rol);
   const userRows = usuarios.length ? `<table><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th></th></tr></thead><tbody>
@@ -579,8 +614,10 @@ async function verEmpresa(id){
       </div></div>` : ''}
     <div class="section">
       <div class="sec-head"><div><div class="sec-name">Áreas</div><div class="sec-sub">${areas.length}</div></div>
-        ${['superadmin','admin_empresa'].includes(ME.rol)?`<button class="btn btn-ghost btn-sm" onclick="modalNuevaArea('${emp.id}')">+ Nueva área</button>`:''}</div>
-      ${areas.length ? `<div style="padding:14px 22px;display:flex;gap:8px;flex-wrap:wrap;">${areas.map(a=>`<span class="pill">${esc(a.nombre)}</span>`).join('')}</div>`
+        ${puedeVincular?`<button class="btn btn-ghost btn-sm" onclick="modalNuevaArea('${emp.id}')">+ Nueva área</button>`:''}</div>
+      ${areas.length ? `<div style="padding:14px 22px;display:flex;gap:8px;flex-wrap:wrap;">${areas.map(a=> puedeVincular
+          ? `<span class="area-pill">${esc(a.nombre)}<button title="Renombrar" onclick="modalEditarArea('${a.id}','${emp.id}')">✎</button><button class="del" title="Eliminar" onclick="delArea('${a.id}','${emp.id}','${escArg(a.nombre)}')">✕</button></span>`
+          : `<span class="pill">${esc(a.nombre)}</span>`).join('')}</div>`
         : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg></div>Sin áreas.</div>`}</div>
     <div class="section">
       <div class="sec-head"><div><div class="sec-name">Usuarios</div><div class="sec-sub">${usuarios.length}</div></div>
@@ -654,6 +691,36 @@ async function crearAreaCustom(empresaId, btn){
     closeModal(); toast('Área creada','ok'); verEmpresa(empresaId);
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }
+// ── Editar / eliminar áreas ya creadas ──
+function modalEditarArea(areaId, empresaId){
+  const a = (window._areasEmpresa||[]).find(x=>x.id===areaId);
+  if(!a) return toast('Área no encontrada','err');
+  openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+      <div><h3>Renombrar área</h3><p class="modal-sub">Los usuarios asignados la conservan con el nuevo nombre.</p></div></div>
+    <div class="field"><label>Nombre</label><input id="mAreaNombre" value="${esc(a.nombre)}"></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="guardarArea('${areaId}','${empresaId}',this)">Guardar</button></div>`);
+  setTimeout(()=>$('mAreaNombre').focus(),80);
+}
+async function guardarArea(areaId, empresaId, btn){
+  const nombre = $('mAreaNombre').value.trim();
+  if(!nombre) return showErr('El nombre es requerido');
+  btn.disabled=true;
+  try{ await api('/auth/areas/'+areaId,{method:'PATCH',body:JSON.stringify({nombre})});
+    closeModal(); toast('Área renombrada','ok'); verEmpresa(empresaId);
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+function delArea(areaId, empresaId, nombre){
+  openModal(`<h3>¿Eliminar área?</h3><p class="modal-sub">"${nombre}" dejará de aparecer en los selectores y en los usuarios que la tenían.</p>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" style="background:var(--p-red)" onclick="confirmDelArea('${areaId}','${empresaId}',this)">Sí, eliminar</button></div>`);
+}
+async function confirmDelArea(areaId, empresaId, btn){
+  btn.disabled=true;
+  try{ await api('/auth/areas/'+areaId,{method:'DELETE'}); closeModal(); toast('Área eliminada','ok'); verEmpresa(empresaId); }
+  catch(e){ toast(e.message,'err'); closeModal(); }
+}
 async function modalAsignarProyectoExistente(empresaId){
   let emp, todos;
   try{ [emp, todos] = await Promise.all([api('/api/empresas/'+empresaId), api('/api/gestion/proyectos')]); }
@@ -711,7 +778,7 @@ VIEWS.proyectos = async () => {
     name:'Proyectos', sub:list.length+' proyectos',
     tools: empFilter,
     addBtn:`<button class="btn btn-blue" onclick="location.href='/nuevo-proyecto'">+ Nuevo proyecto</button>`,
-    head:['Proyecto', ...(esSuper?['Empresa']:[]),'Rama','Categoría','Estado','Inicio', ...(puedeEditar?['']:[])],
+    head:['Proyecto', ...(esSuper?['Empresa']:[]),'Rama','Área','Estado','Inicio', ...(puedeEditar?['']:[])],
     rows: list.map(p=>`<tr><td><b>${esc(p.nombre)}</b>${p.oculto?' <span class="pill" style="background:var(--p-subtle);color:var(--p-muted)">oculto</span>':''}</td>
       ${esSuper?`<td class="muted">${esc(p.empresa_nombre||'—')}</td>`:''}
       <td>${p.tipo?`<span class="pill pill-${p.tipo}">${p.tipo}</span>`:'<span class="muted">—</span>'}</td>
@@ -750,9 +817,14 @@ VIEWS.usuarios = async () => {
   window._usuarios = list;
   const m = {}; (asign||[]).forEach(a=>{ (m[a.usuario_id]=m[a.usuario_id]||[]).push(a); });
   window._asignMap = m;
+  const areaNombres = [...new Set(list.flatMap(u=>(u.areas||[]).map(a=>a.nombre)))].sort();
   const filtro = `<select class="filter" id="fRol" onchange="renderUsuarios()">
     <option value="">Todos los roles</option><option value="supervisor">Supervisores</option><option value="tecnico">Técnicos</option>
-    ${ME.rol==='superadmin'?'<option value="admin_empresa">Administradores</option>':''}</select>`;
+    ${ME.rol==='superadmin'?'<option value="admin_empresa">Administradores</option>':''}</select>
+    <select class="filter" id="fArea" onchange="renderUsuarios()">
+      <option value="">Todas las áreas</option>
+      ${areaNombres.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
+      <option value="__sin__">Sin área</option></select>`;
   $('content').innerHTML = `<div class="section">
     <div class="sec-head"><div><div class="sec-name">Usuarios</div><div class="sec-sub" id="uCount"></div></div>
       <div class="sec-tools">${filtro}<button class="btn btn-ghost" onclick="modalImportUsuarios()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Carga masiva</button><button class="btn btn-green" onclick="modalUsuario()">+ Crear acceso</button></div></div>
@@ -761,23 +833,30 @@ VIEWS.usuarios = async () => {
 };
 function renderUsuarios(){
   const f = $('fRol')?.value || '';
+  const fa = $('fArea')?.value || '';
   let list = (window._usuarios||[]).filter(u=>u.rol!=='superadmin');
   if(f) list = list.filter(u=>u.rol===f);
+  if(fa) list = list.filter(u=> fa==='__sin__' ? !(u.areas||[]).length : (u.areas||[]).some(a=>a.nombre===fa));
   $('uCount').textContent = list.length+' usuario'+(list.length!==1?'s':'');
   const admin = ME.rol==='superadmin';
-  $('uBody').innerHTML = list.length? `<table><thead><tr>
-      <th>Nombre</th><th>Email</th><th>RUT</th><th>Empresa</th><th>Rol</th><th>Proyectos</th>${admin?'<th></th>':''}</tr></thead><tbody>
+  const gestiona = ['superadmin','admin_empresa'].includes(ME.rol);
+  $('uBody').innerHTML = list.length? `<div class="tbl-wrap"><table><thead><tr>
+      <th>Nombre</th><th>Email</th><th>RUT</th><th>Empresa</th><th>Rol</th><th>Áreas</th><th>Proyectos</th>${gestiona?'<th></th>':''}</tr></thead><tbody>
     ${list.map(u=>`<tr><td><b>${esc(u.nombre)}</b></td><td class="muted">${esc(u.email)}</td>
       <td class="muted">${esc(u.rut||'—')}</td>
       <td class="muted">${esc(u.empresa_nombre||'—')}${u.empresa_rut?`<div style="font-size:11px;color:var(--p-faint)">RUT ${esc(u.empresa_rut)}</div>`:''}</td>
       <td><span class="pill pill-${u.rol}">${ROL_LABEL[u.rol]||u.rol}</span></td>
+      <td>${(u.areas||[]).length
+        ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${u.areas.map(a=>`<span class="pill pill-area">${esc(a.nombre)}</span>`).join('')}</div>`
+        : '<span class="muted">—</span>'}</td>
       <td>${(window._asignMap?.[u.id]||[]).length
         ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${window._asignMap[u.id].map(a=>`<span class="pill pill-${a.proyecto_tipo||''}" title="${esc(a.proyecto_tipo||'sin rama')}">${esc(a.proyecto_nombre)}</span>`).join('')}</div>`
         : '<span class="muted">—</span>'}</td>
-      ${admin?`<td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-sm btn-ghost" onclick="editarUsuario('${u.id}')">Editar</button>
-        <button class="btn btn-sm btn-del" onclick="delUsuario('${u.id}','${escArg(u.nombre)}')">Eliminar</button></td>`:''}</tr>`).join('')}
-  </tbody></table>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>No hay usuarios con ese filtro.</div>`;
+      ${gestiona?`<td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-sm btn-ghost" onclick="modalAreasUsuario('${u.id}')">Áreas</button>
+        ${admin?`<button class="btn btn-sm btn-ghost" onclick="editarUsuario('${u.id}')">Editar</button>
+        <button class="btn btn-sm btn-del" onclick="delUsuario('${u.id}','${escArg(u.nombre)}')">Eliminar</button>`:''}</td>`:''}</tr>`).join('')}
+  </tbody></table></div>` : `<div class="empty-state"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>No hay usuarios con ese filtro.</div>`;
 }
 
 // ── Asignaciones: TODOS los proyectos con su empresa y equipo ──
@@ -1111,8 +1190,6 @@ async function guardarEmpresa(id,btn){
 async function modalUsuarioEmpresa(empId, empNombre){
   let areas=[];
   try{ areas = await api('/auth/areas?empresa_id='+encodeURIComponent(empId)); }catch{}
-  const areaOpts = `<option value="">— Sin área —</option>`+
-    (areas||[]).map(a=>`<option value="${esc(a.id)}">${esc(a.nombre)}</option>`).join('');
   openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
       <div><h3>Nuevo usuario</h3><p class="modal-sub">Se creará en <b>${esc(empNombre)}</b>.</p></div></div>
     <div class="field-row">
@@ -1125,11 +1202,10 @@ async function modalUsuarioEmpresa(empId, empNombre){
     </div>
     <div class="field"><label>Email</label><input id="nuEmail" type="email" placeholder="correo@dominio.com"></div>
     <div class="field"><label>Contraseña temporal</label><input id="nuPass" type="password" placeholder="Mínimo 6 caracteres"></div>
-    <div class="field-row">
-      <div class="field"><label>Rol</label><select id="nuRol" data-no-enhance>
-        ${ME.rol==='superadmin'?'<option value="admin_empresa">Administrador</option>':''}<option value="supervisor">Supervisor</option><option value="tecnico" selected>Técnico</option></select></div>
-      <div class="field"><label>Área</label><select id="nuArea" data-no-enhance>${areaOpts}</select></div>
-    </div>
+    <div class="field"><label>Rol</label><select id="nuRol" data-no-enhance>
+      ${ME.rol==='superadmin'?'<option value="admin_empresa">Administrador</option>':''}<option value="supervisor">Supervisor</option><option value="tecnico" selected>Técnico</option></select></div>
+    <div class="field"><label>Áreas</label><div id="nuAreas">${areaChecksHtml(areas)}</div>
+      <div class="hint">Puede tener varias (ej: Clima y Energía).</div></div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="crearUsuarioEmpresa('${empId}',this)">Crear usuario</button></div>`);
@@ -1138,11 +1214,11 @@ async function modalUsuarioEmpresa(empId, empNombre){
 async function crearUsuarioEmpresa(empId,btn){
   const nombre=$('nuNombre').value.trim(), apellido=$('nuApellido').value.trim();
   const email=$('nuEmail').value.trim(), password=$('nuPass').value, rol=$('nuRol').value;
-  const rut=$('nuRut').value.trim(), cargo=$('nuCargo').value.trim(), area_id=$('nuArea').value||null;
+  const rut=$('nuRut').value.trim(), cargo=$('nuCargo').value.trim(), area_ids=areaChecksVals('nuAreas');
   if(!nombre||!email||!password) return showErr('Nombre, email y contraseña son requeridos');
   if(password.length<6) return showErr('La contraseña debe tener 6+ caracteres');
   btn.disabled=true;
-  try{ await api('/api/usuarios',{method:'POST',body:JSON.stringify({nombre,apellidos:apellido||null,email,password,rol,empresa_id:empId,rut:rut||null,cargo:cargo||null,area_id})});
+  try{ await api('/api/usuarios',{method:'POST',body:JSON.stringify({nombre,apellidos:apellido||null,email,password,rol,empresa_id:empId,rut:rut||null,cargo:cargo||null,area_ids})});
     closeModal(); toast('Usuario creado','ok'); verEmpresa(empId);
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }
@@ -1218,8 +1294,8 @@ async function modalProyecto(empresaId, empresaNombre){
       <option value="correctivo">Correctivo</option><option value="preventivo">Preventivo</option>
       <option value="temporal">Temporal</option></select>
       <div class="hint">Define cómo se agrupan sus informes en el panel.</div></div>
-    <div class="field"><label>Categoría</label><select id="mPCat">${catOpciones('clima')}</select>
-      <div class="hint">Especialidad del proyecto (Clima, Energía u Obras Civiles).</div></div>
+    <div class="field"><label>Área</label><div id="mPAreas"><div class="hint">Cargando áreas…</div></div>
+      <div class="hint">Área/especialidad del proyecto, tomada de las áreas de la empresa.</div></div>
     <div class="field"><label>Estado</label><select id="mPEstado">
       <option value="activo">Activo</option><option value="planificado">Planificado</option>
       <option value="pausado">Pausado</option><option value="finalizado">Finalizado</option></select></div>
@@ -1228,15 +1304,19 @@ async function modalProyecto(empresaId, empresaNombre){
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="crearProyecto(this, ${empresaId?`'${escArg(empresaId)}'`:'null'})">Crear proyecto</button></div>`);
-  // Técnicos de la empresa para el campo de chips (vacío al crear).
+  // Técnicos de la empresa para el campo de chips (vacío al crear) + áreas.
   const empInicial = empresaId || ($('mEmp') ? $('mEmp').value : null);
   chSetup(await chLoadTecnicos(empInicial), []);
-  if($('mEmp') && !empresaId){ $('mEmp').addEventListener('change', async e=>{ chSetup(await chLoadTecnicos(e.target.value), []); }); }
+  cargarAreaPick('mPAreas', empInicial, null, 'mPArea');
+  if($('mEmp') && !empresaId){ $('mEmp').addEventListener('change', async e=>{
+    chSetup(await chLoadTecnicos(e.target.value), []);
+    cargarAreaPick('mPAreas', e.target.value, null, 'mPArea');
+  }); }
   setTimeout(()=>$('mPNombre').focus(),80);
 }
 async function crearProyecto(btn, empresaId){
   const body={ nombre:$('mPNombre').value.trim(), slug:$('mPSlug').value.trim().toLowerCase()||null,
-    tipo:$('mPTipo').value, categoria:$('mPCat').value, estado:$('mPEstado').value, fecha_inicio:$('mPFecha').value||null };
+    tipo:$('mPTipo').value, categoria:areaPickVal('mPArea'), estado:$('mPEstado').value, fecha_inicio:$('mPFecha').value||null };
   if($('mEmp')) body.empresa_id=$('mEmp').value;
   if(!body.nombre) return showErr('Nombre requerido');
   btn.disabled=true;
@@ -1275,8 +1355,8 @@ async function modalEditarProyecto(pid, empresaId){
     <div class="field"><label>Rama del proyecto</label><select id="ePTipo">
       ${['correctivo','preventivo','temporal'].map(t=>`<option value="${t}" ${p.tipo===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}</select>
       <div class="hint">Define cómo se agrupan sus informes en el panel.</div></div>
-    <div class="field"><label>Categoría</label><select id="ePCat">${catOpciones(p.categoria)}</select>
-      <div class="hint">Especialidad del proyecto (Clima, Energía u Obras Civiles).</div></div>
+    <div class="field"><label>Área</label><div id="ePAreas"><div class="hint">Cargando áreas…</div></div>
+      <div class="hint">Área/especialidad del proyecto, tomada de las áreas de la empresa.</div></div>
     <div class="field"><label>Estado</label><select id="ePEstado">
       ${estados.map(s=>`<option value="${s}" ${p.estado===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}</select></div>
     <div class="field"><label>Fecha de inicio</label><input id="ePFecha" type="date" value="${esc((p.fecha_inicio||'').slice(0,10))}"></div>
@@ -1290,7 +1370,8 @@ async function modalEditarProyecto(pid, empresaId){
       <button class="btn-del" style="margin-right:auto" onclick="borrarProyecto('${pid}',${empresaId?`'${escArg(empresaId)}'`:'null'},${p.template?`'${escArg(p.template)}'`:'null'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Borrar proyecto</button>
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="guardarProyecto('${pid}',${empresaId?`'${escArg(empresaId)}'`:'null'},this)">Guardar cambios</button></div>`);
-  // Técnicos de la empresa + los ya asignados al proyecto.
+  // Técnicos de la empresa + los ya asignados al proyecto + áreas.
+  cargarAreaPick('ePAreas', p.empresa_id, p.categoria||null, 'ePArea');
   const asignados = await api('/api/gestion/proyectos/'+pid+'/personal').catch(()=>[]);
   const idsTec = (asignados||[]).filter(u=>u.rol==='tecnico').map(u=>u.id);
   chSetup(await chLoadTecnicos(p.empresa_id), idsTec);
@@ -1317,7 +1398,7 @@ function clearLogoEdit(e){
 }
 async function guardarProyecto(pid, empresaId, btn){
   const body={ nombre:$('ePNombre').value.trim(),
-    tipo:$('ePTipo').value, categoria:$('ePCat').value, estado:$('ePEstado').value, fecha_inicio:$('ePFecha').value||null,
+    tipo:$('ePTipo').value, categoria:areaPickVal('ePArea'), estado:$('ePEstado').value, fecha_inicio:$('ePFecha').value||null,
     oculto: $('ePOculto') ? $('ePOculto').checked : undefined };
   if(_epLogo !== _epLogoOriginal) body.logo = _epLogo;
   if(!body.nombre) return showErr('Nombre requerido');
@@ -1339,13 +1420,17 @@ async function borrarProyecto(pid, empresaId, template){
   }catch(e){ showErr(e.message); }
 }
 
+// ── Multi-área: pills con checkbox (un técnico puede ser de Clima y Energía) ──
+const areaChecksHtml = (areas, selIds=[]) => (areas&&areas.length)
+  ? `<div class="area-checks">${areas.map(a=>`<label class="area-check"><input type="checkbox" value="${esc(a.id)}" ${selIds.includes(a.id)?'checked':''}><span>${esc(a.nombre)}</span></label>`).join('')}</div>`
+  : `<div class="hint">La empresa aún no tiene áreas. Créalas en la sección <b>Áreas</b> del detalle de la empresa.</div>`;
+const areaChecksVals = wrapId => [...document.querySelectorAll('#'+wrapId+' input:checked')].map(i=>i.value);
+
 async function modalUsuario(){
   const roles = ME.rol==='supervisor' ? [['tecnico','Técnico']]
     : [['supervisor','Supervisor'],['tecnico','Técnico']];
   let areas=[];
   try{ areas = await api('/auth/areas'); }catch{}
-  const areaOpts = `<option value="">— Sin área —</option>`+
-    (areas||[]).map(a=>`<option value="${esc(a.id)}">${esc(a.nombre)}</option>`).join('');
   openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
       <div><h3>Crear acceso</h3><p class="modal-sub">Se genera una cuenta para tu empresa.</p></div></div>
     <div class="field-row">
@@ -1358,10 +1443,9 @@ async function modalUsuario(){
     </div>
     <div class="field"><label>Email</label><input id="mUEmail" type="email" placeholder="correo@dominio.com"></div>
     <div class="field"><label>Contraseña temporal</label><input id="mUPass" type="password" placeholder="Mínimo 6 caracteres"></div>
-    <div class="field-row">
-      <div class="field"><label>Rol</label><select id="mURol" data-no-enhance>${roles.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
-      <div class="field"><label>Área</label><select id="mUArea" data-no-enhance>${areaOpts}</select></div>
-    </div>
+    <div class="field"><label>Rol</label><select id="mURol" data-no-enhance>${roles.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div>
+    <div class="field"><label>Áreas</label><div id="mUAreas">${areaChecksHtml(areas)}</div>
+      <div class="hint">Puede tener varias (ej: Clima y Energía).</div></div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="crearUsuario(this)">Crear cuenta</button></div>`);
@@ -1370,12 +1454,36 @@ async function modalUsuario(){
 async function crearUsuario(btn){
   const nombre=$('mUNombre').value.trim(), apellido=$('mUApellido').value.trim();
   const email=$('mUEmail').value.trim(), password=$('mUPass').value, rol=$('mURol').value;
-  const rut=$('mURut').value.trim(), cargo=$('mUCargo').value.trim(), area_id=$('mUArea').value||null;
+  const rut=$('mURut').value.trim(), cargo=$('mUCargo').value.trim(), area_ids=areaChecksVals('mUAreas');
   if(!nombre||!email||!password) return showErr('Nombre, email y contraseña son requeridos');
   if(password.length<6) return showErr('La contraseña debe tener 6+ caracteres');
   btn.disabled=true;
-  try{ await api('/auth/crear-usuario',{method:'POST',body:JSON.stringify({nombre,apellidos:apellido||null,email,password,rol,rut:rut||null,cargo:cargo||null,area_id})});
+  try{ await api('/auth/crear-usuario',{method:'POST',body:JSON.stringify({nombre,apellidos:apellido||null,email,password,rol,rut:rut||null,cargo:cargo||null,area_ids})});
     closeModal(); toast('Usuario creado','ok'); go('usuarios');
+  }catch(e){ showErr(e.message); btn.disabled=false; }
+}
+
+// ── Áreas de un usuario existente (multi-área: Clima + Energía, etc.) ──
+async function modalAreasUsuario(id){
+  const u = (window._usuarios||[]).find(x=>x.id===id);
+  if(!u) return toast('Usuario no encontrado','err');
+  if(!u.empresa_id) return toast('El usuario no pertenece a ninguna empresa','err');
+  let areas=[];
+  try{ areas = await api('/auth/areas?empresa_id='+encodeURIComponent(u.empresa_id)); }catch{}
+  const sel = (u.areas||[]).map(a=>a.id);
+  openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+      <div><h3>Áreas del usuario</h3><p class="modal-sub">${esc(u.nombre)} — marca todas las que correspondan.</p></div></div>
+    <div class="field"><label>Áreas</label><div id="mAreasUser">${areaChecksHtml(areas, sel)}</div>
+      <div class="hint">Puede tener varias (ej: Clima y Energía). Los cambios aplican al próximo inicio de sesión del usuario.</div></div>
+    <div class="modal-err" id="mErr"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="guardarAreasUsuario('${id}',this)">Guardar</button></div>`);
+}
+async function guardarAreasUsuario(id,btn){
+  const area_ids = areaChecksVals('mAreasUser');
+  btn.disabled=true;
+  try{ await api('/auth/usuarios/'+id+'/areas',{method:'PUT',body:JSON.stringify({area_ids})});
+    closeModal(); toast('Áreas actualizadas','ok'); go('usuarios');
   }catch(e){ showErr(e.message); btn.disabled=false; }
 }
 
@@ -1396,7 +1504,7 @@ function modalImportUsuarios(){
 async function descargarPlantillaUsuarios(btn){
   btn.disabled=true;
   try{
-    const r = await fetch('/api/usuarios/plantilla',{ headers: aH() });
+    const r = await fetch('/api/usuarios/plantilla');
     if(!r.ok) throw new Error('No se pudo descargar la plantilla');
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
@@ -1500,14 +1608,14 @@ async function modalAsignar(pid, rolProyecto){
   }
   const rolDef = rolProyecto || 'tecnico';
   // El usuario a asignar debe coincidir con el rol elegido en el proyecto:
-  // técnico → técnicos; supervisor/responsable → supervisores.
+  // técnico → técnicos; supervisor → supervisores.
   window._asignUsuarios = usuarios;
-  openModal(`<h3>Asignar al proyecto</h3><p class="modal-sub">Vincula a alguien a "${esc(proy.nombre)}".</p>
+  openModal(`<div class="modal-head"><div class="modal-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+      <div><h3>Asignar al proyecto</h3><p class="modal-sub">Vincula a alguien a "${esc(proy.nombre)}".</p></div></div>
     <div class="field"><label>Usuario</label><select id="mAUser">${opcionesUsuarioAsignar(rolDef)}</select></div>
     <div class="field"><label>Rol en el proyecto</label><select id="mARol" onchange="onCambioRolAsignar()">
       <option value="tecnico" ${rolDef==='tecnico'?'selected':''}>Técnico</option>
-      <option value="supervisor" ${rolDef==='supervisor'?'selected':''}>Supervisor</option>
-      <option value="responsable" ${rolDef==='responsable'?'selected':''}>Responsable</option></select></div>
+      <option value="supervisor" ${rolDef==='supervisor'?'selected':''}>Supervisor</option></select></div>
     <div class="modal-err" id="mErr"></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="confirmAsignar('${pid}',this)">Asignar</button></div>`);

@@ -270,6 +270,13 @@ const local = {
     },
     findById(id) {
       return db.prepare('SELECT * FROM areas WHERE id = ?').get(id);
+    },
+    update(id, f) {
+      const sets = [], vals = [];
+      if (f.nombre !== undefined) { sets.push('nombre = ?'); vals.push(f.nombre); }
+      if (f.activa !== undefined) { sets.push('activa = ?'); vals.push(f.activa ? 1 : 0); }
+      if (sets.length) { vals.push(id); db.prepare('UPDATE areas SET '+sets.join(', ')+' WHERE id = ?').run(...vals); }
+      return db.prepare('SELECT * FROM areas WHERE id = ?').get(id);
     }
   },
 
@@ -283,6 +290,31 @@ const local = {
         INSERT OR REPLACE INTO usuario_areas (usuario_id, area_id, asignado_por)
         VALUES (?, ?, ?)
       `).run(usuario_id, area_id, asignado_por || null);
+    },
+    // Reemplaza el set completo de áreas del usuario (un técnico puede tener varias)
+    setForUsuario(usuario_id, area_ids, asignado_por) {
+      const tx = db.transaction(() => {
+        db.prepare('DELETE FROM usuario_areas WHERE usuario_id = ?').run(usuario_id);
+        const ins = db.prepare('INSERT INTO usuario_areas (usuario_id, area_id, asignado_por) VALUES (?, ?, ?)');
+        for (const area_id of area_ids) ins.run(usuario_id, area_id, asignado_por || null);
+      });
+      tx();
+    },
+    // Áreas (id+nombre) de todos los usuarios, opcionalmente de una empresa —
+    // para pintar la columna Áreas del listado sin N+1. Solo áreas activas.
+    listDetalle(empresa_id) {
+      if (empresa_id) {
+        return db.prepare(`
+          SELECT ua.usuario_id, a.id AS area_id, a.nombre AS area_nombre
+          FROM usuario_areas ua JOIN areas a ON a.id = ua.area_id
+          WHERE a.activa = 1 AND a.empresa_id = ?
+        `).all(empresa_id);
+      }
+      return db.prepare(`
+        SELECT ua.usuario_id, a.id AS area_id, a.nombre AS area_nombre
+        FROM usuario_areas ua JOIN areas a ON a.id = ua.area_id
+        WHERE a.activa = 1
+      `).all();
     }
   },
 

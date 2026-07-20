@@ -159,7 +159,7 @@ body{ font-family: Calibri, Arial, sans-serif; font-size: 7pt; color: #000; }
 <!-- DATOS GENERALES -->
 <table class="dg-table">
   <tr>
-    <td class="dg-head" colspan="2">DATOS GENERALES NODO</td>
+    <td class="dg-head" colspan="2">DATOS GENERALES DEL MANTENIMIENTO</td>
     <td class="dg-badge" style="width:18%">CRITICIDAD: ${esc(v(d.criticidad))}</td>
     <td class="dg-badge" style="width:20%">CATEGORÍA: ${esc(v(d.categoria))}</td>
     <td class="dg-badge" style="width:14%">SALA: ${esc(v(d.sala))}</td>
@@ -223,6 +223,7 @@ body{ font-family: Calibri, Arial, sans-serif; font-size: 7pt; color: #000; }
     ${resRow('FLUJO DE AIRE','flujoAire')}
     ${resRow('TEMP. INYECCIÓN (°C)','tempIny')}
     ${resRow('TEMP. RETORNO (°C)','tempRet')}
+    ${resRow('SETPOINT (°C)','setpoint')}
     ${resRow('TIPO REFRIGERANTE','refrigerante')}
   </tbody>
 </table>

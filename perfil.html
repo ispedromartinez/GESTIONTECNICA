@@ -70,6 +70,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .proj-row-meta{margin-left:auto;font-size:11px;color:var(--muted);text-transform:capitalize;}
 .proj-empty{font-size:13px;color:var(--muted);padding:8px 2px;}
 
+/* Preferencias de vista */
+.pref-row{display:flex;align-items:center;gap:10px;}
+.pref-check{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text);cursor:pointer;}
+.pref-check input{width:17px;height:17px;accent-color:var(--blue);cursor:pointer;}
+.densidad-group{display:inline-flex;background:#F1F2F6;border:1.5px solid var(--border);border-radius:8px;padding:3px;gap:3px;}
+.densidad-btn{background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:var(--font-body);transition:.15s;}
+.densidad-btn.active{background:var(--blue);color:#fff;}
+
 /* Action bar */
 .action-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:4px;}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;font-family:var(--font-body);transition:.14s;}
@@ -188,6 +196,37 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     </div>
   </div>
 
+  <!-- Preferencias de vista -->
+  <div class="card">
+    <div class="card-header">
+      <span class="ch-bar" style="background:var(--green);"></span>
+      <span class="ch-title">Preferencias de vista</span>
+    </div>
+    <div class="card-body">
+      <div class="frow">
+        <div>
+          <label class="flabel">Tablas</label>
+          <div class="pref-row">
+            <label class="pref-check">
+              <input type="checkbox" id="prefAnchoCompleto">
+              <span>Usar todo el ancho de la pantalla</span>
+            </label>
+          </div>
+          <p class="fhelp">Aplica a las tablas de listados (ej. tareas de mantenimiento preventivo).</p>
+        </div>
+      </div>
+      <div class="frow">
+        <div>
+          <label class="flabel">Densidad de filas</label>
+          <div class="densidad-group">
+            <button type="button" class="densidad-btn" data-densidad="comodo">Cómodo</button>
+            <button type="button" class="densidad-btn" data-densidad="compacto">Compacto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Proyectos asignados -->
   <div class="card">
     <div class="card-header">
@@ -205,10 +244,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
 <div class="toast" id="toast"></div>
 
+<script src="/common.js"></script>
 <script>
 const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 if (!token) { window.location.replace('/login'); }
-const authH = { Authorization: 'Bearer ' + token };
+// El Authorization ya lo agrega el interceptor global de fetch en common.js.
 
 const ROL_LABEL = { superadmin: 'Superadmin', admin_empresa: 'Jefe', supervisor: 'Supervisor', tecnico: 'Técnico' };
 let miRol = 'tecnico';
@@ -246,8 +286,8 @@ async function cargar() {
   let rol = 'tecnico';
   try {
     const [meR, perfR] = await Promise.all([
-      fetch('/auth/me', { headers: authH }),
-      fetch('/api/gestion/perfil', { headers: authH }),
+      fetch('/auth/me'),
+      fetch('/api/gestion/perfil'),
     ]);
     if (meR.ok) {
       const { usuario } = await meR.json();
@@ -289,7 +329,7 @@ async function cargarProyectos(rol) {
   const tituloEl = document.getElementById('projCardTitle');
   if (tituloEl) tituloEl.textContent = esTecnico ? 'Proyectos asignados' : 'Proyectos de tu empresa';
   try {
-    const r = await fetch(endpoint, { headers: authH });
+    const r = await fetch(endpoint);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const list = await r.json();
     if (!Array.isArray(list) || !list.length) {
@@ -332,7 +372,7 @@ async function guardar() {
   try {
     const r = await fetch('/api/gestion/perfil', {
       method: 'PUT',
-      headers: { ...authH, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const data = await r.json();
@@ -350,6 +390,34 @@ async function guardar() {
   const rol = await cargar();
   cargarProyectos(rol);
 })();
+
+// ── Preferencias de vista (ancho/densidad de tablas) ────────────
+// Se guardan acá y las páginas con tablas (ej. preventivo.html) solo las
+// leen y aplican — el control vive únicamente en el perfil del usuario.
+const VISTA_TABLAS_KEY = 'vista_tablas_v1';
+function cargarPrefVista() {
+  let v = { ancho: false, densidad: 'comodo' };
+  try { v = { ...v, ...JSON.parse(localStorage.getItem(VISTA_TABLAS_KEY) || '{}') }; } catch {}
+  return v;
+}
+function guardarPrefVista(v) { try { localStorage.setItem(VISTA_TABLAS_KEY, JSON.stringify(v)); } catch {} }
+function pintarPrefVista(v) {
+  document.getElementById('prefAnchoCompleto').checked = !!v.ancho;
+  document.querySelectorAll('.densidad-btn').forEach(b => b.classList.toggle('active', b.dataset.densidad === v.densidad));
+}
+let prefVistaState = cargarPrefVista();
+pintarPrefVista(prefVistaState);
+document.getElementById('prefAnchoCompleto').addEventListener('change', (e) => {
+  prefVistaState.ancho = e.target.checked;
+  guardarPrefVista(prefVistaState);
+});
+document.querySelectorAll('.densidad-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    prefVistaState.densidad = b.dataset.densidad;
+    guardarPrefVista(prefVistaState);
+    pintarPrefVista(prefVistaState);
+  });
+});
 </script>
 </body>
 </html>

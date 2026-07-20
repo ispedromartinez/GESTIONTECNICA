@@ -102,6 +102,47 @@ const db = {
     localDB.usuario_areas.upsert(usuario_id, area_id, asignado_por);
   },
 
+  // Reemplaza el set completo de áreas del usuario (multi-área: Clima + Energía, etc.)
+  async setUsuarioAreas(usuario_id, area_ids, asignado_por) {
+    if (supabaseClient) {
+      const { error: delErr } = await supabaseClient
+        .from('usuario_areas').delete().eq('usuario_id', usuario_id);
+      if (delErr) throw new Error(delErr.message);
+      if (area_ids.length) {
+        const rows = area_ids.map(area_id => ({ usuario_id, area_id, asignado_por }));
+        const { error } = await supabaseClient.from('usuario_areas').insert(rows);
+        if (error) throw new Error(error.message);
+      }
+      return;
+    }
+    localDB.usuario_areas.setForUsuario(usuario_id, area_ids, asignado_por);
+  },
+
+  // usuario_id → [{area_id, area_nombre}] para la columna Áreas del listado (sin N+1)
+  async listUsuarioAreasDetalle(empresa_id) {
+    if (supabaseClient) {
+      let q = supabaseClient.from('usuario_areas')
+        .select('usuario_id, areas!inner(id,nombre,empresa_id,activa)')
+        .eq('areas.activa', true);
+      if (empresa_id) q = q.eq('areas.empresa_id', empresa_id);
+      const { data } = await q;
+      return (data || []).map(r => ({
+        usuario_id: r.usuario_id, area_id: r.areas.id, area_nombre: r.areas.nombre
+      }));
+    }
+    return localDB.usuario_areas.listDetalle(empresa_id);
+  },
+
+  async updateArea(id, fields) {
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient
+        .from('areas').update(fields).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      return data;
+    }
+    return localDB.areas.update(id, fields);
+  },
+
   async listEmpresas() {
     if (supabaseClient) {
       const { data } = await supabaseClient.from('empresas').select('*').eq('activa', true);
@@ -164,11 +205,14 @@ const db = {
 };
 
 // ── POST /auth/login ─────────────────────────────────────────
-// Anti fuerza bruta por IP: máx. 20 intentos FALLIDOS cada 15 min.
+// Anti fuerza bruta por IP: máx. 8 intentos FALLIDOS cada 15 min.
 // Solo cuenta fallos (un login correcto limpia el contador) y el
 // superadmin nunca queda bloqueado: siempre puede iniciar sesión.
-const LOGIN_MAX = 20;
+// A partir del 5º intento fallido, el mensaje de error avisa cuántos
+// intentos quedan antes del bloqueo temporal.
+const LOGIN_MAX = 8;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_AVISO_DESDE = 5;
 const loginFails = new Map(); // ip -> { count, reset }
 const ipDe = req => req.ip || (req.connection && req.connection.remoteAddress) || 'unknown';
 function loginBloqueado(ip) {
@@ -182,8 +226,19 @@ function loginFallo(ip) {
   let rec = loginFails.get(ip);
   if (!rec || now > rec.reset) { rec = { count: 0, reset: now + LOGIN_WINDOW_MS }; loginFails.set(ip, rec); }
   rec.count++;
+  return rec.count;
 }
 const loginReset = ip => loginFails.delete(ip);
+
+// Agrega el aviso de intentos restantes (desde el 5º intento fallido) a un
+// mensaje de error de login. No aplica al superadmin, que nunca se bloquea.
+function conAvisoIntentos(mensaje, count, esSuper) {
+  if (esSuper || count < LOGIN_AVISO_DESDE) return mensaje;
+  const restantes = Math.max(LOGIN_MAX - count, 0);
+  if (restantes <= 0) return `${mensaje} Sin intentos restantes: la IP queda bloqueada temporalmente.`;
+  const plural = restantes === 1 ? '' : 's';
+  return `${mensaje} Te queda${restantes === 1 ? '' : 'n'} ${restantes} intento${plural} antes del bloqueo temporal.`;
+}
 
 router.post('/login', async (req, res) => {
   try {
@@ -200,23 +255,29 @@ router.post('/login', async (req, res) => {
       return res.status(429).json({ error: 'Demasiados intentos de inicio de sesión. Espera unos minutos.' });
 
     // Mismo mensaje para email no encontrado y contraseña incorrecta — evita enumeración
-    if (!usuario) { loginFallo(ip); return res.status(401).json({ error: 'Credenciales inválidas' }); }
+    if (!usuario) {
+      const count = loginFallo(ip);
+      return res.status(401).json({ error: conAvisoIntentos('Correo o contraseña incorrecta.', count, false) });
+    }
     if (!usuario.activo) return res.status(403).json({ error: 'Cuenta desactivada' });
 
     const ok = await bcrypt.compare(password, usuario.password_hash);
-    if (!ok) { if (!esSuper) loginFallo(ip); return res.status(401).json({ error: 'Credenciales inválidas' }); }
+    if (!ok) {
+      const count = esSuper ? 0 : loginFallo(ip);
+      return res.status(401).json({ error: conAvisoIntentos('Correo o contraseña incorrecta.', count, esSuper) });
+    }
 
     // Validar empresa si se envió en el formulario
     // superadmin no tiene empresa asignada → se omite la validación
     if (empresaSlug && usuario.rol !== 'superadmin') {
       const empresa = await db.findEmpresaBySlug(empresaSlug.toLowerCase().trim());
       if (!empresa) {
-        loginFallo(ip);
-        return res.status(401).json({ error: 'Empresa no encontrada o inactiva' });
+        const count = loginFallo(ip);
+        return res.status(401).json({ error: conAvisoIntentos('Empresa no encontrada o inactiva.', count, false) });
       }
       if (empresa.id !== usuario.empresa_id) {
-        loginFallo(ip);
-        return res.status(401).json({ error: 'Credenciales inválidas' });
+        const count = loginFallo(ip);
+        return res.status(401).json({ error: conAvisoIntentos('Correo o contraseña incorrecta.', count, false) });
       }
     }
 
@@ -290,7 +351,9 @@ router.post('/crear-empresa', authMiddleware, requireRol('superadmin'), async (r
 router.post('/crear-usuario', authMiddleware, async (req, res) => {
   try {
     const { rol: rolCreador, empresa_id: empresaCreador } = req.user;
-    const { nombre, apellidos, email, password, rol, empresa_id, rut, cargo, area_id } = req.body;
+    const { nombre, apellidos, email, password, rol, empresa_id, rut, cargo, area_id, area_ids } = req.body;
+    // Acepta varias áreas (area_ids) o una sola (area_id, compat con clientes antiguos)
+    const areasFinal = [...new Set(Array.isArray(area_ids) ? area_ids : (area_id ? [area_id] : []))];
 
     if (!nombre || !email || !password || !rol)
       return res.status(400).json({ error: 'nombre, email, password y rol son requeridos' });
@@ -326,9 +389,9 @@ router.post('/crear-usuario', authMiddleware, async (req, res) => {
         return res.status(409).json({ error: 'Ese RUT ya está registrado' });
     }
 
-    // Área (opcional): debe pertenecer a la empresa del usuario
-    if (area_id) {
-      const area = await gestionDB.areaById(area_id);
+    // Áreas (opcionales): todas deben pertenecer a la empresa del usuario
+    for (const areaId of areasFinal) {
+      const area = await gestionDB.areaById(areaId);
       if (!area || area.empresa_id !== empresaFinal)
         return res.status(400).json({ error: 'El área no pertenece a esta empresa' });
     }
@@ -346,8 +409,8 @@ router.post('/crear-usuario', authMiddleware, async (req, res) => {
     // Perfil (nombre / apellidos / RUT / cargo) y asignación de área, ya con el id del usuario
     if (rutNorm || cargo || apellidos)
       await gestionDB.perfilUpsert({ usuario_id: usuario.id, rut: rutNorm, nombre, apellidos: apellidos || null, cargo: cargo || null });
-    if (area_id)
-      await gestionDB.usuarioAreaUpsert(usuario.id, area_id, req.user.usuario_id);
+    for (const areaId of areasFinal)
+      await gestionDB.usuarioAreaUpsert(usuario.id, areaId, req.user.usuario_id);
 
     res.json({ ok: true, usuario });
   } catch (err) {
@@ -365,6 +428,76 @@ router.post('/crear-area', authMiddleware, requireRol('superadmin', 'admin_empre
 
     const area = await db.insertArea({ empresa_id: empId, nombre });
     res.json({ ok: true, area });
+  } catch (err) {
+    const msg = /unique|duplicate/i.test(err.message) ? 'Ya existe un área con ese nombre' : err.message;
+    res.status(400).json({ error: msg });
+  }
+});
+
+// ── PATCH /auth/areas/:id ─────────────────────────────────────
+// Renombrar un área existente. superadmin: cualquiera; admin_empresa: solo de su empresa.
+router.patch('/areas/:id', authMiddleware, requireRol('superadmin', 'admin_empresa'), async (req, res) => {
+  try {
+    const nombre = (req.body.nombre || '').trim();
+    if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
+
+    const area = await db.getAreaById(req.params.id);
+    if (!area) return res.status(404).json({ error: 'Área no encontrada' });
+    if (!canAccessTenant(req, area.empresa_id))
+      return res.status(403).json({ error: 'El área no pertenece a tu empresa' });
+
+    const actualizada = await db.updateArea(req.params.id, { nombre });
+    res.json({ ok: true, area: actualizada });
+  } catch (err) {
+    const msg = /unique|duplicate/i.test(err.message) ? 'Ya existe un área con ese nombre' : err.message;
+    res.status(400).json({ error: msg });
+  }
+});
+
+// ── DELETE /auth/areas/:id ────────────────────────────────────
+// Baja lógica (activa=false): desaparece de pickers y listados pero conserva
+// el historial de usuario_areas por si se reactiva.
+router.delete('/areas/:id', authMiddleware, requireRol('superadmin', 'admin_empresa'), async (req, res) => {
+  try {
+    const area = await db.getAreaById(req.params.id);
+    if (!area) return res.status(404).json({ error: 'Área no encontrada' });
+    if (!canAccessTenant(req, area.empresa_id))
+      return res.status(403).json({ error: 'El área no pertenece a tu empresa' });
+
+    await db.updateArea(req.params.id, { activa: false });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── PUT /auth/usuarios/:id/areas ──────────────────────────────
+// Reemplaza el set de áreas de un usuario (un técnico puede tener varias:
+// Clima + Energía, etc.). superadmin: cualquier usuario; admin_empresa: solo
+// usuarios de su empresa.
+router.put('/usuarios/:id/areas', authMiddleware, requireRol('superadmin', 'admin_empresa'), async (req, res) => {
+  try {
+    const { area_ids } = req.body;
+    if (!Array.isArray(area_ids))
+      return res.status(400).json({ error: 'area_ids (array) requerido' });
+
+    const usuario = await db.findUserById(req.params.id);
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!usuario.empresa_id)
+      return res.status(400).json({ error: 'El usuario no pertenece a ninguna empresa' });
+    if (!canAccessTenant(req, usuario.empresa_id))
+      return res.status(403).json({ error: 'Solo puedes editar usuarios de tu empresa' });
+
+    // Cada área debe existir y pertenecer a la empresa del usuario
+    const unicos = [...new Set(area_ids)];
+    for (const areaId of unicos) {
+      const area = await db.getAreaById(areaId);
+      if (!area || area.empresa_id !== usuario.empresa_id)
+        return res.status(400).json({ error: 'Hay un área que no pertenece a la empresa del usuario' });
+    }
+
+    await db.setUsuarioAreas(usuario.id, unicos, req.user.usuario_id);
+    res.json({ ok: true, area_ids: unicos });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -403,7 +536,15 @@ router.get('/usuarios', authMiddleware, async (req, res) => {
   try {
     const { rol, empresa_id } = req.user;
     const filtro = rol === 'superadmin' ? null : empresa_id;
-    res.json(await db.listUsuarios(filtro));
+    const [usuarios, uAreas] = await Promise.all([
+      db.listUsuarios(filtro),
+      db.listUsuarioAreasDetalle(filtro).catch(() => [])
+    ]);
+    // usuario_id → [{id,nombre}] para mostrar/editar las áreas de cada técnico
+    const porUsuario = {};
+    for (const r of uAreas)
+      (porUsuario[r.usuario_id] = porUsuario[r.usuario_id] || []).push({ id: r.area_id, nombre: r.area_nombre });
+    res.json(usuarios.map(u => ({ ...u, areas: porUsuario[u.id] || [] })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

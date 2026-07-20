@@ -191,8 +191,7 @@ header{background:#1C1F3B;padding:13px 24px;display:flex;align-items:center;just
 <div id="toast"></div>
 
 <script>
-const TOKEN = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-const authH = (x={}) => ({ Authorization: 'Bearer ' + TOKEN(), ...x });
+// El Authorization ya lo agrega el interceptor global de fetch en common.js.
 
 let proyConfig = null;
 let miRol = '';
@@ -209,8 +208,8 @@ function toast(msg) {
 async function init() {
   try {
     const [meR, pR] = await Promise.all([
-      fetch('/auth/me', { headers: authH() }),
-      fetch(`/api/proyectos/${slug}`, { headers: authH() })
+      fetch('/auth/me'),
+      fetch(`/api/proyectos/${slug}`)
     ]);
     if (!meR.ok) { window.location.replace('/login'); return; }
     if (!pR.ok) { toast('Proyecto no encontrado'); setTimeout(() => window.location.replace('/dashboard'), 1500); return; }
@@ -305,7 +304,7 @@ async function abrirModalSitios(){
   document.getElementById('modalSitios').classList.add('show');
   if(!CATALOGO.length){
     try{
-      const r = await fetch('/api/sitios-preventivos', { headers: authH() });
+      const r = await fetch('/api/sitios-preventivos');
       CATALOGO = r.ok ? await r.json() : [];
     }catch{ CATALOGO=[]; }
   }
@@ -340,12 +339,12 @@ async function confirmarSitios(){
   const sitios=[...catSel].map(i=>{ const s=CATALOGO[i]; return { nombre:s.nombre, direccion:s.direccion||'', comuna:s.ciudad||'' }; });
   const btn=document.getElementById('catConfirmar'); btn.disabled=true;
   try{
-    const r=await fetch(`/api/proyectos/${slug}/sitios`, { method:'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify({ sitios }) });
+    const r=await fetch(`/api/proyectos/${slug}/sitios`, { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sitios }) });
     const d=await r.json();
     if(!r.ok){ toast(d.error||'Error al añadir'); return; }
     toast(`${sitios.length} sitio(s) añadidos`);
     cerrarModalSitios();
-    const pR=await fetch(`/api/proyectos/${slug}`, { headers: authH() });
+    const pR=await fetch(`/api/proyectos/${slug}`);
     if(pR.ok){ proyConfig=await pR.json(); document.getElementById('infoSitios').textContent=proyConfig.sitios?.length||0; renderSitios(proyConfig.sitios||[]); }
   }catch(e){ toast('Error: '+e.message); }
   finally{ btn.disabled=false; }

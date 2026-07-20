@@ -40,11 +40,9 @@ body{background:#64748B;min-height:100vh;padding:24px 12px}
 <div id="status">Cargando informe…</div>
 <div id="docxContainer"></div>
 
+<script src="/common.js"></script>
 <script>
-function authH(extra={}) {
-  const t = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-  return { Authorization: 'Bearer ' + t, ...extra };
-}
+// El Authorization ya lo agrega el interceptor global de fetch en common.js.
 
 document.getElementById('btnVolver').onclick = () => {
   try {
@@ -73,7 +71,7 @@ const ENDPOINTS = { clima: '/descargar/', wom: '/descargar-wom/' };
   }
 
   try {
-    const r = await fetch(endpoint + id, { headers: authH() });
+    const r = await fetch(endpoint + id);
     if (!r.ok) {
       const d = await r.json().catch(() => ({}));
       throw new Error(d.error || 'No se pudo obtener el informe');
