@@ -258,13 +258,13 @@ function renderProyecto(p) {
   // Supervisores
   if (p.supervisores?.length) {
     document.getElementById('secSups').style.display = 'block';
-    document.getElementById('listSups').innerHTML = p.supervisores.map(s => `<span class="tag">${s}</span>`).join('');
+    document.getElementById('listSups').innerHTML = p.supervisores.map(s => `<span class="tag">${esc(s)}</span>`).join('');
   }
 
   // Técnicos
   if (p.tecnicos?.length) {
     document.getElementById('secTecs').style.display = 'block';
-    document.getElementById('listTecs').innerHTML = p.tecnicos.map(t => `<span class="tag">${t}</span>`).join('');
+    document.getElementById('listTecs').innerHTML = p.tecnicos.map(t => `<span class="tag">${esc(t)}</span>`).join('');
   }
 
   // Sitios — visible si hay sitios o si el rol puede asignar (para ver el botón)
