@@ -165,7 +165,50 @@ const PROYECTOS_FILE = path.join(__dirname, 'proyectos.json');
 const LOGOS_DIR = path.join(__dirname, 'logos');
 if (!fs.existsSync(PROYECTOS_FILE)) fs.writeFileSync(PROYECTOS_FILE, '[]');
 if (!fs.existsSync(LOGOS_DIR)) fs.mkdirSync(LOGOS_DIR);
-app.use('/logos', express.static(LOGOS_DIR));
+// Los logos se sirven estáticos desde el MISMO origen que la app, donde vive
+// el JWT en localStorage. Un archivo ejecutable como documento (HTML/SVG) ahí
+// sería XSS almacenado → robo de token. Doble barrera: (a) validación estricta
+// al escribir (guardarLogo), (b) estas cabeceras al servir.
+app.use('/logos', express.static(LOGOS_DIR, {
+  setHeaders: (res) => {
+    res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+}));
+
+// Formatos de logo admitidos: subtipo del data-URI → extensión en disco.
+// La extensión NUNCA se toma tal cual de lo que manda el cliente.
+const LOGO_TIPOS = { png: 'png', jpeg: 'jpg', jpg: 'jpg', webp: 'webp', gif: 'gif' };
+const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+// Comprueba los magic bytes: el contenido real debe coincidir con el formato
+// declarado (impide colar HTML/SVG bajo un data:image/png).
+function magicBytesOk(buf, ext) {
+  if (buf.length < 12) return false;
+  const b = buf;
+  const marca = b.slice(0, 6).toString('latin1');
+  switch (ext) {
+    case 'png':  return b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47;
+    case 'jpg':  return b[0]===0xFF && b[1]===0xD8 && b[2]===0xFF;
+    case 'gif':  return marca === 'GIF87a' || marca === 'GIF89a';
+    case 'webp': return b.slice(0,4).toString('latin1')==='RIFF' && b.slice(8,12).toString('latin1')==='WEBP';
+    default:     return false;
+  }
+}
+
+// Valida y escribe el logo. Devuelve { path } o { error }.
+function guardarLogo(dataUrl, slug) {
+  const m = /^data:image\/([a-z0-9.+-]+);base64,/i.exec(dataUrl || '');
+  const ext = m && LOGO_TIPOS[m[1].toLowerCase()];
+  if (!ext) return { error: 'Formato de logo no permitido (usa PNG, JPG, WEBP o GIF)' };
+  const buf = Buffer.from(dataUrl.slice(m[0].length), 'base64');
+  if (!buf.length) return { error: 'El logo está vacío o mal codificado' };
+  if (buf.length > LOGO_MAX_BYTES) return { error: 'El logo supera el máximo de 2 MB' };
+  if (!magicBytesOk(buf, ext)) return { error: 'El archivo no es una imagen válida' };
+  const fname = `${slug}.${ext}`;
+  fs.writeFileSync(path.join(LOGOS_DIR, fname), buf);
+  return { path: `/logos/${fname}` };
+}
 
 function loadProyectos() { try { return JSON.parse(fs.readFileSync(PROYECTOS_FILE,'utf8')); } catch(e) { return []; } }
 function saveProyectos(d) { fs.writeFileSync(PROYECTOS_FILE, JSON.stringify(d, null, 2)); }
@@ -238,10 +281,9 @@ app.post('/api/proyectos', authMiddleware, requireRol('superadmin', 'admin_empre
     const slug = generarSlugProyecto(proyectos.map(p => p.slug));
     let logoPath = null;
     if (logo && logo.startsWith('data:image/')) {
-      const ext = (logo.match(/data:image\/(\w+);/)||[])[1]||'png';
-      const fname = `${slug}.${ext}`;
-      fs.writeFileSync(path.join(LOGOS_DIR, fname), Buffer.from(logo.replace(/^data:image\/\w+;base64,/,''), 'base64'));
-      logoPath = `/logos/${fname}`;
+      const r = guardarLogo(logo, slug);
+      if (r.error) return res.status(400).json({ error: r.error });
+      logoPath = r.path;
     }
     const proyecto = {
       id: uuidSimple(), slug,
