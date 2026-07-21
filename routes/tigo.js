@@ -18,7 +18,7 @@ const buildDocx = require('../docx/clima');
 const {
   sanitizeSearch, escapeLike, filtrarInformesPorEmpresa, puedeVerInforme,
   vincularInformeGestion, storageUpload, storageDownload, storageMove, storageRemove,
-  loadTareasInformes, saveTareasInformes
+  loadTareasInformes, saveTareasInformes, nombreUnico, nombreDescarga
 } = require('../utils/informesCompartido');
 
 const router = express.Router();
@@ -99,6 +99,9 @@ async function dbClimaFind(id) {
     const { data, error } = await supabase.from('informes_clima')
       .select('*').eq('id', id).single();
     if (!error && data) return fromClima(data);
+    // Con Supabase activo, un miss es un miss: NO se cae al JSON local, que en
+    // producción es un residuo obsoleto y resucitaría informes ya borrados.
+    return null;
   }
   return loadDBLocal().find(r => r.id === id) || null;
 }
@@ -149,6 +152,7 @@ async function dbPapeleraFind(id) {
     const { data, error } = await supabase.from('papelera_clima')
       .select('*').eq('id', id).single();
     if (!error && data) return { ...fromClima(data), fechaEliminado: data.fecha_eliminado };
+    return null; // ver nota en dbClimaFind
   }
   return loadPapeleraLocal().find(r => r.id === id) || null;
 }
@@ -175,17 +179,20 @@ router.post('/generar', authMiddleware, requireModulo('tigo'), async (req,res) =
   try {
     const d = req.body;
     const buffer = await buildDocx(d);
+    const id = Date.now().toString();
     const sitePart = (d.nombreSitio||'Clima').replace(/[^a-zA-Z0-9]/g,'_').slice(0,25);
     // El código viaja al nombre de archivo: solo caracteres seguros (evita
     // path traversal con ../ y roturas del header Content-Disposition).
     const codPart = (d.codInforme||'Informe').replace(/[^a-zA-Z0-9\-_]/g,'_').slice(0,40);
-    const fname = `${codPart}_${sitePart}.docx`;
+    // El id hace único el nombre (código+sitio se repiten); al descargar se
+    // muestra sin el sufijo. Ver nombreUnico/nombreDescarga.
+    const fname = nombreUnico(`${codPart}_${sitePart}`, id, 'docx');
     fs.writeFileSync(path.join(DOCS_DIR, fname), buffer);
     await storageUpload(buffer, `clima/${fname}`);
 
     const { photos } = d;
     const entry = {
-      id: Date.now().toString(),
+      id,
       fecha: d.fecha, fechaCreacion: new Date().toISOString(),
       codInforme: d.codInforme, nombreSitio: d.nombreSitio,
       codigoSitio: d.codigoSitio, tecnico: d.tecnico,
@@ -217,7 +224,7 @@ router.post('/generar', authMiddleware, requireModulo('tigo'), async (req,res) =
     await vincularInformeGestion(req, d.gestionInformeId, `/descargar/${entry.id}`, fname);
 
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
+    res.setHeader('Content-Disposition',`attachment; filename="${nombreDescarga(fname)}"`);
     res.setHeader('Access-Control-Expose-Headers','Content-Disposition');
     res.send(buffer);
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
@@ -239,7 +246,7 @@ router.get('/descargar/:id', authMiddleware, requireModulo('tigo'), async (req,r
     buffer = fs.readFileSync(fpath);
   }
   res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-  res.setHeader('Content-Disposition',`attachment; filename="${entry.filename}"`);
+  res.setHeader('Content-Disposition',`attachment; filename="${nombreDescarga(entry.filename)}"`);
   res.send(buffer);
 });
 
@@ -274,7 +281,7 @@ router.post('/enviar/:id', authMiddleware, requireModulo('tigo'), async (req,res
     const t = nodemailer.createTransport({ host, port, secure: port === 465, auth:{user:smtpUser,pass:smtpPass} });
     await t.sendMail({ from:smtpUser, to, subject:`Informe - ${entry.nombreSitio} - ${entry.codInforme}`,
       text:`Adjunto informe.\nSitio: ${entry.nombreSitio}\nFecha: ${entry.fecha}\nTécnico: ${entry.tecnico}`,
-      attachments:[{filename:entry.filename, content:buffer}] });
+      attachments:[{filename:nombreDescarga(entry.filename), content:buffer}] });
     res.json({ok:true});
   } catch(err){ res.status(500).json({error:err.message}); }
 });

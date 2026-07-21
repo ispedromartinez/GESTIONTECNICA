@@ -74,6 +74,10 @@ Both TIGO and WOM follow the same pattern:
 
 `codInforme` is the primary user-visible identifier (e.g. `YG0806ANTONITX01`). It is used as part of the filename and is **not sanitized** before being embedded in HTML attributes — escape it before innerHTML interpolation.
 
+**Filenames on disk/Storage carry the entry id as a `__<id>` suffix** (`nombreUnico`/`nombreDescarga` in `utils/informesCompartido.js`). The human-readable part (código+sitio, ticket, sitio_crq_sala) is **not unique**: without the suffix two informes shared one file — the newer overwrote the older, deleting one left the other with a 404, and emptying the papelera removed the document of an *active* informe. `Content-Disposition` (and the email attachment) strips the suffix back off, so the user still sees the pretty name. `nombreDescarga` is a no-op on legacy filenames written before this change.
+
+**Find-by-id helpers never fall back to the local JSON when Supabase is configured.** `dbClimaFind`/`dbPapeleraFind`/`dbWomFind`/`dbPapeleraWomFind`/`dbPrevFind`/`dbPrevFindBySecId` all `return null` inside the `if (supabase)` branch. In production `registro*.json` is a stale leftover, and falling through to it resurrected informes already deleted from the database.
+
 ## Photo compression & offline resilience (frontend, 2026-07-17)
 
 The three informe pages (`informe_clima_app.html`, `informe_wom_app.html`, `informe-preventivo.html`) share two new pieces of infrastructure added to **`common.js`** — same rationale as `esc`/`escArg`: one implementation, not three copies that can drift.

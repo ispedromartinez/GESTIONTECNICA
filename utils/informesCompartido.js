@@ -23,6 +23,19 @@ if (!fs.existsSync(TAREAS_INFORMES_FILE)) fs.writeFileSync(TAREAS_INFORMES_FILE,
 function loadTareasInformes() { try { return JSON.parse(fs.readFileSync(TAREAS_INFORMES_FILE,'utf8')); } catch { return {}; } }
 function saveTareasInformes(m) { fs.writeFileSync(TAREAS_INFORMES_FILE, JSON.stringify(m, null, 2)); }
 
+// ── Nombres de archivo únicos ──────────────────────────────────
+// El nombre en disco/Storage lleva el id del informe como sufijo (`__<id>`)
+// porque el par código+sitio NO es único: sin el sufijo dos informes del
+// mismo sitio comparten archivo, el segundo pisa al primero y borrar uno
+// deja al otro con 404 (y vaciar la papelera borra el documento de un
+// informe activo). Al descargar se muestra el nombre "bonito" sin el sufijo.
+function nombreUnico(base, id, ext) {
+  return `${base}__${id}.${ext}`;
+}
+function nombreDescarga(filename) {
+  return String(filename || '').replace(/__\d{6,}(\.\w+)$/, '$1');
+}
+
 // ── Seguridad: sanitización de búsquedas ──────────────────────
 // El texto del buscador NUNCA se interpola en SQL — viaja como
 // parámetro ($1) para que el motor lo trate como dato, no como código.
@@ -101,6 +114,7 @@ async function vincularInformeGestion(req, gestionInformeId, doc_url, doc_nombre
 
 module.exports = {
   loadTareasInformes, saveTareasInformes,
+  nombreUnico, nombreDescarga,
   sanitizeSearch, escapeLike,
   filtrarInformesPorEmpresa, puedeVerInforme,
   storageUpload, storageDownload, storageMove, storageRemove,

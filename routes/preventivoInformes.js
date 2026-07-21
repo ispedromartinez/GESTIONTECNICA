@@ -20,7 +20,7 @@ const { supabase } = require('../db/supabase');
 const {
   sanitizeSearch, escapeLike, filtrarInformesPorEmpresa, puedeVerInforme,
   vincularInformeGestion, storageUpload, storageDownload, storageMove,
-  loadTareasInformes, saveTareasInformes
+  loadTareasInformes, saveTareasInformes, nombreUnico, nombreDescarga
 } = require('../utils/informesCompartido');
 
 const router = express.Router();
@@ -92,6 +92,9 @@ async function dbPrevFind(id) {
     const { data, error } = await supabase.from('informes_prev')
       .select('*').eq('id', id).single();
     if (!error && data) return fromPrev(data);
+    // Con Supabase activo, un miss es un miss: NO se cae al JSON local, que en
+    // producción es un residuo obsoleto y resucitaría informes ya borrados.
+    return null;
   }
   return loadDBPrevLocal().find(r => r.id === id) || null;
 }
@@ -100,6 +103,7 @@ async function dbPrevFindBySecId(secId) {
     const { data, error } = await supabase.from('informes_prev')
       .select('*').eq('tarea_officetrack', secId).single();
     if (!error && data) return fromPrev(data);
+    return null; // ver nota en dbPrevFind
   }
   return loadDBPrevLocal().find(r => r.tareaOfficetrack === secId) || null;
 }
@@ -186,17 +190,19 @@ router.post('/generar-preventivo', authMiddleware, requireModulo('preventivo'), 
     } catch(e) { d.qrDataUrl = null; }
     const buffer = await buildPdfPreventivo(d);
 
-    // Nombre: SITIO_CRQ_SALA.pdf
+    // Nombre: SITIO_CRQ_SALA.pdf — con el id como sufijo para que sea único
+    // (sitio+crq+sala se repiten); al descargar se muestra sin el sufijo.
+    const id = Date.now().toString();
     const sitio = (d.nombreNodo||'SITIO').replace(/[^a-zA-Z0-9\-]/g,'_').replace(/_+/g,'_').slice(0,35);
     const crq   = (d.crq||trackerId).replace(/[^a-zA-Z0-9\-]/g,'_').slice(0,20);
     const sala  = (d.sala||'').replace(/[^a-zA-Z0-9]/g,'_').slice(0,6);
-    const fname = `${sitio}_${crq}_${sala}.pdf`;
+    const fname = nombreUnico(`${sitio}_${crq}_${sala}`, id, 'pdf');
 
     fs.writeFileSync(path.join(DOCS_DIR_PREV, fname), buffer);
     await storageUpload(buffer, `prev/${fname}`);
 
     const entry = {
-      id: Date.now().toString(),
+      id,
       fechaCreacion: new Date().toISOString(),
       trackerId,
       nombreNodo: d.nombreNodo, ejecutante: d.ejecutante,
@@ -216,7 +222,7 @@ router.post('/generar-preventivo', authMiddleware, requireModulo('preventivo'), 
     await vincularInformeGestion(req, d.gestionInformeId, `/descargar-prev/${entry.id}`, fname);
 
     res.setHeader('Content-Type','application/pdf');
-    res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
+    res.setHeader('Content-Disposition',`attachment; filename="${nombreDescarga(fname)}"`);
     res.setHeader('Access-Control-Expose-Headers','Content-Disposition');
     res.send(buffer);
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
@@ -281,7 +287,7 @@ router.get('/descargar-prev/:id', authMiddleware, requireModulo('preventivo'), a
   }
   const isPdf = entry.filename.endsWith('.pdf');
   res.setHeader('Content-Type', isPdf ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-  res.setHeader('Content-Disposition',`attachment; filename="${entry.filename}"`);
+  res.setHeader('Content-Disposition',`attachment; filename="${nombreDescarga(entry.filename)}"`);
   res.send(buffer);
 });
 

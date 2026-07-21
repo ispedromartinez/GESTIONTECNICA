@@ -21,7 +21,8 @@ const equiposDb = require('../db/equipos');
 const buildDocxWom = require('../docx/wom');
 const {
   sanitizeSearch, escapeLike, filtrarInformesPorEmpresa, puedeVerInforme,
-  vincularInformeGestion, storageUpload, storageDownload, storageMove, storageRemove
+  vincularInformeGestion, storageUpload, storageDownload, storageMove, storageRemove,
+  nombreUnico, nombreDescarga
 } = require('../utils/informesCompartido');
 
 const router = express.Router();
@@ -98,6 +99,9 @@ async function dbWomFind(id) {
     const { data, error } = await supabase.from('informes_wom')
       .select('*').eq('id', id).single();
     if (!error && data) return fromWom(data);
+    // Con Supabase activo, un miss es un miss: NO se cae al JSON local, que en
+    // producción es un residuo obsoleto y resucitaría informes ya borrados.
+    return null;
   }
   return loadDBWomLocal().find(r => r.id === id) || null;
 }
@@ -137,6 +141,7 @@ async function dbPapeleraWomFind(id) {
     const { data, error } = await supabase.from('papelera_wom')
       .select('*').eq('id', id).single();
     if (!error && data) return { ...fromWom(data), deletedAt: data.deleted_at };
+    return null; // ver nota en dbWomFind
   }
   return loadPapeleraWomLocal().find(r => r.id === id) || null;
 }
@@ -183,14 +188,17 @@ router.post('/generar-wom', authMiddleware, requireModulo('wom'), async (req, re
   try {
     const d = req.body;
     const buffer = await buildDocxWom(d);
+    const id = Date.now().toString();
     const ticket = (d.ticket||'WOM').replace(/[^a-zA-Z0-9\-_]/g,'_').slice(0,50);
-    const fname  = `${ticket}_WOM.docx`;
+    // El id hace único el nombre (el ticket se repite); al descargar se muestra
+    // sin el sufijo. Ver nombreUnico/nombreDescarga.
+    const fname  = nombreUnico(`${ticket}_WOM`, id, 'docx');
     fs.writeFileSync(path.join(DOCS_DIR_WOM, fname), buffer);
     await storageUpload(buffer, `wom/${fname}`);
 
     const { photos, captions } = d;
     const entry = {
-      id: Date.now().toString(),
+      id,
       fechaCreacion: new Date().toISOString(),
       ticket: d.ticket, codInterno: d.codInterno,
       fechaInicio: d.fechaInicio, instalacion: d.instalacion,
@@ -216,7 +224,7 @@ router.post('/generar-wom', authMiddleware, requireModulo('wom'), async (req, re
     await vincularInformeGestion(req, d.gestionInformeId, `/descargar-wom/${entry.id}`, fname);
 
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition',`attachment; filename="${fname}"`);
+    res.setHeader('Content-Disposition',`attachment; filename="${nombreDescarga(fname)}"`);
     res.setHeader('Access-Control-Expose-Headers','Content-Disposition');
     res.send(buffer);
   } catch(err) { console.error(err); res.status(500).json({error:err.message}); }
@@ -238,7 +246,7 @@ router.get('/descargar-wom/:id', authMiddleware, requireModulo('wom'), async (re
     buffer = fs.readFileSync(fpath);
   }
   res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-  res.setHeader('Content-Disposition',`attachment; filename="${entry.filename}"`);
+  res.setHeader('Content-Disposition',`attachment; filename="${nombreDescarga(entry.filename)}"`);
   res.send(buffer);
 });
 
