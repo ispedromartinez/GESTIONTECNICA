@@ -111,6 +111,28 @@ tenant.
 - Fixed in WOM history on 2026-07-13 (commit `7f89cd0`); centralized to
   `common.js`; onclick `esc→escArg` fix on 2026-07-15 (commit `23c5503`).
 
+## Security rule: uploads served from the app origin (MANDATORY)
+
+Project logos are written to `logos/` and served by `express.static` from the
+**same origin** as the app — the origin whose `localStorage` holds the JWT. An
+uploaded file that the browser executes as a document (HTML, SVG with script)
+is therefore stored-XSS → token theft, exactly like an unescaped field. Two
+barriers, both in `server.js`, and both required for any future upload path:
+
+- **On write** — `guardarLogo(dataUrl, slug)` is the only way a logo reaches
+  disk. The extension is **never** taken from the client: the data-URI subtype
+  is looked up in `LOGO_TIPOS` (png/jpeg/jpg/webp/gif → real extension), the
+  payload is capped at `LOGO_MAX_BYTES` (2 MB), and `magicBytesOk(buf, ext)`
+  checks the real header bytes against the declared format so HTML/SVG can't
+  ride in under a `data:image/png`. It returns `{path}` or `{error}`; callers
+  must surface `error` as a 400 rather than ignore it.
+- **On serve** — the `/logos` static mount sets `Content-Security-Policy:
+  default-src 'none'; sandbox` and `X-Content-Type-Options: nosniff`, so even a
+  file that slipped past validation is inert.
+
+The old code did `logo.match(/data:image\/(\w+);/)` and wrote whatever
+extension came back. Added 2026-07-21 (commit `60da59f`).
+
 ## Equipos (hoja de vida)
 
 `db/equipos.js` mantiene la tabla resumen `equipos` (clave natural empresa+sitio+numero,
