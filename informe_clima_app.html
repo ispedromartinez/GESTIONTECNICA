@@ -252,6 +252,25 @@ input.has-error,textarea.has-error{border-color:#ef4444!important;background:#ff
 .act-em:hover{background:#dcfce7;}
 .act-del{background:#fef2f2;color:var(--red);}
 .act-del:hover{background:#fee2e2;}
+.act-edit{background:var(--bl);color:var(--bd);}
+.act-edit:hover{background:#d6e9ff;}
+.btn-subir{background:#fff;color:var(--bm);border:1.5px solid var(--bm);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.btn-subir:hover{background:var(--bl);}
+.ok-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 16px rgba(0,0,0,.2);max-width:calc(100% - 32px);text-align:center;}
+/* Modo edición: barra fija para guardar desde cualquier pestaña */
+.edit-bar{position:fixed;left:0;right:0;bottom:0;z-index:400;background:#fff;border-top:2px solid var(--bm);box-shadow:0 -4px 16px rgba(0,0,0,.08);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:none;}
+.edit-bar.on{display:block;}
+.edit-bar-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.edit-bar-txt{flex:1;min-width:160px;font-size:12.5px;color:var(--muted);line-height:1.35;}
+.edit-bar-txt strong{color:var(--text);display:block;font-size:13px;}
+.edit-bar button{padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit;}
+.edit-bar .eb-cancel{background:#f1f5f9;color:var(--text);}
+.edit-bar .eb-save{background:var(--bm);color:#fff;}
+.edit-bar .eb-save:disabled{opacity:.6;cursor:default;}
+body.editing{padding-bottom:110px;}
+.cbtn.primary{background:var(--bm);color:#fff;}
+.cbtn.primary:hover{background:var(--bd);}
+.cbtn.primary:disabled{opacity:.6;cursor:default;}
 
 /* ── SUMMARY ── */
 .summary-table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -323,6 +342,9 @@ code{background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;}
 <script src="/common.js"></script>
 <script>
 let HOME_URL = '/dashboard';
+// Editar, subir .docx y recontar fotos: supervisor o superior (el servidor
+// lo vuelve a exigir; esto solo decide si se muestran los botones).
+let PUEDE_EDITAR = false;
 (function(){
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (!token) { window.location.replace('/login'); throw ''; }
@@ -334,6 +356,12 @@ let HOME_URL = '/dashboard';
       HOME_URL = d.usuario.rol === 'tecnico' ? '/panel' : '/dashboard';
       const home = document.getElementById('btnHome');
       if (home) home.href = HOME_URL;
+      PUEDE_EDITAR = ['superadmin', 'admin_empresa', 'supervisor'].includes(d.usuario.rol);
+      if (PUEDE_EDITAR) {
+        const up = document.getElementById('btnSubirDocx');
+        if (up) up.style.display = '';
+        if (typeof renderHist === 'function' && typeof histRecords !== 'undefined' && histRecords.length) renderHist(histRecords);
+      }
 
       // Informe ya asignado a este técnico (llegó con ?informeId= desde
       // "Generar informe" en /panel): precargar y bloquear su nombre en
@@ -645,6 +673,7 @@ function precargarSitioLpuAsignados(informeId, token, intentos){
 <div class="section" id="tab7">
   <div class="hist-search-wrap">
     <input type="text" id="histSearch" placeholder="🔍 Buscar por sitio, código, técnico, OT..." oninput="filterHist(this.value)">
+    <button class="btn-subir" id="btnSubirDocx" style="display:none" onclick="openUploadModal()" title="Agregar un informe .docx ya hecho con esta app">⬆ Subir .docx</button>
     <button class="btn-refresh" onclick="loadHist()">↻</button>
   </div>
   <div class="hist-stats" id="histStats">
@@ -670,6 +699,31 @@ function precargarSitioLpuAsignados(informeId, token, intentos){
     <button class="btn btn-secondary" onclick="showTab(0)">← Inicio</button>
   </div>
 </div>
+
+<!-- SUBIR INFORME YA CONFECCIONADO -->
+<div class="confirm-overlay" id="uploadModal">
+  <div class="confirm-box" style="max-width:420px;text-align:left">
+    <div class="confirm-icon" style="text-align:center">⬆</div>
+    <div class="confirm-title" style="text-align:center">Subir informe ya confeccionado</div>
+    <div class="confirm-msg" style="text-align:center">Solo informes .docx hechos con esta misma aplicación. Los datos se leen del documento.</div>
+    <div class="field"><label>Archivo (.docx)</label><input type="file" id="up_file" accept=".docx"></div>
+    <div id="uploadPreview" style="display:none;background:#f5f7fa;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:8px;line-height:1.6"></div>
+    <div class="confirm-btns">
+      <button class="cbtn cancel" onclick="closeUploadModal()">Cerrar</button>
+      <button class="cbtn primary" id="uploadSaveBtn" onclick="submitUpload()">Subir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BARRA DE MODO EDICIÓN -->
+<div class="edit-bar" id="editBar">
+  <div class="edit-bar-inner">
+    <div class="edit-bar-txt"><strong>✏️ Editando <span id="editBarCod"></span></strong>Al guardar se regenera el mismo informe.</div>
+    <button class="eb-cancel" onclick="cancelarEdicion()">Cancelar</button>
+    <button class="eb-save" id="editBarSave" onclick="generateDocx()">Guardar cambios</button>
+  </div>
+</div>
+<div id="okToast" class="ok-toast"></div>
 
 <!-- CONFIRM PAPELERA PERMANENTE -->
 <div class="confirm-overlay" id="confirmPerm">
@@ -1106,6 +1160,7 @@ function previewCod(){
 
 // ══ NUEVO INFORME ══
 function nuevoInforme(){
+  salirModoEdicion();
   // Clear all fields
   const ids=['codigoSitio','fechaEjecucion','sala','tecnico','numOT','lpu',
     'ticketInc','ticketTE','ticketTI','ticketRED','resumen','observaciones','tituloPortada',
@@ -1421,8 +1476,10 @@ async function generateDocx(){
   btn.disabled=true;status.className='status loading';status.textContent='⏳ Generando código y documento...';
   document.getElementById('genOverlay').classList.add('show');
 
-  // Get final correlative code
-  const cod=await buildCodigoFinal()||'INFORME';
+  // Al editar se conserva el código (el servidor lo fuerza igual); si es
+  // nuevo se calcula el correlativo contra el historial.
+  const editId=editingInformeId;
+  const cod=editId?editingCodInforme:(await buildCodigoFinal()||'INFORME');
 
   const payload={
     codInforme:cod,fecha:fmtDate(g('fechaEjecucion')),
@@ -1444,6 +1501,7 @@ async function generateDocx(){
     tareaId:TAREA_ID,
     gestionInformeId:new URLSearchParams(location.search).get('informeId')||null
   };
+  if(editId){ await guardarEdicion(editId,payload,btn,status); return; }
   let resp;
   try{
     resp=await fetch(SERVER+'/generar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -1558,6 +1616,8 @@ function renderHist(records){
         <div class="inf-actions">
           <button class="act-btn act-dl" onclick="downloadRecord('${r.id}')">⬇ Descargar</button>
           <button class="act-btn act-dl" onclick="verPdf('${r.id}')">👁 Ver PDF</button>
+          ${PUEDE_EDITAR?`<button class="act-btn act-edit" onclick="editarInforme('${escArg(r.id)}')">✏️ Editar</button>
+          <button class="act-btn act-edit" onclick="recontarFotos('${escArg(r.id)}')">🔁 Recontar fotos</button>`:''}
           <!-- Botón Enviar oculto temporalmente hasta reimplementar el envío por correo.
                El modal (#emailModal) y sendEmail() quedan intactos para reactivarlo.
           <button class="act-btn act-em" onclick="openEmailModal('${r.id}','${escArg(r.nombreSitio)}','${escArg(r.codInforme)}')">✉️ Enviar</button>
@@ -1589,6 +1649,148 @@ function goHistPage(n){
   renderHist(histRecords);
   document.getElementById('histList').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
+function okToast(msg,ms=3500){
+  const t=document.getElementById('okToast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(okToast._t);okToast._t=setTimeout(()=>{t.style.display='none';},ms);
+}
+
+// ══ MODO EDICIÓN ══
+// Reabre el formulario con todo lo que tenía el informe (fotos, mediciones,
+// resumen…) y al guardar regenera el mismo Word (PUT /registro/:id) en vez
+// de crear uno nuevo. Mientras se edita no corre el autoguardado del
+// borrador, para no pisar un informe nuevo que el usuario tenga a medias.
+let editingInformeId=null, editingCodInforme=null;
+function setVal(id,v){const el=document.getElementById(id);if(el)el.value=v||'';}
+// "dd-mm-aaaa" (formato del informe) → "aaaa-mm-dd" (input date)
+function fechaAIso(s){const p=String(s||'').trim().split('-');return p.length===3&&p[2].length===4?`${p[2]}-${p[1]}-${p[0]}`:'';}
+async function editarInforme(id){
+  let j;
+  try{
+    const resp=await fetch(`${SERVER}/registro/${encodeURIComponent(id)}/datos`);
+    j=await resp.json().catch(()=>({}));
+    if(!resp.ok)throw new Error(j.error||'No se pudo cargar el informe');
+  }catch(e){
+    const t=document.getElementById('errToast');t.textContent='❌ '+e.message;t.style.display='block';
+    setTimeout(()=>{t.style.display='none';},4000);
+    return;
+  }
+  const d=j.datos||{};
+  nuevoInforme();
+  editingInformeId=id;editingCodInforme=d.codInforme||'';
+  if(d.nombreSitio)selectSite(d.nombreSitio,d.direccion||'');
+  setVal('codigoSitio',d.codigoSitio);
+  setVal('fechaEjecucion',fechaAIso(d.fecha));
+  setVal('sala',d.sala);
+  if(d.tecnico)selectTec(d.tecnico);
+  if(d.supervisor)selectSup(d.supervisor);
+  ['numOT','lpu','ticketInc','ticketTE','ticketTI','ticketRED','resumen','observaciones','tituloPortada',
+   'eqSala','eqNumero','eqTipo','eqMarca','eqModelo',
+   'm_cv','m_ca','m_ev','m_ea','m_condv','m_conda','m_tinj','m_tret'].forEach(k=>setVal(k,d[k]));
+  setVal('eqCircuito',d.circuito);
+  restaurarFotosTigo(d.photos,d.photoDescs);
+  // En edición todas las pestañas quedan abiertas: se guarda desde cualquiera.
+  unlockedUpTo=6;updateTabStates();
+  previewCod();
+  document.getElementById('editBarCod').textContent=editingCodInforme;
+  document.getElementById('editBar').classList.add('on');document.body.classList.add('editing');
+  okToast(j.parcial
+    ?'⚠️ Informe sin datos guardados: se leyó lo que se pudo del Word. Revisá tickets, descripciones de fotos y título.'
+    :'✏️ Modo edición: guardá desde cualquier pestaña con la barra de abajo',j.parcial?7000:3500);
+  showTab(1);
+}
+function salirModoEdicion(){
+  editingInformeId=null;editingCodInforme=null;
+  document.getElementById('editBar').classList.remove('on');document.body.classList.remove('editing');
+}
+function cancelarEdicion(){
+  nuevoInforme();showTab(7);
+  okToast('Edición cancelada: el informe no cambió');
+}
+async function guardarEdicion(id,payload,btn,status){
+  const saveBtn=document.getElementById('editBarSave');saveBtn.disabled=true;
+  try{
+    let resp;
+    try{
+      resp=await fetch(`${SERVER}/registro/${encodeURIComponent(id)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }catch{
+      // Editar no se encola offline: sobrescribe un informe existente y un
+      // reintento diferido podría pisar cambios hechos después desde otro equipo.
+      throw new Error('Sin conexión — no se guardó. Probá de nuevo cuando vuelva la señal.');
+    }
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error del servidor: ${resp.status}`);}
+    status.className='status ok';status.textContent=`✅ Informe ${editingCodInforme} actualizado`;
+    nuevoInforme();
+    okToast('✅ Informe actualizado');
+    await loadHist(true);
+    showTab(7);
+  }catch(err){
+    status.className='status err';status.textContent='❌ '+err.message;
+    okToast('❌ '+err.message,5000);
+  }finally{
+    btn.disabled=false;saveBtn.disabled=false;
+    document.getElementById('genOverlay').classList.remove('show');
+  }
+}
+async function recontarFotos(id){
+  try{
+    const resp=await fetch(`${SERVER}/registro/${encodeURIComponent(id)}/recontar-fotos`,{method:'POST'});
+    const j=await resp.json().catch(()=>({}));
+    if(!resp.ok)throw new Error(j.error||'No se pudo recontar');
+    okToast(`✔ ${j.photoCount} foto${j.photoCount!==1?'s':''} en el informe`);
+    await loadHist(true);
+  }catch(e){okToast('❌ '+e.message,5000);}
+}
+
+// ══ SUBIR INFORME YA CONFECCIONADO ══
+// Todos los datos se leen del .docx en el servidor; acá solo se manda el archivo.
+function openUploadModal(){
+  document.getElementById('up_file').value='';
+  document.getElementById('uploadPreview').style.display='none';
+  const btn=document.getElementById('uploadSaveBtn');btn.disabled=false;btn.textContent='Subir';
+  document.getElementById('uploadModal').classList.add('open');
+}
+function closeUploadModal(){document.getElementById('uploadModal').classList.remove('open');}
+function leerArchivoBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+let subiendoDocx=false;
+async function submitUpload(){
+  if(subiendoDocx)return;
+  const file=document.getElementById('up_file').files[0];
+  if(!file){okToast('❌ Seleccioná un archivo .docx');return;}
+  if(!/\.docx$/i.test(file.name)){okToast('❌ El archivo debe ser .docx');return;}
+  if(file.size>20*1024*1024){okToast('❌ El archivo supera el máximo de 20 MB');return;}
+  const btn=document.getElementById('uploadSaveBtn');
+  subiendoDocx=true;btn.disabled=true;btn.textContent='Leyendo y subiendo...';
+  try{
+    const fileBase64=await leerArchivoBase64(file);
+    const resp=await fetch(`${SERVER}/registro/subir`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fileName:file.name,fileBase64})});
+    const d=await resp.json().catch(()=>({}));
+    if(!resp.ok)throw new Error(d.error||'Error al subir el informe');
+    const c=d.campos||{};
+    const prev=document.getElementById('uploadPreview');
+    prev.style.display='block';
+    prev.innerHTML=`<strong>✔ Agregado con estos datos leídos del documento:</strong><br>Sitio: ${esc(c.nombreSitio)||'—'}<br>Código informe: ${esc(c.codInforme)||'—'}<br>Fecha: ${esc(c.fecha)||'—'}<br>Técnico: ${esc(c.tecnico)||'—'}`;
+    document.getElementById('up_file').value='';
+    // El botón queda deshabilitado: evita subir el mismo archivo dos veces.
+    btn.textContent='✔ Subido';
+    loadHist(true);
+  }catch(e){
+    okToast('❌ '+e.message,5000);
+    btn.disabled=false;btn.textContent='Subir';
+  }finally{subiendoDocx=false;}
+}
+document.getElementById('up_file').addEventListener('change',()=>{
+  const btn=document.getElementById('uploadSaveBtn');btn.disabled=false;btn.textContent='Subir';
+  document.getElementById('uploadPreview').style.display='none';
+});
 function toggleInf(id){document.getElementById(`body_${id}`).classList.toggle('open');}
 async function downloadRecord(id){
   try{
@@ -1806,7 +2008,7 @@ function snapshotBorradorTigo(){
     photoDataUrls,photoDescs,photoTransforms,photoRotations
   };
 }
-function guardarBorradorTigo(){ guardarBorrador('tigo', snapshotBorradorTigo()); }
+function guardarBorradorTigo(){ if(editingInformeId)return; guardarBorrador('tigo', snapshotBorradorTigo()); }
 
 function restaurarFotosTigo(urls,descs,transforms,rotations){
   (urls||[]).forEach((url,idx)=>{
