@@ -353,7 +353,7 @@ let PUEDE_EDITAR = false;
       if (PUEDE_EDITAR) {
         const up = document.getElementById('btnSubirDocx');
         if (up) up.style.display = '';
-        if (typeof renderHist === 'function' && typeof histRecords !== 'undefined' && histRecords.length) renderHist(histRecords);
+        try { if (allRecords.length) renderHist(allRecords); } catch {} // historial aún no cargado: se dibuja con botones al cargar
       }
 
       // Informe ya asignado a este técnico (llegó con ?informeId= desde
