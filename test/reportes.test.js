@@ -51,7 +51,10 @@ after(async () => {
   // Limpia el informe generado.
   const list = await fetch(`${BASE}/registro`, { headers: auth() }).then(r => r.json()).catch(() => []);
   const found = list.find(x => x.codInforme === COD);
-  if (found) await fetch(`${BASE}/registro/${found.id}`, { method: 'DELETE', headers: auth() }).catch(() => {});
+  if (found) {
+    await fetch(`${BASE}/registro/${found.id}`, { method: 'DELETE', headers: auth() }).catch(() => {});
+    await fetch(`${BASE}/papelera/${found.id}`, { method: 'DELETE', headers: auth() }).catch(() => {});
+  }
   if (server) server.kill();
 });
 

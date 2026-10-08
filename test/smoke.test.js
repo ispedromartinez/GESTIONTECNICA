@@ -60,6 +60,8 @@ after(async () => {
   for (const id of creados) {
     await fetch(`${BASE}/registro/${id}`, { method: 'DELETE',
       headers: { Authorization: 'Bearer ' + TOKEN } }).catch(() => {});
+    await fetch(`${BASE}/papelera/${id}`, { method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + TOKEN } }).catch(() => {});
   }
   for (const id of creadosWom) {
     await fetch(`${BASE}/registro-wom/${id}`, { method: 'DELETE',
@@ -91,6 +93,19 @@ test('auth: login con password incorrecta → 401', async () => {
     body: JSON.stringify({ email: EMAIL, password: 'malo' })
   });
   assert.equal(r.status, 401);
+});
+
+test('estático: archivos de datos y código del server no se sirven', async () => {
+  for (const p of ['/auth.db', '/registro.json', '/papelera.json', '/server.js', '/routes/tigo.js', '/db/local.js']) {
+    const r = await fetch(`${BASE}${p}`);
+    assert.equal(r.status, 404, p);
+  }
+});
+
+test('tigo: la API de papelera responde (el bloqueo de estáticos no la tapa)', async () => {
+  const r = await fetch(`${BASE}/papelera`, { headers: auth() });
+  assert.equal(r.status, 200);
+  assert.ok(Array.isArray(await r.json()));
 });
 
 test('tigo: generar informe → 200 y devuelve .docx', async () => {

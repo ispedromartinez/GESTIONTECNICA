@@ -91,19 +91,18 @@ app.use(express.json({ limit: '80mb' }));
 const STATIC_DIR_BLOCK = /^\/(db|middleware|routes|templates|utils|schema|react|node_modules|documentos_md|informes(_wom|_prev)?|papelera(_wom|_prev)?)(\/|$)/i;
 const STATIC_EXT_BLOCK = /\.(json|xlsx|xls|docx|pdf|db|db-shm|db-wal|md|txt|env|log|sqlite)$/i;
 const STATIC_FILE_BLOCK = new Set(['/server.js', '/ecosystem.config.js']);
-app.use((req, res, next) => {
-  let p;
-  try { p = decodeURIComponent(req.path); } catch { return res.status(400).json({ error: 'Ruta inválida' }); }
-  p = p.replace(/\\/g, '/');
-  if (STATIC_DIR_BLOCK.test(p) || STATIC_EXT_BLOCK.test(p) || STATIC_FILE_BLOCK.has(p.toLowerCase())) {
-    return res.status(404).json({ error: 'No encontrado' });
-  }
-  next();
-});
+// El bloqueo aplica SOLO al estático: una ruta bloqueada no se sirve desde
+// disco, pero sigue hacia los routers. Antes respondía 404 a todo, y como las
+// rutas de API /papelera, /papelera/:id y /papelera/restaurar/:id (Tigo)
+// coinciden con el patrón, la papelera de Tigo nunca funcionó. Una ruta
+// bloqueada sin router que la atienda termina igual en 404.
+function rutaEstaticaBloqueada(p) {
+  return STATIC_DIR_BLOCK.test(p) || STATIC_EXT_BLOCK.test(p) || STATIC_FILE_BLOCK.has(p.toLowerCase());
+}
 
 // No cachear los HTML: el navegador siempre carga la última versión
 // (evita ver pantallas viejas tras un cambio). El resto de assets sí se cachea.
-app.use(express.static(__dirname, {
+const serveRaiz = express.static(__dirname, {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -111,7 +110,14 @@ app.use(express.static(__dirname, {
       res.setHeader('Expires', '0');
     }
   }
-}));
+});
+app.use((req, res, next) => {
+  let p;
+  try { p = decodeURIComponent(req.path); } catch { return res.status(400).json({ error: 'Ruta inválida' }); }
+  p = p.replace(/\\/g, '/');
+  if (rutaEstaticaBloqueada(p)) return next();
+  serveRaiz(req, res, next);
+});
 
 // ── Auth routes (públicas: /auth/login, /auth/register-superadmin)
 app.use('/auth', authRoutes);

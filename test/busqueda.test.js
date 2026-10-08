@@ -4,7 +4,7 @@ const assert = require('node:assert');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 
-const PORT = 3198;
+const PORT = 3194;
 const BASE = `http://localhost:${PORT}`;
 const ADMIN_SECRET = 'busq-admin-secret';
 const SUPER = { email: 'busq-super@test.local', password: 'Busq123!' };
@@ -126,7 +126,9 @@ after(async () => {
   const codigos = ['BUSQTEST01', 'BUSQSCOPEA', 'BUSQSCOPEB'];
   for (const cod of codigos) {
     const f = (Array.isArray(list) ? list : []).find(x => x.codInforme === cod);
-    if (f) await fetch(`${BASE}/registro/${f.id}`, { method: 'DELETE', headers: authOf(tokSuper) }).catch(() => {});
+    if (!f) continue;
+    await fetch(`${BASE}/registro/${f.id}`, { method: 'DELETE', headers: authOf(tokSuper) }).catch(() => {});
+    await fetch(`${BASE}/papelera/${f.id}`, { method: 'DELETE', headers: authOf(tokSuper) }).catch(() => {});
   }
   if (server) server.kill();
 });
