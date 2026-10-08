@@ -592,6 +592,10 @@ function precargarSitioLpuAsignados(informeId, token, intentos){
 
 <!-- ══ TAB 4: NOTAS ══ -->
 <div class="section" id="tab4">
+  <div class="card" id="cardTituloPortada" style="display:none">
+    <div class="card-title">Título de Portada<span class="req"> *</span></div>
+    <div class="field"><input type="text" id="tituloPortada" placeholder="Ej: BÚSQUEDA Y REPARACIÓN DE FUGA EN EQUIPO 1 CIRCUITO 1"></div>
+  </div>
   <div class="card">
     <div class="card-title">Resumen de Actividad<span class="req"> *</span></div>
     <textarea id="resumen" rows="4" placeholder="Describir las actividades realizadas..." spellcheck="true" lang="es"></textarea>
@@ -1078,7 +1082,18 @@ async function buildCodigoFinal(){
     return `${base}${max}`;
   }catch{return base;}
 }
+// Sitios del cliente NextStream: el Word lleva portada con un título que
+// escribe el usuario. Misma lista y normalización que docx/clima.js.
+const SITIOS_CON_PORTADA=new Set(['DATA CENTER SAN MARTIN','DATA CENTER APOQUINDO']);
+function sitioTienePortada(){
+  const s=(document.getElementById('nombreSitio').value||siteInput.value||'');
+  return SITIOS_CON_PORTADA.has(s.normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toUpperCase());
+}
+function toggleTituloPortada(){
+  document.getElementById('cardTituloPortada').style.display=sitioTienePortada()?'':'none';
+}
 function previewCod(){
+  toggleTituloPortada();
   const base=buildCodigo();
   const el=document.getElementById('codPreview');
   if(base){
@@ -1093,7 +1108,7 @@ function previewCod(){
 function nuevoInforme(){
   // Clear all fields
   const ids=['codigoSitio','fechaEjecucion','sala','tecnico','numOT','lpu',
-    'ticketInc','ticketTE','ticketTI','ticketRED','resumen','observaciones',
+    'ticketInc','ticketTE','ticketTI','ticketRED','resumen','observaciones','tituloPortada',
     'eqSala','eqNumero','eqCircuito','eqTipo','eqMarca','eqModelo',
     'm_cv','m_ca','m_ev','m_ea','m_condv','m_conda','m_tinj','m_tret'];
   ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -1153,6 +1168,7 @@ const REQUIRED={
     {elId:'eqTipo',  check:()=>document.getElementById('eqTipo').value.trim()},
   ],
   4:[
+    {elId:'tituloPortada', check:()=>!sitioTienePortada()||document.getElementById('tituloPortada').value.trim()},
     {elId:'resumen', check:()=>document.getElementById('resumen').value.trim()},
   ]
 };
@@ -1417,6 +1433,7 @@ async function generateDocx(){
     numOT:g('numOT'),lpu:g('lpu'),circuito:g('eqCircuito'),
     ticketInc:g('ticketInc'),ticketTE:g('ticketTE'),ticketTI:g('ticketTI'),ticketRED:g('ticketRED'),
     resumen:g('resumen'),observaciones:g('observaciones'),
+    tituloPortada:sitioTienePortada()?g('tituloPortada'):'',
     eqSala:g('eqSala'),eqNumero:g('eqNumero'),eqTipo:g('eqTipo'),eqMarca:g('eqMarca'),eqModelo:g('eqModelo'),
     m_cv:document.getElementById('m_cv').value,m_ca:document.getElementById('m_ca').value,
     m_ev:document.getElementById('m_ev').value,m_ea:document.getElementById('m_ea').value,
@@ -1776,6 +1793,7 @@ function snapshotBorradorTigo(){
     ticketRED:document.getElementById('ticketRED').value,
     resumen:document.getElementById('resumen').value,
     observaciones:document.getElementById('observaciones').value,
+    tituloPortada:document.getElementById('tituloPortada').value,
     eqSala:document.getElementById('eqSala').value,
     eqNumero:document.getElementById('eqNumero').value,
     eqTipo:document.getElementById('eqTipo').value,
@@ -1834,6 +1852,7 @@ async function restaurarBorradorTigo(){
     if(s.ticketRED)document.getElementById('ticketRED').value=s.ticketRED;
     if(s.resumen)document.getElementById('resumen').value=s.resumen;
     if(s.observaciones)document.getElementById('observaciones').value=s.observaciones;
+    if(s.tituloPortada)document.getElementById('tituloPortada').value=s.tituloPortada;
     if(s.eqSala)document.getElementById('eqSala').value=s.eqSala;
     if(s.eqNumero)document.getElementById('eqNumero').value=s.eqNumero;
     if(s.eqTipo)document.getElementById('eqTipo').value=s.eqTipo;

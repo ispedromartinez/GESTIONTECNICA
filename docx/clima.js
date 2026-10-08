@@ -425,20 +425,93 @@ async function buildDocx(d) {
     );
   }
 
-  const doc = new Document({
-    sections: [{
-      headers: { default: new Header({ children: headerChildren }) },
-      properties: {
-        page: {
-          size: { width: 12240, height: 15840 },
-          margin: { top: 1080, right: 1701, bottom: 1417, left: 1701, header: 284 }
-        }
-      },
-      children: sectionChildren
-    }]
+  const docSections = [];
+  if (tienePortada(d.nombreSitio)) docSections.push(buildPortada(d, v));
+  docSections.push({
+    headers: { default: new Header({ children: headerChildren }) },
+    properties: {
+      page: {
+        size: { width: 12240, height: 15840 },
+        margin: { top: 1080, right: 1701, bottom: 1417, left: 1701, header: 284 }
+      }
+    },
+    children: sectionChildren
   });
+
+  const doc = new Document({ sections: docSections });
 
   return Packer.toBuffer(doc);
 }
 
+// ── PORTADA — solo sitios del cliente NextStream ──────────
+// El nombre se compara sin tildes ni mayúsculas: "Data Center San Martín"
+// y "DATA CENTER SAN MARTIN" son el mismo sitio. La lista vive duplicada en
+// informe_clima_app.html (SITIOS_CON_PORTADA) para mostrar el campo Título.
+const SITIOS_CON_PORTADA = ['DATA CENTER SAN MARTIN', 'DATA CENTER APOQUINDO'];
+const normSitio = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
+const tienePortada = nombreSitio => SITIOS_CON_PORTADA.includes(normSitio(nombreSitio));
+
+function buildPortada(d, v) {
+  const COVER_BLUE = '1F497D';
+  const children = [];
+
+  try {
+    let logoPath = path.join(ROOT, 'logo.png');
+    let logoType = 'png';
+    if (!fs.existsSync(logoPath)) { logoPath = path.join(ROOT, 'logo.jpeg'); logoType = 'jpeg'; }
+    children.push(new Paragraph({
+      alignment: AlignmentType.LEFT,
+      spacing: { before: 0, after: 0 },
+      children: [new ImageRun({ data: fs.readFileSync(logoPath), transformation: { width: 120, height: 65 }, type: logoType })]
+    }));
+  } catch (e) { console.log('Logo Icetel no encontrado para portada:', e.message); }
+
+  const coverLine = (text, size = 28) => new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 0, after: 0 },
+    children: [new TextRun({ text, bold: true, size, font: 'Calibri', color: COVER_BLUE })]
+  });
+  const gap = twips => new Paragraph({ spacing: { before: 0, after: twips }, children: [] });
+
+  children.push(
+    gap(700),
+    coverLine(normSitio(d.nombreSitio), 32),
+    gap(300),
+    coverLine(v(d.tituloPortada)),
+    gap(300),
+    coverLine(`Código informe ${v(d.codInforme)}`),
+    coverLine(v(d.fecha)),
+    gap(6000)
+  );
+
+  try {
+    const nsLogoPath = path.join(ROOT, 'nextstream-logo.png');
+    if (fs.existsSync(nsLogoPath)) {
+      children.push(
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 0, after: 100 },
+          children: [new TextRun({ text: 'CLIENTE', bold: true, size: 24, font: 'Calibri', color: '000000' })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 0, after: 0 },
+          children: [new ImageRun({ data: fs.readFileSync(nsLogoPath), transformation: { width: 220, height: 29 }, type: 'png' })]
+        })
+      );
+    }
+  } catch (e) { console.log('Logo NextStream no encontrado para portada:', e.message); }
+
+  return {
+    properties: {
+      page: {
+        size: { width: 12240, height: 15840 },
+        margin: { top: 1080, right: 1701, bottom: 1417, left: 1701 }
+      }
+    },
+    children
+  };
+}
+
 module.exports = buildDocx;
+module.exports.tienePortada = tienePortada;
