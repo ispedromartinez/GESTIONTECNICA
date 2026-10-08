@@ -12,9 +12,11 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 const { authMiddleware } = require('../middleware/auth');
 const { requireModulo } = require('../middleware/modulos');
+const { requireNivel } = require('../middleware/roles');
 const { supabase } = require('../db/supabase');
 const equiposDb = require('../db/equipos');
 const buildDocx = require('../docx/clima');
+const { leerCamposClima, contarFotosClima, extraerFotosClima } = require('../docx/climaLeer');
 const {
   sanitizeSearch, escapeLike, filtrarInformesPorEmpresa, puedeVerInforme,
   vincularInformeGestion, storageUpload, storageDownload, storageMove, storageRemove,
@@ -24,11 +26,13 @@ const {
 const router = express.Router();
 
 const DOCS_DIR      = path.join(__dirname, '..', 'informes');
+const DATOS_DIR     = path.join(DOCS_DIR, 'datos');
 const PAPELERA_DIR  = path.join(__dirname, '..', 'papelera');
 const DB_FILE       = path.join(__dirname, '..', 'registro.json');
 const PAPELERA_FILE = path.join(__dirname, '..', 'papelera.json');
 
 if (!fs.existsSync(DOCS_DIR))     fs.mkdirSync(DOCS_DIR);
+if (!fs.existsSync(DATOS_DIR))    fs.mkdirSync(DATOS_DIR);
 if (!fs.existsSync(PAPELERA_DIR)) fs.mkdirSync(PAPELERA_DIR);
 if (!fs.existsSync(DB_FILE))      fs.writeFileSync(DB_FILE, '[]');
 if (!fs.existsSync(PAPELERA_FILE))fs.writeFileSync(PAPELERA_FILE, '[]');
@@ -106,6 +110,28 @@ async function dbClimaFind(id) {
   return loadDBLocal().find(r => r.id === id) || null;
 }
 
+// Actualización parcial: solo las columnas presentes en `campos` (camelCase).
+// No se pasa por toClima porque rellena con null lo que no viene y pisaría
+// columnas que el llamador no quiso tocar.
+const COLUMNAS_CLIMA = {
+  fecha: 'fecha', codInforme: 'cod_informe', nombreSitio: 'nombre_sitio',
+  codigoSitio: 'codigo_sitio', tecnico: 'tecnico', supervisor: 'supervisor',
+  numOT: 'num_ot', lpu: 'lpu', circuito: 'circuito', photoCount: 'photo_count',
+  eqNumero: 'eq_numero'
+};
+async function dbClimaUpdate(id, campos) {
+  if (supabase) {
+    const row = {};
+    for (const [k, v] of Object.entries(campos)) if (COLUMNAS_CLIMA[k]) row[COLUMNAS_CLIMA[k]] = v;
+    const { error } = await supabase.from('informes_clima').update(row).eq('id', id);
+    if (error) throw new Error(error.message);
+  } else {
+    const db = loadDBLocal();
+    const i = db.findIndex(r => r.id === id);
+    if (i >= 0) { db[i] = { ...db[i], ...campos }; saveDBLocal(db); }
+  }
+}
+
 async function dbClimaDelete(id) {
   if (supabase) {
     const { error } = await supabase.from('informes_clima').delete().eq('id', id);
@@ -175,6 +201,56 @@ async function dbPapeleraClear() {
   }
 }
 
+// ── Documento y payload completo de un informe ────────────────
+async function leerDocxInforme(entry) {
+  const buffer = await storageDownload(`clima/${entry.filename}`);
+  if (buffer) return buffer;
+  const fpath = path.join(DOCS_DIR, entry.filename);
+  return fs.existsSync(fpath) ? fs.readFileSync(fpath) : null;
+}
+
+// El payload con que se generó el informe (fotos, resumen, mediciones…) se
+// guarda aparte para poder reabrirlo entero en modo edición. Va a Storage
+// además de a disco porque el disco del servidor en producción es efímero.
+// Sin las referencias de flujo (tarea/gestión): ya cumplieron su función.
+async function guardarDatosInforme(id, d) {
+  try {
+    const { tareaId, gestionInformeId, ...datos } = d;
+    const buf = Buffer.from(JSON.stringify(datos));
+    fs.writeFileSync(path.join(DATOS_DIR, `${id}.json`), buf);
+    await storageUpload(buf, `clima/datos/${id}.json`, 'application/json');
+  } catch (e) { console.error('guardarDatosInforme:', e.message); }
+}
+async function leerDatosInforme(id) {
+  let buf = await storageDownload(`clima/datos/${id}.json`);
+  if (!buf) {
+    const fpath = path.join(DATOS_DIR, `${id}.json`);
+    if (!fs.existsSync(fpath)) return null;
+    buf = fs.readFileSync(fpath);
+  }
+  try { return JSON.parse(buf.toString('utf8')); } catch { return null; }
+}
+
+// Hoja de vida: registra/actualiza el equipo. Nunca rompe el flujo que la llama.
+async function registrarEquipo(empresaId, d) {
+  try {
+    await equiposDb.upsertDesdeInforme({
+      empresaId: empresaId || null,
+      sitio: d.nombreSitio, numero: d.eqNumero,
+      tipo: d.eqTipo, marca: d.eqMarca, modelo: d.eqModelo,
+      fecha: d.fecha
+    });
+  } catch (e) { console.error('equipos upsert (clima):', e.message); }
+}
+
+// Busca el informe y verifica el acceso del usuario; responde 404/403 si no.
+async function informeAccesible(req, res) {
+  const entry = await dbClimaFind(req.params.id);
+  if (!entry) { res.status(404).json({ error: 'No encontrado' }); return null; }
+  if (!puedeVerInforme(entry, req.user)) { res.status(403).json({ error: 'Sin acceso a este informe' }); return null; }
+  return entry;
+}
+
 router.post('/generar', authMiddleware, requireModulo('tigo'), async (req,res) => {
   try {
     const d = req.body;
@@ -204,16 +280,8 @@ router.post('/generar', authMiddleware, requireModulo('tigo'), async (req,res) =
       empresaId: req.user.empresa_id || null
     };
     await dbClimaInsert(entry);
-
-    // Hoja de vida: registra/actualiza el equipo. Nunca rompe la generación.
-    try {
-      await equiposDb.upsertDesdeInforme({
-        empresaId: req.user.empresa_id || null,
-        sitio: d.nombreSitio, numero: d.eqNumero,
-        tipo: d.eqTipo, marca: d.eqMarca, modelo: d.eqModelo,
-        fecha: d.fecha
-      });
-    } catch (e) { console.error('equipos upsert (clima):', e.message); }
+    await guardarDatosInforme(id, d);
+    await registrarEquipo(req.user.empresa_id, d);
 
     if (d.tareaId) {
       const mapa = loadTareasInformes();
@@ -248,6 +316,101 @@ router.get('/descargar/:id', authMiddleware, requireModulo('tigo'), async (req,r
   res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   res.setHeader('Content-Disposition',`attachment; filename="${nombreDescarga(entry.filename)}"`);
   res.send(buffer);
+});
+
+// ── Subir un .docx ya confeccionado con esta app ──────────────
+// Los metadatos se leen del propio documento (docx/climaLeer.js); el archivo
+// se guarda tal cual llega, sin regenerarlo. Supervisor o superior.
+const SUBIR_MAX_BYTES = 20 * 1024 * 1024;
+router.post('/registro/subir', authMiddleware, requireModulo('tigo'), requireNivel(2), async (req, res) => {
+  try {
+    const { fileName, fileBase64 } = req.body || {};
+    if (!fileBase64) return res.status(400).json({ error: 'Falta el archivo .docx' });
+    if (!/\.docx$/i.test(fileName || '')) return res.status(400).json({ error: 'El archivo debe ser un .docx' });
+    const buffer = Buffer.from(fileBase64, 'base64');
+    if (buffer.length > SUBIR_MAX_BYTES) return res.status(413).json({ error: 'El archivo supera el máximo de 20 MB.' });
+    if (buffer.slice(0, 2).toString('ascii') !== 'PK') return res.status(400).json({ error: 'El archivo no es un .docx válido.' });
+
+    let campos;
+    try { campos = await leerCamposClima(buffer); }
+    catch (e) { return res.status(400).json({ error: e.message }); }
+    const photoCount = await contarFotosClima(buffer);
+
+    const id = Date.now().toString();
+    const base = String(fileName).replace(/\.docx$/i, '').replace(/[^a-zA-Z0-9\-_]/g, '_').slice(0, 80) || 'Informe';
+    const fname = nombreUnico(base, id, 'docx');
+    fs.writeFileSync(path.join(DOCS_DIR, fname), buffer);
+    await storageUpload(buffer, `clima/${fname}`);
+
+    await dbClimaInsert({
+      id, fecha: campos.fecha, fechaCreacion: new Date().toISOString(),
+      codInforme: campos.codInforme, nombreSitio: campos.nombreSitio,
+      codigoSitio: campos.codigoSitio, tecnico: campos.tecnico,
+      supervisor: campos.supervisor, numOT: campos.numOT,
+      lpu: campos.lpu || null, circuito: campos.circuito || null,
+      eqNumero: campos.eqNumero || null,
+      photoCount, filename: fname,
+      empresaId: req.user.empresa_id || null
+    });
+    await registrarEquipo(req.user.empresa_id, campos);
+    res.json({ ok: true, id, campos });
+  } catch (e) { console.error('POST /registro/subir:', e); res.status(500).json({ error: e.message || 'Error al subir el informe' }); }
+});
+
+// Recalcula photoCount leyendo el .docx real (informes que quedaron con un
+// conteo incorrecto, p. ej. subidos antes de que se contaran las fotos).
+router.post('/registro/:id/recontar-fotos', authMiddleware, requireModulo('tigo'), requireNivel(2), async (req, res) => {
+  try {
+    const entry = await informeAccesible(req, res);
+    if (!entry) return;
+    const buffer = await leerDocxInforme(entry);
+    if (!buffer) return res.status(404).json({ error: 'Archivo no existe' });
+    const photoCount = await contarFotosClima(buffer);
+    await dbClimaUpdate(entry.id, { photoCount });
+    res.json({ ok: true, photoCount });
+  } catch (e) { console.error('POST /registro/:id/recontar-fotos:', e); res.status(500).json({ error: e.message || 'Error al recontar fotos' }); }
+});
+
+// ── Modo edición ──────────────────────────────────────────────
+// Devuelve el payload para reabrir el formulario. Si el informe no lo tiene
+// guardado (generado antes de esta función, o subido), se arma leyendo el
+// .docx: campos + fotos; `parcial` avisa que puede faltar algo (tickets
+// vacíos, descripciones de fotos, título de portada).
+router.get('/registro/:id/datos', authMiddleware, requireModulo('tigo'), requireNivel(2), async (req, res) => {
+  try {
+    const entry = await informeAccesible(req, res);
+    if (!entry) return;
+    const datos = await leerDatosInforme(entry.id);
+    if (datos) return res.json({ ok: true, datos, parcial: false });
+    const buffer = await leerDocxInforme(entry);
+    if (!buffer) return res.status(404).json({ error: 'Archivo no existe' });
+    const campos = await leerCamposClima(buffer);
+    const photos = await extraerFotosClima(buffer).catch(() => []);
+    res.json({ ok: true, parcial: true, datos: { ...campos, tituloPortada: '', photos, photoDescs: [] } });
+  } catch (e) { console.error('GET /registro/:id/datos:', e); res.status(500).json({ error: e.message || 'Error al leer el informe' }); }
+});
+
+// Regenera el .docx del informe con el payload editado, sobre el mismo
+// archivo y el mismo id. El código de informe no cambia: es el identificador
+// que ve el usuario y puede estar citado en otros documentos.
+router.put('/registro/:id', authMiddleware, requireModulo('tigo'), requireNivel(2), async (req, res) => {
+  try {
+    const entry = await informeAccesible(req, res);
+    if (!entry) return;
+    const d = { ...req.body, codInforme: entry.codInforme };
+    const buffer = await buildDocx(d);
+    fs.writeFileSync(path.join(DOCS_DIR, entry.filename), buffer);
+    await storageUpload(buffer, `clima/${entry.filename}`);
+    await guardarDatosInforme(entry.id, d);
+    await dbClimaUpdate(entry.id, {
+      fecha: d.fecha, nombreSitio: d.nombreSitio, codigoSitio: d.codigoSitio,
+      tecnico: d.tecnico, supervisor: d.supervisor, numOT: d.numOT,
+      lpu: d.lpu || null, circuito: d.circuito || null, eqNumero: d.eqNumero || null,
+      photoCount: (d.photos || []).filter(Boolean).length
+    });
+    await registrarEquipo(entry.empresaId, d);
+    res.json({ ok: true, id: entry.id });
+  } catch (e) { console.error('PUT /registro/:id:', e); res.status(500).json({ error: e.message || 'Error al actualizar el informe' }); }
 });
 
 
@@ -328,10 +491,12 @@ router.delete('/papelera/:id', authMiddleware, requireModulo('tigo'), async (req
   const entry = await dbPapeleraFind(req.params.id);
   if (!entry) return res.status(404).json({error:'No encontrado'});
   if (!puedeVerInforme(entry, req.user)) return res.status(403).json({error:'Sin acceso a este informe'});
-  await storageRemove([`clima/papelera/${entry.filename}`]);
+  await storageRemove([`clima/papelera/${entry.filename}`, `clima/datos/${entry.id}.json`]);
   try {
     const fpath = path.join(PAPELERA_DIR, entry.filename);
     if (fs.existsSync(fpath)) fs.unlinkSync(fpath);
+    const dpath = path.join(DATOS_DIR, `${entry.id}.json`);
+    if (fs.existsSync(dpath)) fs.unlinkSync(dpath);
   } catch(e) {}
   await dbPapeleraDelete(entry.id);
   res.json({ok:true});
@@ -341,10 +506,11 @@ router.delete('/papelera/:id', authMiddleware, requireModulo('tigo'), async (req
 router.delete('/papelera', authMiddleware, requireModulo('tigo'), async (req,res) => {
   const papelera = filtrarInformesPorEmpresa(await dbPapeleraList(null), req.user);
   if (papelera.length) {
-    await storageRemove(papelera.map(e => `clima/papelera/${e.filename}`));
+    await storageRemove(papelera.flatMap(e => [`clima/papelera/${e.filename}`, `clima/datos/${e.id}.json`]));
     papelera.forEach(e => {
       try {
         const f = path.join(PAPELERA_DIR, e.filename); if (fs.existsSync(f)) fs.unlinkSync(f);
+        const dpath = path.join(DATOS_DIR, `${e.id}.json`); if (fs.existsSync(dpath)) fs.unlinkSync(dpath);
       } catch(e2) {}
     });
   }
